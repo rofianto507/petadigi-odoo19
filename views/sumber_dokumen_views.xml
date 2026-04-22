@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_petadigi_sumber_dokumen_list" model="ir.ui.view">
+            <field name="name">sumber_dokumen.list.petadigi</field>
+            <field name="model">petadigi.sumber_dokumen</field>
+            <field name="arch" type="xml">
+                <list string="Sumber Dokumen">
+                    <field name="name"/>
+                    <field name="tipe_sumber"/>
+                    <field name="tahun"/>
+                    <field name="keterangan"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_petadigi_sumber_dokumen_form" model="ir.ui.view">
+            <field name="name">sumber_dokumen.form.petadigi</field>
+            <field name="model">petadigi.sumber_dokumen</field>
+            <field name="arch" type="xml">
+                <form string="Sumber Dokumen">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="tipe_sumber"/>
+                            <field name="tahun"/>
+                            <field name="keterangan"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="action_petadigi_sumber_dokumen" model="ir.actions.act_window">
+            <field name="name">Sumber Dokumen</field>
+            <field name="res_model">petadigi.sumber_dokumen</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

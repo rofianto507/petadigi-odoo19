@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="petadigi.GeoJsonMapWidget">
+        <div class="o_field_geojson_map">
+            <div t-ref="mapContainer" style="height: 400px; width: 100%; background: #eee;">
+                Loading Map...
+            </div>
+        </div>
+    </t>
+</templates>

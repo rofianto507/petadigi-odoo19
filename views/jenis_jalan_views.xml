@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_petadigi_jenis_jalan_list" model="ir.ui.view">
+            <field name="name">jenis_jalan.list.petadigi</field>
+            <field name="model">petadigi.jenis_jalan</field>
+            <field name="arch" type="xml">
+                <list string="Jenis Jalan">
+                    <field name="name"/>
+                    <field name="keterangan"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_petadigi_jenis_jalan_form" model="ir.ui.view">
+            <field name="name">jenis_jalan.form.petadigi</field>
+            <field name="model">petadigi.jenis_jalan</field>
+            <field name="arch" type="xml">
+                <form string="Jenis Jalan">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="keterangan"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="action_petadigi_jenis_jalan" model="ir.actions.act_window">
+            <field name="name">Jenis Jalan</field>
+            <field name="res_model">petadigi.jenis_jalan</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

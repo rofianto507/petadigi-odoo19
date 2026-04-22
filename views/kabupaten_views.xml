@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_petadigi_kabupaten_list" model="ir.ui.view">
+            <field name="name">kabupaten.list.petadigi</field>
+            <field name="model">petadigi.kabupaten</field>
+            <field name="arch" type="xml">
+                <list string="Kabupaten/Kota">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="type"/>
+                    <field name="polres_id"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_petadigi_kabupaten_form" model="ir.ui.view">
+            <field name="name">kabupaten.form.petadigi</field>
+            <field name="model">petadigi.kabupaten</field>
+            <field name="arch" type="xml">
+                <form string="Kabupaten/Kota">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="code"/>
+                                <field name="name"/>
+                            </group>
+                            <group>
+                                <field name="type"/>
+                                <field name="polres_id"/>
+                            </group>
+                             
+                        </group>
+                        <notebook>
+                            <page string="Daftar Kecamatan">
+                                <field name="kecamatan_ids">
+                                    <list editable="bottom">
+                                        <field name="code"/>
+                                        <field name="name"/>
+                                        <field name="polsek_id" domain="[('polres_id', '=', parent.polres_id)]"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Peta">
+                                <group>
+                                    <field name="geometry" widget="geojson_map" nolabel="1"/>                                 
+                                </group>
+                                <group>
+                                    <field name="geometry" widget="text" string="Raw GeoJSON"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="action_petadigi_kabupaten" model="ir.actions.act_window">
+            <field name="name">Kabupaten/Kota</field>
+            <field name="res_model">petadigi.kabupaten</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

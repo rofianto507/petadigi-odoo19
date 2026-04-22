@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_petadigi_jenis_tkp_list" model="ir.ui.view">
+            <field name="name">jenis_tkp.list.petadigi</field>
+            <field name="model">petadigi.jenis_tkp</field>
+            <field name="arch" type="xml">
+                <list string="Jenis TKP">
+                    <field name="name"/>
+                    <field name="keterangan"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_petadigi_jenis_tkp_form" model="ir.ui.view">
+            <field name="name">jenis_tkp.form.petadigi</field>
+            <field name="model">petadigi.jenis_tkp</field>
+            <field name="arch" type="xml">
+                <form string="Jenis TKP">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="keterangan"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="action_petadigi_jenis_tkp" model="ir.actions.act_window">
+            <field name="name">Jenis TKP</field>
+            <field name="res_model">petadigi.jenis_tkp</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

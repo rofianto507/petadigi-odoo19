@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_petadigi_kategori_kriminal_list" model="ir.ui.view">
+            <field name="name">kategori_kriminal.list.petadigi</field>
+            <field name="model">petadigi.kategori_kriminal</field>
+            <field name="arch" type="xml">
+                <list string="Kategori Kriminal">
+                    <field name="name"/>
+                    <field name="keterangan"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_petadigi_kategori_kriminal_form" model="ir.ui.view">
+            <field name="name">kategori_kriminal.form.petadigi</field>
+            <field name="model">petadigi.kategori_kriminal</field>
+            <field name="arch" type="xml">
+                <form string="Kategori Kriminal">
+                    <sheet>
+                        <group>
+                            <field name="name"/>
+                            <field name="keterangan"/>
+                        </group>
+                        <notebook>
+                            <page string="Sub Kategori">
+                                <field name="sub_kategori_ids">
+                                    <list editable="bottom">
+                                        <field name="name"/>
+                                        <field name="keterangan"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="action_petadigi_kategori_kriminal" model="ir.actions.act_window">
+            <field name="name">Kategori Kriminal</field>
+            <field name="res_model">petadigi.kategori_kriminal</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

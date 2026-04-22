@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_petadigi_kecamatan_list" model="ir.ui.view">
+            <field name="name">kecamatan.list.petadigi</field>
+            <field name="model">petadigi.kecamatan</field>
+            <field name="arch" type="xml">
+                <list string="Kecamatan">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="kabupaten_id"/>
+                    <field name="polsek_id"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_petadigi_kecamatan_form" model="ir.ui.view">
+            <field name="name">kecamatan.form.petadigi</field>
+            <field name="model">petadigi.kecamatan</field>
+            <field name="arch" type="xml">
+                <form string="Kecamatan">
+                    <sheet>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="kabupaten_id"/>
+                            <field name="polsek_id"/>
+                        </group>
+                        <notebook>
+                            <page string="Daftar Desa/Kelurahan">
+                                <field name="desa_ids">
+                                    <list editable="bottom">
+                                        <field name="code"/>
+                                        <field name="name"/>
+                                        <field name="type"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Peta">
+                                <group>
+                                    <field name="geometry" widget="geojson_map" nolabel="1"/>                                 
+                                </group>
+                                <group>
+                                    <field name="geometry" widget="text" string="Raw GeoJSON"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="action_petadigi_kecamatan" model="ir.actions.act_window">
+            <field name="name">Kecamatan</field>
+            <field name="res_model">petadigi.kecamatan</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <menuitem 
+            id="menu_petadigi_root"
+            name="PetaDigi"
+            web_icon="petadigi,static/description/icon.png"
+            sequence="10"/>
+        
+        <menuitem
+            id="menu_petadigi_configuration"
+            name="Configuration"
+            parent="menu_petadigi_root"
+            sequence="99"/>
+        <menuitem
+            id="menu_config_polres"
+            name="Polres"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_polres"
+            sequence="10"/>   
+        <menuitem
+            id="menu_config_polsek"
+            name="Polsek"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_polsek"
+            sequence="20"/>     
+        <menuitem
+            id="menu_config_kabupaten"
+            name="Kabupaten"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_kabupaten"
+            sequence="30"/>   
+        <menuitem
+            id="menu_config_kecamatan"
+            name="Kecamatan"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_kecamatan"
+            sequence="40"/>
+        <menuitem
+            id="menu_config_desa"
+            name="Desa"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_desa"
+            sequence="50"/>
+        <menuitem
+            id="menu_config_sumber_dokumen"
+            name="Sumber Dokumen"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_sumber_dokumen"
+            sequence="60"/>
+        <menuitem
+            id="menu_config_kategori_kriminal"
+            name="Kategori Kriminal"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_kategori_kriminal"
+            sequence="70"/>
+        <menuitem
+            id="menu_config_sub_kategori_kriminal"
+            name="Sub Kategori Kriminal"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_sub_kategori_kriminal"
+            sequence="80"/>
+        <menuitem
+            id="menu_config_kategori_bencana"
+            name="Kategori Bencana"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_kategori_bencana"
+            sequence="90"/>
+        <menuitem
+            id="menu_config_kategori_kamtibmas"
+            name="Kategori Kamtibmas"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_kategori_kamtibmas"
+            sequence="100"/>
+        <menuitem
+            id="menu_config_kategori_lalu_lintas"
+            name="Kategori Lalu Lintas"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_kategori_lalu_lintas"
+            sequence="110"/>
+        <menuitem
+            id="menu_config_kategori_lokasi"
+            name="Kategori Lokasi"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_kategori_lokasi"
+            sequence="120"/>
+        <menuitem
+            id="menu_config_jenis_jalan"
+            name="Jenis Jalan"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_jenis_jalan"
+            sequence="130"/>
+        <menuitem
+            id="menu_config_modus_operandi"
+            name="Modus Operandi"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_modus_operandi"
+            sequence="140"/>
+        <menuitem
+            id="menu_config_jenis_tkp"
+            name="Jenis TKP"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_jenis_tkp"
+            sequence="150"/>
+    </data>
+</odoo>

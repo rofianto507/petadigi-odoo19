@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_petadigi_desa_list" model="ir.ui.view">
+            <field name="name">desa.list.petadigi</field>
+            <field name="model">petadigi.desa</field>
+            <field name="arch" type="xml">
+                <list string="Desa/Kelurahan">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="type"/>
+                    <field name="kecamatan_id"/>
+                </list>
+            </field>
+        </record>
+        <record id="view_petadigi_desa_form" model="ir.ui.view">
+            <field name="name">desa.form.petadigi</field>
+            <field name="model">petadigi.desa</field>
+            <field name="arch" type="xml">
+                <form string="Desa/Kelurahan">
+                    <sheet>
+                        <group>
+                            <field name="code"/>
+                            <field name="name"/>
+                            <field name="type"/>
+                            <field name="kecamatan_id"/>
+                        </group>
+                        <notebook>
+                            <page string="Peta">
+                                <group>
+                                    <field name="geometry" widget="geojson_map" nolabel="1"/>                                 
+                                </group>
+                                <group>
+                                    <field name="geometry" widget="text" string="Raw GeoJSON"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+        <record id="action_petadigi_desa" model="ir.actions.act_window">
+            <field name="name">Desa/Kelurahan</field>
+            <field name="res_model">petadigi.desa</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>
