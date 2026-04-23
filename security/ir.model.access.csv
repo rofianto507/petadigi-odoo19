@@ -14,3 +14,4 @@ access_petadigi_kategori_lokasi,petadigi.kategori_lokasi,model_petadigi_kategori
 access_petadigi_jenis_jalan,petadigi.jenis_jalan,model_petadigi_jenis_jalan,,1,1,1,1
 access_petadigi_modus_operandi,petadigi.modus_operandi,model_petadigi_modus_operandi,,1,1,1,1
 access_petadigi_jenis_tkp,petadigi.jenis_tkp,model_petadigi_jenis_tkp,,1,1,1,1
+access_petadigi_dashboard,petadigi.dashboard,model_petadigi_dashboard,,1,1,1,1

@@ -13,3 +13,4 @@ from . import kategori_lokasi
 from . import jenis_jalan
 from . import modus_operandi
 from . import jenis_tkp
+from . import dashboard

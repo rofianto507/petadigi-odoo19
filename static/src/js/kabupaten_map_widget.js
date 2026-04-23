@@ -12,10 +12,12 @@ export class GeoJsonMapWidget extends Component {
         this.mapContainer = useRef("mapContainer");
         this.map = null;
         this.polygonLayer = null;
+
         useEffect(
             () => this.renderOrUpdateMap(),
             () => [this.props.record.data[this.props.name], this.props.readonly]
         );
+
         onWillUnmount(() => {
             if (this.map) {
                 this.map.remove();
@@ -25,65 +27,82 @@ export class GeoJsonMapWidget extends Component {
     }
 
     renderOrUpdateMap() {
-        let doFitBounds = false;
         const geojsonStr = this.props.record.data[this.props.name];
+
+        // Init map dengan editable: true agar Leaflet.Editable aktif
         if (!this.map && this.mapContainer.el) {
-            this.map = L.map(this.mapContainer.el, { editable: true }).setView([-2.5, 117.5], 5);
+            this.map = L.map(this.mapContainer.el, {
+                editable: true,  // wajib untuk enableEdit()
+            }).setView([-2.5, 117.5], 5);
+
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(this.map);
-            doFitBounds = true;
         }
 
-        // Remove previous polygon if any
+        // Hapus layer lama
         if (this.polygonLayer) {
             this.map.removeLayer(this.polygonLayer);
+            this.polygonLayer = null;
         }
+
         if (!geojsonStr) return;
+
         let geojson = null;
         try {
             geojson = JSON.parse(geojsonStr);
-        } catch (_) { return; }
-
-        // Handle only Polygon/MultiPolygon
-        let geomType = geojson.type || (geojson.geometry && geojson.geometry.type);
-        let coordinates = geojson.coordinates || (geojson.geometry && geojson.geometry.coordinates);
-
-        // Converts GeoJSON coordinates to LatLng arrays
-        function coordsToLatLngArr(coords) {
-            return coords.map(function (pt) { return [pt[1], pt[0]]; });
+        } catch (_) {
+            console.warn("GeoJSON tidak valid:", geojsonStr);
+            return;
         }
 
-        if (geomType === "Polygon" && Array.isArray(coordinates)) {
-            this.polygonLayer = L.polygon(coordsToLatLngArr(coordinates[0]), {
-                color: "#3388ff", fillOpacity: 0.4
-            }).addTo(this.map);
-        } else if (geomType === "MultiPolygon" && Array.isArray(coordinates)) {
-            // Only use first polygon for simplicity; adapt if needed
-            this.polygonLayer = L.polygon(coordsToLatLngArr(coordinates[0][0]), {
-                color: "#3388ff", fillOpacity: 0.4
-            }).addTo(this.map);
-        }
+        // Render semua polygon/multipolygon via L.geoJSON
+        this.polygonLayer = L.geoJSON(geojson, {
+            style: {
+                color: '#3388ff',
+                weight: 2,
+                opacity: 1,
+                fillColor: '#3388ff',
+                fillOpacity: 0.35,
+            }
+        }).addTo(this.map);
 
-        
-        if (this.polygonLayer && this.polygonLayer.getBounds && this.polygonLayer.getBounds().isValid() && doFitBounds) {
-            this.map.fitBounds(this.polygonLayer.getBounds());
+        // Auto fit bounds
+        const bounds = this.polygonLayer.getBounds();
+        if (bounds.isValid()) {
+            this.map.fitBounds(bounds);
         }
 
         // EDIT MODE
-        if (!this.props.readonly && this.polygonLayer) {
-            this.polygonLayer.enableEdit();
+        if (!this.props.readonly) {
+            this.polygonLayer.eachLayer((layer) => {
+                // Cek dulu apakah enableEdit tersedia (Leaflet.Editable loaded)
+                if (typeof layer.enableEdit === 'function') {
+                    layer.enableEdit();
 
-            this.polygonLayer.on('editable:dragend editable:vertex:dragend editable:vertex:deleted editable:vertex:new', () => {
-                // On any edit, save back geometry to model
-                const latlngs = this.polygonLayer.getLatLngs()[0]; // only outer ring
-                // Convert back to geojson structure: [ [lon, lat], ... ]
-                const coords = latlngs.map(pt => [pt.lng, pt.lat]);
-                const newGeoJson = {
-                    type: "Polygon",
-                    coordinates: [coords]
-                };
-                this.props.record.update({ [this.props.name]: JSON.stringify(newGeoJson) });
+                    layer.on('editable:dragend editable:vertex:dragend editable:vertex:deleted editable:vertex:new', () => {
+                        const allCoords = [];
+                        this.polygonLayer.eachLayer((l) => {
+                            const latlngs = l.getLatLngs();
+                            const rings = Array.isArray(latlngs[0]) ? latlngs : [latlngs];
+                            rings.forEach((ring) => {
+                                const flat = ring.flat ? ring.flat() : ring;
+                                allCoords.push(flat.map(pt => [pt.lng, pt.lat]));
+                            });
+                        });
+
+                        const newGeoJson = allCoords.length === 1
+                            ? { type: "Polygon", coordinates: allCoords }
+                            : { type: "MultiPolygon", coordinates: allCoords.map(c => [c]) };
+
+                        this.props.record.update({
+                            [this.props.name]: JSON.stringify(newGeoJson)
+                        });
+                    });
+                } else {
+                    // Leaflet.Editable tidak tersedia, tampilkan warning sekali
+                    console.warn("Leaflet.Editable tidak tersedia. Edit polygon dinonaktifkan.");
+                }
             });
         }
     }

@@ -4,7 +4,7 @@
     'summary': 'Module for Digital Map.',
     'description': 'Digital map module for Odoo, providing interactive mapping features and geolocation services.',
     'category': 'Tools',
-    'author': 'Sel Studio',
+    'author': 'Cv Sel Studio',
     'website': 'https://selstudio.id',
     'depends': ['base', 'web'],
     'data': [
@@ -24,12 +24,15 @@
         'views/jenis_jalan_views.xml',
         'views/modus_operandi_views.xml',
         'views/jenis_tkp_views.xml',
+        'views/dashboard_views.xml',
         'views/menu.xml',
     ],
     'assets': {
          'web.assets_backend': [
             'petadigi/static/lib/leaflet/leaflet.css',
             'petadigi/static/lib/leaflet/leaflet.js',
+            'petadigi/static/src/js/dashboard_map.js',
+            'petadigi/static/src/xml/dashboard_map.xml',
             'petadigi/static/lib/leaflet/leaflet.editable.js',
             'petadigi/static/src/js/kabupaten_map_widget.js',
             'petadigi/static/src/xml/geojson_map_widget.xml',
