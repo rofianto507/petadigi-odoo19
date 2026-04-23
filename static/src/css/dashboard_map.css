@@ -2,17 +2,18 @@
    LAYOUT UTAMA DASHBOARD
 ════════════════════════════════════════════ */
 .petadigi-dashboard {
+    height: 100%;
     display: flex;
     flex-direction: column;
     /* Gunakan 100% + absolute agar tidak overlap navbar Odoo */
-    position: absolute;
+    position: relative;/* ✅ Pastikan dashboard bisa menumpuk di atas navbar */
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     font-family: inherit;
     background: #f4f5f7;
-    overflow: hidden;
+    overflow: hidden;/* ✅ Cegah konten meluap ke luar dashboard */
 }
 
 /* ── TOOLBAR ── */
