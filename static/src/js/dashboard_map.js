@@ -26,10 +26,11 @@ class DashboardMap extends Component {
         }).addTo(map);
 
         try {
+            // Ambil data lengkap kabupaten termasuk kecamatan_ids
             const records = await this.orm.searchRead(
                 'petadigi.kabupaten',
                 [],
-                ['name', 'geometry'],
+                ['code', 'name', 'type', 'kecamatan_ids', 'geometry'],
             );
 
             const features = records
@@ -39,10 +40,15 @@ class DashboardMap extends Component {
                         return {
                             type: "Feature",
                             geometry: JSON.parse(r.geometry),
-                            properties: { name: r.name }
+                            properties: {
+                                code: r.code,
+                                name: r.name,
+                                type: r.type,
+                                jumlah_kecamatan: r.kecamatan_ids ? r.kecamatan_ids.length : 0,
+                            }
                         };
                     } catch (e) {
-                        console.warn(`Gagal parse geometry kabupaten: ${r.name}`, e);
+                        console.warn(`Gagal parse geometry: ${r.name}`, e);
                         return null;
                     }
                 })
@@ -54,32 +60,68 @@ class DashboardMap extends Component {
 
             const geoLayer = L.geoJSON(geojsonData, {
                 style: () => ({
-                    color: "#3388ff",
-                    weight: 2,
-                    opacity: 0.7,
-                    fillOpacity: 0.80,
-                    fillColor: '#e5e1e1',
+                    color: '#888888',
+                    weight: 1.5,
+                    opacity: 1,
+                    fillColor: '#aaaaaa',
+                    fillOpacity: 0.35,
                 }),
                 onEachFeature: (feature, layer) => {
-                    // Setelah layer ditambahkan ke map, taruh label di tengah area
+                    const props = feature.properties;
+
+                    // Label nama permanen di tengah area
                     layer.on('add', () => {
-                        if (!feature.properties?.name) return;
-
-                        // Ambil titik tengah dari bounds polygon
                         const center = layer.getBounds().getCenter();
-
-                        // Buat label dengan divIcon
-                        const label = L.marker(center, {
+                        L.marker(center, {
                             icon: L.divIcon({
                                 className: 'kabupaten-label',
-                                html: `<span>${feature.properties.name}</span>`,
+                                html: `<span>${props.name}</span>`,
                                 iconSize: null,
                             }),
-                            interactive: false, // label tidak bisa diklik
+                            interactive: false,
                             zIndexOffset: 100,
-                        });
+                        }).addTo(map);
+                    });
 
-                        label.addTo(map);
+                    // Hover effect
+                    layer.on('mouseover', () => {
+                        layer.setStyle({ fillOpacity: 0.55, fillColor: '#666666' });
+                    });
+                    layer.on('mouseout', () => {
+                        layer.setStyle({ fillOpacity: 0.35, fillColor: '#aaaaaa' });
+                    });
+
+                    // Klik → tampilkan popup informasi
+                    layer.on('click', (e) => {
+                        const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+                        const popupContent = `
+                            <div class="petadigi-popup">
+                                <div class="petadigi-popup-header">
+                                    <i class="fa fa-map-marker"></i>
+                                    <strong>${tipeLabel} ${props.name}</strong>
+                                </div>
+                                <div class="petadigi-popup-body">
+                                    <table>
+                                        <tr>
+                                            <td><i class="fa fa-barcode"></i> Kode</td>
+                                            <td><strong>${props.code}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fa fa-tag"></i> Tipe</td>
+                                            <td><strong>${tipeLabel}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <td><i class="fa fa-list"></i> Kecamatan</td>
+                                            <td><strong>${props.jumlah_kecamatan} Kecamatan</strong></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        `;
+                        L.popup({ maxWidth: 250, className: 'petadigi-leaflet-popup' })
+                            .setLatLng(e.latlng)
+                            .setContent(popupContent)
+                            .openOn(map);
                     });
                 }
             }).addTo(map);

@@ -5,8 +5,8 @@
 }
 
 .kabupaten-label span {
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 600;
     color: #05305e;
     text-align: center;
     white-space: normal;
@@ -18,4 +18,75 @@
          1px -1px 0 #fff,
         -1px  1px 0 #fff,
          1px  1px 0 #fff;
+}
+/* ── Popup klik kabupaten ── */
+.petadigi-leaflet-popup .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    padding: 0;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+
+.petadigi-leaflet-popup .leaflet-popup-content {
+    margin: 0;
+    min-width: 200px;
+}
+
+.petadigi-popup-header {
+    background: #34495e;
+    color: #ffffff;
+    padding: 10px 14px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.petadigi-popup-header i {
+    color: #e74c3c;
+    font-size: 14px;
+}
+
+.petadigi-popup-body {
+    padding: 10px 14px;
+    background: #ffffff;
+}
+
+.petadigi-popup-body table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.petadigi-popup-body table tr {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.petadigi-popup-body table tr:last-child {
+    border-bottom: none;
+}
+
+.petadigi-popup-body table td {
+    padding: 6px 4px;
+    color: #444;
+    vertical-align: middle;
+}
+
+.petadigi-popup-body table td:first-child {
+    color: #888;
+    white-space: nowrap;
+    padding-right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.petadigi-popup-body table td i {
+    color: #3498db;
+    width: 14px;
+    text-align: center;
+}
+
+.petadigi-leaflet-popup .leaflet-popup-tip {
+    background: #34495e;
 }
