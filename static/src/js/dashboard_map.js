@@ -4,14 +4,12 @@ import { Component, onMounted, useRef } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
- 
-
 class DashboardMap extends Component {
     static template = "petadigi.DashboardMap";
 
     setup() {
         this.mapRef = useRef("mapContainer");
-        this.orm = useService("orm");  // Gunakan orm, bukan rpc
+        this.orm = useService("orm");
 
         onMounted(async () => {
             await this._initMap();
@@ -22,23 +20,21 @@ class DashboardMap extends Component {
         const el = this.mapRef.el;
         if (!el) return;
 
-        // Init Leaflet map
         const map = L.map(el).setView([-3.31987, 104.91459], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(map);
 
-        // Fetch data kabupaten langsung via ORM
         try {
             const records = await this.orm.searchRead(
-                'petadigi.kabupaten',  // nama model
-                [],                    // domain (kosong = semua)
-                ['name', 'geometry'],  // fields yang diambil
+                'petadigi.kabupaten',
+                [],
+                ['name', 'geometry'],
             );
 
             const features = records
                 .filter(r => r.geometry)
-                .map(r => {
+                .map((r) => {
                     try {
                         return {
                             type: "Feature",
@@ -46,37 +42,49 @@ class DashboardMap extends Component {
                             properties: { name: r.name }
                         };
                     } catch (e) {
+                        console.warn(`Gagal parse geometry kabupaten: ${r.name}`, e);
                         return null;
                     }
                 })
                 .filter(f => f !== null);
 
+            if (features.length === 0) return;
+
             const geojsonData = { type: "FeatureCollection", features };
 
-            let colorIndex = 0;
-            L.geoJSON(geojsonData, {
-                style: () => {
-                    
-                    return {
-                        color: "#3388ff",
-                        weight: 2,
-                        opacity: 0.7,
-                        fillOpacity: 0.80,
-                        fillColor: '#e5e1e1'
-                    };
-                },
+            const geoLayer = L.geoJSON(geojsonData, {
+                style: () => ({
+                    color: "#3388ff",
+                    weight: 2,
+                    opacity: 0.7,
+                    fillOpacity: 0.80,
+                    fillColor: '#e5e1e1',
+                }),
                 onEachFeature: (feature, layer) => {
-                    if (feature.properties?.name) {
-                        layer.bindTooltip(feature.properties.name, {
-                            permanent: false,
-                            direction: 'center',
-                            className: 'kabupaten-tooltip'
+                    // Setelah layer ditambahkan ke map, taruh label di tengah area
+                    layer.on('add', () => {
+                        if (!feature.properties?.name) return;
+
+                        // Ambil titik tengah dari bounds polygon
+                        const center = layer.getBounds().getCenter();
+
+                        // Buat label dengan divIcon
+                        const label = L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'kabupaten-label',
+                                html: `<span>${feature.properties.name}</span>`,
+                                iconSize: null,
+                            }),
+                            interactive: false, // label tidak bisa diklik
+                            zIndexOffset: 100,
                         });
-                        layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.65 }));
-                        layer.on('mouseout', () => layer.setStyle({ fillOpacity: 0.35 }));
-                    }
+
+                        label.addTo(map);
+                    });
                 }
             }).addTo(map);
+
+            map.fitBounds(geoLayer.getBounds());
 
         } catch (error) {
             console.error("Gagal memuat data GeoJSON kabupaten:", error);

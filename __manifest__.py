@@ -31,6 +31,7 @@
          'web.assets_backend': [
             'petadigi/static/lib/leaflet/leaflet.css',
             'petadigi/static/lib/leaflet/leaflet.js',
+            'petadigi/static/src/css/dashboard_map.css',
             'petadigi/static/src/js/dashboard_map.js',
             'petadigi/static/src/xml/dashboard_map.xml',
             'petadigi/static/lib/leaflet/leaflet.editable.js',
