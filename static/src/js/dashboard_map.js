@@ -20,17 +20,38 @@ class DashboardMap extends Component {
         const el = this.mapRef.el;
         if (!el) return;
 
-        const map = L.map(el).setView([-3.31987, 104.91459], 8);
+        this.map = L.map(el).setView([-3.31987, 104.91459], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
+        }).addTo(this.map);
+
+        // Layer groups untuk masing-masing tingkatan
+        this.kabupatenLayerGroup = L.layerGroup().addTo(this.map);
+        this.kabupatenLabelGroup = L.layerGroup().addTo(this.map);
+        this.kecamatanLayerGroup = L.layerGroup().addTo(this.map);
+        this.kecamatanLabelGroup = L.layerGroup().addTo(this.map);
+        this.desaLayerGroup       = L.layerGroup().addTo(this.map);
+        this.desaLabelGroup       = L.layerGroup().addTo(this.map);
+
+        this.backButton = null;
+        this.currentLevel = 'kabupaten'; // kabupaten | kecamatan | desa
+
+        await this._loadKabupatenLayer();
+    }
+
+    // ─────────────────────────────────────────────
+    // LEVEL 1 — KABUPATEN
+    // ─────────────────────────────────────────────
+    async _loadKabupatenLayer() {
+        this.currentLevel = 'kabupaten';
+        this.kabupatenLayerGroup.clearLayers();
+        this.kabupatenLabelGroup.clearLayers();
 
         try {
-            // Ambil data lengkap kabupaten termasuk kecamatan_ids
             const records = await this.orm.searchRead(
                 'petadigi.kabupaten',
                 [],
-                ['code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+                ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
             );
 
             const features = records
@@ -41,6 +62,7 @@ class DashboardMap extends Component {
                             type: "Feature",
                             geometry: JSON.parse(r.geometry),
                             properties: {
+                                id: r.id,
                                 code: r.code,
                                 name: r.name,
                                 type: r.type,
@@ -48,7 +70,7 @@ class DashboardMap extends Component {
                             }
                         };
                     } catch (e) {
-                        console.warn(`Gagal parse geometry: ${r.name}`, e);
+                        console.warn(`Gagal parse geometry kabupaten: ${r.name}`, e);
                         return null;
                     }
                 })
@@ -56,9 +78,7 @@ class DashboardMap extends Component {
 
             if (features.length === 0) return;
 
-            const geojsonData = { type: "FeatureCollection", features };
-
-            const geoLayer = L.geoJSON(geojsonData, {
+            const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
                 style: () => ({
                     color: '#888888',
                     weight: 1.5,
@@ -69,10 +89,9 @@ class DashboardMap extends Component {
                 onEachFeature: (feature, layer) => {
                     const props = feature.properties;
 
-                    // Label nama permanen di tengah area
                     layer.on('add', () => {
                         const center = layer.getBounds().getCenter();
-                        L.marker(center, {
+                        const label = L.marker(center, {
                             icon: L.divIcon({
                                 className: 'kabupaten-label',
                                 html: `<span>${props.name}</span>`,
@@ -80,57 +99,368 @@ class DashboardMap extends Component {
                             }),
                             interactive: false,
                             zIndexOffset: 100,
-                        }).addTo(map);
+                        });
+                        this.kabupatenLabelGroup.addLayer(label);
                     });
 
-                    // Hover effect
-                    layer.on('mouseover', () => {
-                        layer.setStyle({ fillOpacity: 0.55, fillColor: '#666666' });
-                    });
-                    layer.on('mouseout', () => {
-                        layer.setStyle({ fillOpacity: 0.35, fillColor: '#aaaaaa' });
-                    });
-
-                    // Klik → tampilkan popup informasi
-                    layer.on('click', (e) => {
-                        const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
-                        const popupContent = `
-                            <div class="petadigi-popup">
-                                <div class="petadigi-popup-header">
-                                    <i class="fa fa-map-marker"></i>
-                                    <strong>${tipeLabel} ${props.name}</strong>
-                                </div>
-                                <div class="petadigi-popup-body">
-                                    <table>
-                                        <tr>
-                                            <td><i class="fa fa-barcode"></i> Kode</td>
-                                            <td><strong>${props.code}</strong></td>
-                                        </tr>
-                                        <tr>
-                                            <td><i class="fa fa-tag"></i> Tipe</td>
-                                            <td><strong>${tipeLabel}</strong></td>
-                                        </tr>
-                                        <tr>
-                                            <td><i class="fa fa-list"></i> Kecamatan</td>
-                                            <td><strong>${props.jumlah_kecamatan} Kecamatan</strong></td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                        `;
-                        L.popup({ maxWidth: 250, className: 'petadigi-leaflet-popup' })
-                            .setLatLng(e.latlng)
-                            .setContent(popupContent)
-                            .openOn(map);
-                    });
+                    layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.55, fillColor: '#666666' }));
+                    layer.on('mouseout',  () => layer.setStyle({ fillOpacity: 0.35, fillColor: '#aaaaaa' }));
+                    layer.on('click', (e) => this._showKabupatenPopup(e, props, layer));
                 }
-            }).addTo(map);
+            });
 
-            map.fitBounds(geoLayer.getBounds());
+            this.kabupatenLayerGroup.addLayer(geoLayer);
+            this.map.fitBounds(geoLayer.getBounds());
 
         } catch (error) {
-            console.error("Gagal memuat data GeoJSON kabupaten:", error);
+            console.error("Gagal memuat data kabupaten:", error);
         }
+    }
+
+    _showKabupatenPopup(e, props, layer) {
+        const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+        const popupContent = `
+            <div class="petadigi-popup">
+                <div class="petadigi-popup-header">
+                    <i class="fa fa-map-marker"></i>
+                    <strong>${tipeLabel} ${props.name}</strong>
+                </div>
+                <div class="petadigi-popup-body">
+                    <table>
+                        <tr>
+                            <td><i class="fa fa-barcode"></i> Kode</td>
+                            <td><strong>${props.code}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><i class="fa fa-tag"></i> Tipe</td>
+                            <td><strong>${tipeLabel}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><i class="fa fa-list"></i> Kecamatan</td>
+                            <td><strong>${props.jumlah_kecamatan} Kecamatan</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="petadigi-popup-footer">
+                    <button class="petadigi-btn-detail" id="btn-detail-kab-${props.id}">
+                        <i class="fa fa-search-plus"></i> Lihat Detail Kecamatan
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const popup = L.popup({ maxWidth: 260, className: 'petadigi-leaflet-popup' })
+            .setLatLng(e.latlng)
+            .setContent(popupContent)
+            .openOn(this.map);
+
+        // Bind tombol detail setelah popup terbuka
+        this.map.once('popupopen', () => {
+            const btn = document.getElementById(`btn-detail-kab-${props.id}`);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    this.map.closePopup();
+                    this._drillDownKecamatan(props, layer);
+                });
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────
+    // LEVEL 2 — KECAMATAN
+    // ─────────────────────────────────────────────
+    async _drillDownKecamatan(kabProps, kabLayer) {
+        this.currentLevel = 'kecamatan';
+
+        // Sembunyikan layer kabupaten
+        this.kabupatenLayerGroup.clearLayers();
+        this.kabupatenLabelGroup.clearLayers();
+        this.kecamatanLayerGroup.clearLayers();
+        this.kecamatanLabelGroup.clearLayers();
+
+        // Zoom ke area kabupaten
+        const bounds = kabLayer.getBounds();
+        this.map.fitBounds(bounds, { padding: [40, 40] });
+
+        try {
+            const records = await this.orm.searchRead(
+                'petadigi.kecamatan',
+                [['kabupaten_id', '=', kabProps.id]],
+                ['id', 'code', 'name', 'desa_ids', 'geometry'],
+            );
+
+            const features = records
+                .filter(r => r.geometry)
+                .map((r) => {
+                    try {
+                        return {
+                            type: "Feature",
+                            geometry: JSON.parse(r.geometry),
+                            properties: {
+                                id: r.id,
+                                code: r.code,
+                                name: r.name,
+                                jumlah_desa: r.desa_ids ? r.desa_ids.length : 0,
+                            }
+                        };
+                    } catch (e) {
+                        console.warn(`Gagal parse geometry kecamatan: ${r.name}`, e);
+                        return null;
+                    }
+                })
+                .filter(f => f !== null);
+
+            if (features.length === 0) {
+                console.warn('Tidak ada kecamatan dengan geometry di kabupaten ini.');
+                await this._loadKabupatenLayer();
+                return;
+            }
+
+            const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
+                style: () => ({
+                    color: '#888888',
+                    weight: 1.5,
+                    opacity: 1,
+                    fillColor: '#aaaaaa',
+                    fillOpacity: 0.35,
+                }),
+                onEachFeature: (feature, layer) => {
+                    const props = feature.properties;
+
+                    layer.on('add', () => {
+                        const center = layer.getBounds().getCenter();
+                        const label = L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'kabupaten-label',
+                                html: `<span>${props.name}</span>`,
+                                iconSize: null,
+                            }),
+                            interactive: false,
+                            zIndexOffset: 100,
+                        });
+                        this.kecamatanLabelGroup.addLayer(label);
+                    });
+
+                    layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.55, fillColor: '#666666' }));
+                    layer.on('mouseout',  () => layer.setStyle({ fillOpacity: 0.35, fillColor: '#aaaaaa' }));
+                    layer.on('click', (e) => this._showKecamatanPopup(e, props, layer, kabProps));
+                }
+            });
+
+            this.kecamatanLayerGroup.addLayer(geoLayer);
+            this._addBackButton('kabupaten', null);
+
+        } catch (error) {
+            console.error("Gagal memuat data kecamatan:", error);
+        }
+    }
+
+    _showKecamatanPopup(e, props, layer, kabProps) {
+        const popupContent = `
+            <div class="petadigi-popup">
+                <div class="petadigi-popup-header petadigi-popup-header--kecamatan">
+                    <i class="fa fa-map"></i>
+                    <strong>Kec. ${props.name}</strong>
+                </div>
+                <div class="petadigi-popup-body">
+                    <table>
+                        <tr>
+                            <td><i class="fa fa-barcode"></i> Kode</td>
+                            <td><strong>${props.code}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><i class="fa fa-home"></i> Desa/Kel.</td>
+                            <td><strong>${props.jumlah_desa} Desa/Kelurahan</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="petadigi-popup-footer">
+                    <button class="petadigi-btn-detail petadigi-btn-detail--kecamatan" id="btn-detail-kec-${props.id}">
+                        <i class="fa fa-search-plus"></i> Lihat Detail Desa/Kelurahan
+                    </button>
+                </div>
+            </div>
+        `;
+
+        const popup = L.popup({ maxWidth: 260, className: 'petadigi-leaflet-popup' })
+            .setLatLng(e.latlng)
+            .setContent(popupContent)
+            .openOn(this.map);
+
+        this.map.once('popupopen', () => {
+            const btn = document.getElementById(`btn-detail-kec-${props.id}`);
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    this.map.closePopup();
+                    this._drillDownDesa(props, layer, kabProps);
+                });
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────
+    // LEVEL 3 — DESA
+    // ─────────────────────────────────────────────
+    async _drillDownDesa(kecProps, kecLayer, kabProps) {
+        this.currentLevel = 'desa';
+
+        // Sembunyikan layer kecamatan
+        this.kecamatanLayerGroup.clearLayers();
+        this.kecamatanLabelGroup.clearLayers();
+        this.desaLayerGroup.clearLayers();
+        this.desaLabelGroup.clearLayers();
+
+        // Zoom ke area kecamatan
+        const bounds = kecLayer.getBounds();
+        this.map.fitBounds(bounds, { padding: [40, 40] });
+
+        try {
+            const records = await this.orm.searchRead(
+                'petadigi.desa',
+                [['kecamatan_id', '=', kecProps.id]],
+                ['id', 'code', 'name', 'type', 'geometry'],
+            );
+
+            const features = records
+                .filter(r => r.geometry)
+                .map((r) => {
+                    try {
+                        return {
+                            type: "Feature",
+                            geometry: JSON.parse(r.geometry),
+                            properties: {
+                                id: r.id,
+                                code: r.code,
+                                name: r.name,
+                                type: r.type,
+                            }
+                        };
+                    } catch (e) {
+                        console.warn(`Gagal parse geometry desa: ${r.name}`, e);
+                        return null;
+                    }
+                })
+                .filter(f => f !== null);
+
+            if (features.length === 0) {
+                console.warn('Tidak ada desa dengan geometry di kecamatan ini.');
+                await this._drillDownKecamatan(kabProps, kecLayer);
+                return;
+            }
+
+            const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
+                style: () => ({
+                    color: '#888888',
+                    weight: 1.5,
+                    opacity: 1,
+                    fillColor: '#aaaaaa',
+                    fillOpacity: 0.35,
+                }),
+                onEachFeature: (feature, layer) => {
+                    const props = feature.properties;
+
+                    layer.on('add', () => {
+                        const center = layer.getBounds().getCenter();
+                        const label = L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'kabupaten-label',
+                                html: `<span>${props.name}</span>`,
+                                iconSize: null,
+                            }),
+                            interactive: false,
+                            zIndexOffset: 100,
+                        });
+                        this.desaLabelGroup.addLayer(label);
+                    });
+
+                    layer.on('mouseover', () => layer.setStyle({ fillOpacity: 0.55, fillColor: '#666666' }));
+                    layer.on('mouseout',  () => layer.setStyle({ fillOpacity: 0.35, fillColor: '#aaaaaa' }));
+                    layer.on('click', (e) => this._showDesaPopup(e, props));
+                }
+            });
+
+            this.desaLayerGroup.addLayer(geoLayer);
+            this._addBackButton('kecamatan', { kecProps, kecLayer, kabProps });
+
+        } catch (error) {
+            console.error("Gagal memuat data desa:", error);
+        }
+    }
+
+    _showDesaPopup(e, props) {
+        const tipeLabel = props.type === 'KELURAHAN' ? 'Kelurahan' : 'Desa';
+        const popupContent = `
+            <div class="petadigi-popup">
+                <div class="petadigi-popup-header petadigi-popup-header--desa">
+                    <i class="fa fa-home"></i>
+                    <strong>${tipeLabel} ${props.name}</strong>
+                </div>
+                <div class="petadigi-popup-body">
+                    <table>
+                        <tr>
+                            <td><i class="fa fa-barcode"></i> Kode</td>
+                            <td><strong>${props.code}</strong></td>
+                        </tr>
+                        <tr>
+                            <td><i class="fa fa-tag"></i> Tipe</td>
+                            <td><strong>${tipeLabel}</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        L.popup({ maxWidth: 260, className: 'petadigi-leaflet-popup' })
+            .setLatLng(e.latlng)
+            .setContent(popupContent)
+            .openOn(this.map);
+    }
+
+    // ─────────────────────────────────────────────
+    // TOMBOL KEMBALI
+    // ─────────────────────────────────────────────
+    _addBackButton(targetLevel, ctx) {
+        // Hapus tombol kembali lama
+        if (this.backButton) {
+            this.backButton.remove();
+            this.backButton = null;
+        }
+
+        const labelMap = {
+            kabupaten: '← Kembali ke Peta Kabupaten',
+            kecamatan: '← Kembali ke Peta Kecamatan',
+        };
+
+        const BackControl = L.Control.extend({
+            onAdd: () => {
+                const btn = L.DomUtil.create('button', 'petadigi-btn-back');
+                btn.innerHTML = `<i class="fa fa-arrow-left"></i> ${labelMap[targetLevel]}`;
+                L.DomEvent.on(btn, 'click', async (ev) => {
+                    L.DomEvent.stopPropagation(ev);
+                    this.map.closePopup();
+                    if (targetLevel === 'kabupaten') {
+                        this.kecamatanLayerGroup.clearLayers();
+                        this.kecamatanLabelGroup.clearLayers();
+                        this.desaLayerGroup.clearLayers();
+                        this.desaLabelGroup.clearLayers();
+                        await this._loadKabupatenLayer();
+                    } else if (targetLevel === 'kecamatan' && ctx) {
+                        this.desaLayerGroup.clearLayers();
+                        this.desaLabelGroup.clearLayers();
+                        await this._drillDownKecamatan(ctx.kabProps, ctx.kecLayer);
+                    }
+                    if (this.backButton) {
+                        this.backButton.remove();
+                        this.backButton = null;
+                    }
+                });
+                return btn;
+            },
+            onRemove: () => {}
+        });
+
+        this.backButton = new BackControl({ position: 'topleft' });
+        this.backButton.addTo(this.map);
     }
 }
 

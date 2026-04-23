@@ -19,7 +19,7 @@
         -1px  1px 0 #fff,
          1px  1px 0 #fff;
 }
-/* ── Popup klik kabupaten ── */
+/* ── Popup umum ── */
 .petadigi-leaflet-popup .leaflet-popup-content-wrapper {
     border-radius: 8px;
     padding: 0;
@@ -29,9 +29,10 @@
 
 .petadigi-leaflet-popup .leaflet-popup-content {
     margin: 0;
-    min-width: 200px;
+    min-width: 220px;
 }
 
+/* ── Header popup ── */
 .petadigi-popup-header {
     background: #34495e;
     color: #ffffff;
@@ -42,11 +43,21 @@
     gap: 8px;
 }
 
+/* Header warna berbeda per level */
+.petadigi-popup-header--kecamatan {
+    background: #1a6b9a;
+}
+
+.petadigi-popup-header--desa {
+    background: #1e8449;
+}
+
 .petadigi-popup-header i {
-    color: #e74c3c;
+    color: #f1c40f;
     font-size: 14px;
 }
 
+/* ── Body popup ── */
 .petadigi-popup-body {
     padding: 10px 14px;
     background: #ffffff;
@@ -89,4 +100,66 @@
 
 .petadigi-leaflet-popup .leaflet-popup-tip {
     background: #34495e;
+}
+
+/* ── Footer popup dengan tombol detail ── */
+.petadigi-popup-footer {
+    padding: 8px 14px 12px;
+    background: #f8f9fa;
+    border-top: 1px solid #eee;
+}
+
+.petadigi-btn-detail {
+    width: 100%;
+    padding: 7px 10px;
+    background: #34495e;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background 0.2s;
+}
+
+.petadigi-btn-detail:hover {
+    background: #2c3e50;
+}
+
+/* Tombol detail kecamatan → warna biru */
+.petadigi-btn-detail--kecamatan {
+    background: #1a6b9a;
+}
+
+.petadigi-btn-detail--kecamatan:hover {
+    background: #155d87;
+}
+
+/* ── Tombol kembali di pojok kiri atas map ── */
+.petadigi-btn-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: #ffffff;
+    color: #34495e;
+    border: 1.5px solid #bbb;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    transition: background 0.2s, color 0.2s;
+    margin-top: 8px;
+    white-space: nowrap;
+}
+
+.petadigi-btn-back:hover {
+    background: #34495e;
+    color: #ffffff;
+    border-color: #34495e;
 }
