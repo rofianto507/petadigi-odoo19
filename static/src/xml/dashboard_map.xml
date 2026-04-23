@@ -76,7 +76,8 @@
                             <i class="fa fa-map"/> Peta Umum
                         </span>
                     </div>
-                    <div t-ref="mapContainer" class="petadigi-map-container"/>
+                    <!-- tabindex="-1" mencegah browser scroll saat map diklik -->
+                    <div t-ref="mapContainer" class="petadigi-map-container" tabindex="-1"/>
                 </div>
 
             </div>
