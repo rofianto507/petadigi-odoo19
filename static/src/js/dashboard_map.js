@@ -8,12 +8,205 @@ class DashboardMap extends Component {
     static template = "petadigi.DashboardMap";
 
     setup() {
-        this.mapRef = useRef("mapContainer");
+        this.mapRef         = useRef("mapContainer");
+        this.sidebarRef     = useRef("sidebar");
+        this.breadcrumbRef  = useRef("breadcrumb");
+        this.collapseIcon   = useRef("collapseIcon");
+        this.collapseText   = useRef("collapseText");
+        this.filterTahun    = useRef("filterTahun");
+        this.filterKabupaten = useRef("filterKabupaten");
+
         this.orm = useService("orm");
 
+        this.sidebarOpen = true;
+        this.currentMode = 'umum';     // umum | kriminal | lalin | bencana | lokasi
+        this.currentLevel = 'kabupaten';
+        this.backButton = null;
+
         onMounted(async () => {
+            await this._initFilters();
             await this._initMap();
         });
+    }
+
+    // ─────────────────────────────────────────────
+    // SIDEBAR & TOOLBAR
+    // ─────────────────────────────────────────────
+    onToggleSidebar() {
+        this.sidebarOpen = !this.sidebarOpen;
+        const sidebar = this.sidebarRef.el;
+        const icon    = this.collapseIcon.el;
+        const text    = this.collapseText.el;
+
+        if (this.sidebarOpen) {
+            sidebar.classList.remove('collapsed');
+            icon.classList.replace('fa-chevron-right', 'fa-chevron-left');
+            if (text) text.textContent = 'Sembunyikan';
+        } else {
+            sidebar.classList.add('collapsed');
+            icon.classList.replace('fa-chevron-left', 'fa-chevron-right');
+            if (text) text.textContent = '';
+        }
+
+        // Paksa Leaflet re-render map setelah sidebar animasi selesai
+        setTimeout(() => { if (this.map) this.map.invalidateSize(); }, 320);
+    }
+
+    onNavClick(ev) {
+        const item = ev.currentTarget;
+        const mode = item.dataset.mode;
+        if (!mode || mode === this.currentMode) return;
+
+        // Update active state
+        this.sidebarRef.el.querySelectorAll('.petadigi-nav-item').forEach(el => {
+            el.classList.remove('active');
+        });
+        item.classList.add('active');
+
+        this.currentMode = mode;
+        this._switchMode(mode);
+    }
+
+    onFilterChange() {
+        // Re-render layer aktif saat filter berubah
+        this._switchMode(this.currentMode);
+    }
+
+    _switchMode(mode) {
+        this._clearAllLayers();
+        if (this.backButton) { this.backButton.remove(); this.backButton = null; }
+        this.currentLevel = 'kabupaten';
+
+        const modeLabels = {
+            umum:     { icon: 'fa-map',                 label: 'Peta Umum' },
+            kriminal: { icon: 'fa-exclamation-triangle', label: 'Peta Kriminal' },
+            lalin:    { icon: 'fa-car',                 label: 'Peta Lalu Lintas' },
+            bencana:  { icon: 'fa-bolt',                label: 'Peta Bencana' },
+            lokasi:   { icon: 'fa-map-marker',          label: 'Lokasi Penting' },
+        };
+        const meta = modeLabels[mode] || modeLabels['umum'];
+        this._updateBreadcrumb(`<i class="fa ${meta.icon}"></i> ${meta.label}`);
+
+        switch (mode) {
+            case 'umum':     this._loadKabupatenLayer(); break;
+            case 'kriminal': this._loadModeComingSoon('Peta Kriminal', '#e74c3c'); break;
+            case 'lalin':    this._loadModeComingSoon('Peta Lalu Lintas', '#e67e22'); break;
+            case 'bencana':  this._loadModeComingSoon('Peta Bencana', '#2980b9'); break;
+            case 'lokasi':   this._loadModeComingSoon('Lokasi Penting', '#27ae60'); break;
+        }
+    }
+
+    _updateBreadcrumb(html) {
+        if (this.breadcrumbRef.el) {
+            this.breadcrumbRef.el.innerHTML = `<span class="petadigi-breadcrumb-item active">${html}</span>`;
+        }
+    }
+
+    _appendBreadcrumb(html) {
+        if (this.breadcrumbRef.el) {
+            this.breadcrumbRef.el.innerHTML += `
+                <i class="fa fa-chevron-right petadigi-breadcrumb-sep"></i>
+                <span class="petadigi-breadcrumb-item active">${html}</span>
+            `;
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // PLACEHOLDER MODE BELUM TERSEDIA
+    // ─────────────────────────────────────────────
+    _loadModeComingSoon(label, color) {
+        // Tetap tampilkan layer kabupaten sebagai background
+        this._loadKabupatenLayerBackground(color);
+
+        // Tampilkan pesan coming soon di atas peta
+        const ComingSoonControl = L.Control.extend({
+            onAdd: () => {
+                const div = L.DomUtil.create('div', 'petadigi-coming-soon');
+                div.innerHTML = `
+                    <i class="fa fa-wrench"></i>
+                    <strong>${label}</strong>
+                    <span>Segera hadir</span>
+                `;
+                div.style.borderLeft = `4px solid ${color}`;
+                return div;
+            },
+            onRemove: () => {}
+        });
+        this.comingSoonControl = new ComingSoonControl({ position: 'topright' });
+        this.comingSoonControl.addTo(this.map);
+    }
+
+    async _loadKabupatenLayerBackground(borderColor) {
+        // Layer kabupaten tanpa interaksi, hanya sebagai background
+        if (this.comingSoonControl) {
+            this.comingSoonControl.remove();
+            this.comingSoonControl = null;
+        }
+        try {
+            const records = await this.orm.searchRead(
+                'petadigi.kabupaten', [], ['name', 'geometry']
+            );
+            const features = records.filter(r => r.geometry).map(r => {
+                try {
+                    return { type: "Feature", geometry: JSON.parse(r.geometry), properties: { name: r.name } };
+                } catch (_) { return null; }
+            }).filter(Boolean);
+
+            const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
+                style: () => ({
+                    color: borderColor || '#888888',
+                    weight: 1.5,
+                    opacity: 0.6,
+                    fillColor: '#cccccc',
+                    fillOpacity: 0.2,
+                }),
+                onEachFeature: (feature, layer) => {
+                    layer.on('add', () => {
+                        const center = layer.getBounds().getCenter();
+                        const label = L.marker(center, {
+                            icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${feature.properties.name}</span>`, iconSize: null }),
+                            interactive: false, zIndexOffset: 100,
+                        });
+                        this.kabupatenLabelGroup.addLayer(label);
+                    });
+                }
+            });
+            this.kabupatenLayerGroup.addLayer(geoLayer);
+            this.map.fitBounds(geoLayer.getBounds());
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // INIT MAP & FILTERS
+    // ─────────────────────────────────────────────
+    async _initFilters() {
+        // Isi dropdown tahun
+        const tahunEl = this.filterTahun.el;
+        if (tahunEl) {
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear; y >= 2020; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                tahunEl.appendChild(opt);
+            }
+        }
+
+        // Isi dropdown kabupaten
+        const kabEl = this.filterKabupaten.el;
+        if (kabEl) {
+            try {
+                const kabs = await this.orm.searchRead('petadigi.kabupaten', [], ['id', 'name']);
+                kabs.forEach(k => {
+                    const opt = document.createElement('option');
+                    opt.value = k.id;
+                    opt.textContent = k.name;
+                    kabEl.appendChild(opt);
+                });
+            } catch (_) {}
+        }
     }
 
     async _initMap() {
@@ -25,18 +218,25 @@ class DashboardMap extends Component {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         }).addTo(this.map);
 
-        // Layer groups untuk masing-masing tingkatan
+        // Layer groups
         this.kabupatenLayerGroup = L.layerGroup().addTo(this.map);
         this.kabupatenLabelGroup = L.layerGroup().addTo(this.map);
         this.kecamatanLayerGroup = L.layerGroup().addTo(this.map);
         this.kecamatanLabelGroup = L.layerGroup().addTo(this.map);
-        this.desaLayerGroup       = L.layerGroup().addTo(this.map);
-        this.desaLabelGroup       = L.layerGroup().addTo(this.map);
-
-        this.backButton = null;
-        this.currentLevel = 'kabupaten'; // kabupaten | kecamatan | desa
+        this.desaLayerGroup      = L.layerGroup().addTo(this.map);
+        this.desaLabelGroup      = L.layerGroup().addTo(this.map);
 
         await this._loadKabupatenLayer();
+    }
+
+    _clearAllLayers() {
+        if (this.kabupatenLayerGroup) this.kabupatenLayerGroup.clearLayers();
+        if (this.kabupatenLabelGroup) this.kabupatenLabelGroup.clearLayers();
+        if (this.kecamatanLayerGroup) this.kecamatanLayerGroup.clearLayers();
+        if (this.kecamatanLabelGroup) this.kecamatanLabelGroup.clearLayers();
+        if (this.desaLayerGroup)      this.desaLayerGroup.clearLayers();
+        if (this.desaLabelGroup)      this.desaLabelGroup.clearLayers();
+        if (this.comingSoonControl)   { this.comingSoonControl.remove(); this.comingSoonControl = null; }
     }
 
     // ─────────────────────────────────────────────
@@ -153,13 +353,14 @@ class DashboardMap extends Component {
             .setLatLng(e.latlng)
             .setContent(popupContent);
 
-        // ✅ Bind tombol SEBELUM openOn, gunakan event 'add' pada popup
         popup.once('add', () => {
             setTimeout(() => {
                 const btn = document.getElementById(`btn-detail-kab-${props.id}`);
                 if (btn) {
                     btn.addEventListener('click', () => {
                         this.map.closePopup();
+                        this._updateBreadcrumb(`<i class="fa fa-map"></i> Peta Umum`);
+                        this._appendBreadcrumb(`<i class="fa fa-map-marker"></i> ${tipeLabel} ${props.name}`);
                         this._drillDownKecamatan(props, layer);
                     });
                 }
@@ -174,14 +375,11 @@ class DashboardMap extends Component {
     // ─────────────────────────────────────────────
     async _drillDownKecamatan(kabProps, kabLayer) {
         this.currentLevel = 'kecamatan';
-
-        // Sembunyikan layer kabupaten
         this.kabupatenLayerGroup.clearLayers();
         this.kabupatenLabelGroup.clearLayers();
         this.kecamatanLayerGroup.clearLayers();
         this.kecamatanLabelGroup.clearLayers();
 
-        // Zoom ke area kabupaten
         const bounds = kabLayer.getBounds();
         this.map.fitBounds(bounds, { padding: [40, 40] });
 
@@ -214,7 +412,7 @@ class DashboardMap extends Component {
                 .filter(f => f !== null);
 
             if (features.length === 0) {
-                console.warn('Tidak ada kecamatan dengan geometry di kabupaten ini.');
+                console.warn('Tidak ada kecamatan dengan geometry.');
                 await this._loadKabupatenLayer();
                 return;
             }
@@ -289,13 +487,13 @@ class DashboardMap extends Component {
             .setLatLng(e.latlng)
             .setContent(popupContent);
 
-        // ✅ Sama, bind sebelum openOn
         popup.once('add', () => {
             setTimeout(() => {
                 const btn = document.getElementById(`btn-detail-kec-${props.id}`);
                 if (btn) {
                     btn.addEventListener('click', () => {
                         this.map.closePopup();
+                        this._appendBreadcrumb(`<i class="fa fa-map"></i> Kec. ${props.name}`);
                         this._drillDownDesa(props, layer, kabProps);
                     });
                 }
@@ -310,14 +508,11 @@ class DashboardMap extends Component {
     // ─────────────────────────────────────────────
     async _drillDownDesa(kecProps, kecLayer, kabProps) {
         this.currentLevel = 'desa';
-
-        // Sembunyikan layer kecamatan
         this.kecamatanLayerGroup.clearLayers();
         this.kecamatanLabelGroup.clearLayers();
         this.desaLayerGroup.clearLayers();
         this.desaLabelGroup.clearLayers();
 
-        // Zoom ke area kecamatan
         const bounds = kecLayer.getBounds();
         this.map.fitBounds(bounds, { padding: [40, 40] });
 
@@ -335,12 +530,7 @@ class DashboardMap extends Component {
                         return {
                             type: "Feature",
                             geometry: JSON.parse(r.geometry),
-                            properties: {
-                                id: r.id,
-                                code: r.code,
-                                name: r.name,
-                                type: r.type,
-                            }
+                            properties: { id: r.id, code: r.code, name: r.name, type: r.type }
                         };
                     } catch (e) {
                         console.warn(`Gagal parse geometry desa: ${r.name}`, e);
@@ -350,7 +540,7 @@ class DashboardMap extends Component {
                 .filter(f => f !== null);
 
             if (features.length === 0) {
-                console.warn('Tidak ada desa dengan geometry di kecamatan ini.');
+                console.warn('Tidak ada desa dengan geometry.');
                 await this._drillDownKecamatan(kabProps, kecLayer);
                 return;
             }
@@ -427,15 +617,11 @@ class DashboardMap extends Component {
     // TOMBOL KEMBALI
     // ─────────────────────────────────────────────
     _addBackButton(targetLevel, ctx) {
-        // Hapus tombol kembali lama
-        if (this.backButton) {
-            this.backButton.remove();
-            this.backButton = null;
-        }
+        if (this.backButton) { this.backButton.remove(); this.backButton = null; }
 
         const labelMap = {
-            kabupaten: '← Kembali ke Peta Kabupaten',
-            kecamatan: '← Kembali ke Peta Kecamatan',
+            kabupaten: 'Kembali ke Peta Kabupaten',
+            kecamatan: 'Kembali ke Peta Kecamatan',
         };
 
         const BackControl = L.Control.extend({
@@ -450,16 +636,17 @@ class DashboardMap extends Component {
                         this.kecamatanLabelGroup.clearLayers();
                         this.desaLayerGroup.clearLayers();
                         this.desaLabelGroup.clearLayers();
+                        this._updateBreadcrumb(`<i class="fa fa-map"></i> Peta Umum`);
                         await this._loadKabupatenLayer();
                     } else if (targetLevel === 'kecamatan' && ctx) {
                         this.desaLayerGroup.clearLayers();
                         this.desaLabelGroup.clearLayers();
+                        // Trim breadcrumb kembali ke level kecamatan
+                        const items = this.breadcrumbRef.el.querySelectorAll('.petadigi-breadcrumb-item');
+                        if (items.length > 2) items[items.length - 1].previousSibling?.remove(), items[items.length - 1].remove();
                         await this._drillDownKecamatan(ctx.kabProps, ctx.kecLayer);
                     }
-                    if (this.backButton) {
-                        this.backButton.remove();
-                        this.backButton = null;
-                    }
+                    if (this.backButton) { this.backButton.remove(); this.backButton = null; }
                 });
                 return btn;
             },
