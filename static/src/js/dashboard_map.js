@@ -151,19 +151,22 @@ class DashboardMap extends Component {
 
         const popup = L.popup({ maxWidth: 260, className: 'petadigi-leaflet-popup' })
             .setLatLng(e.latlng)
-            .setContent(popupContent)
-            .openOn(this.map);
+            .setContent(popupContent);
 
-        // Bind tombol detail setelah popup terbuka
-        this.map.once('popupopen', () => {
-            const btn = document.getElementById(`btn-detail-kab-${props.id}`);
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    this.map.closePopup();
-                    this._drillDownKecamatan(props, layer);
-                });
-            }
+        // ✅ Bind tombol SEBELUM openOn, gunakan event 'add' pada popup
+        popup.once('add', () => {
+            setTimeout(() => {
+                const btn = document.getElementById(`btn-detail-kab-${props.id}`);
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        this.map.closePopup();
+                        this._drillDownKecamatan(props, layer);
+                    });
+                }
+            }, 0);
         });
+
+        popup.openOn(this.map);
     }
 
     // ─────────────────────────────────────────────
@@ -284,18 +287,22 @@ class DashboardMap extends Component {
 
         const popup = L.popup({ maxWidth: 260, className: 'petadigi-leaflet-popup' })
             .setLatLng(e.latlng)
-            .setContent(popupContent)
-            .openOn(this.map);
+            .setContent(popupContent);
 
-        this.map.once('popupopen', () => {
-            const btn = document.getElementById(`btn-detail-kec-${props.id}`);
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    this.map.closePopup();
-                    this._drillDownDesa(props, layer, kabProps);
-                });
-            }
+        // ✅ Sama, bind sebelum openOn
+        popup.once('add', () => {
+            setTimeout(() => {
+                const btn = document.getElementById(`btn-detail-kec-${props.id}`);
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        this.map.closePopup();
+                        this._drillDownDesa(props, layer, kabProps);
+                    });
+                }
+            }, 0);
         });
+
+        popup.openOn(this.map);
     }
 
     // ─────────────────────────────────────────────
