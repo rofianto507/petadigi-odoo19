@@ -52,7 +52,7 @@ export class GeoJsonMapWidget extends Component {
         try {
             geojson = JSON.parse(geojsonStr);
         } catch (_) {
-            console.warn("GeoJSON tidak valid:", geojsonStr);
+            console.warn("GeoJSON tidak valid:", this.props.name);
             return;
         }
 

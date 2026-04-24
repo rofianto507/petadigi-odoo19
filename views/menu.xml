@@ -107,5 +107,11 @@
             parent="menu_petadigi_configuration"
             action="action_petadigi_jenis_tkp"
             sequence="150"/>
+        <menuitem
+            id="menu_config_subdit"
+            name="Subdit"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_subdit"
+            sequence="160"/>
     </data>
 </odoo>
