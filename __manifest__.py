@@ -6,7 +6,7 @@
     'category': 'Tools',
     'author': 'Cv Sel Studio',
     'website': 'https://selstudio.id',
-    'depends': ['base', 'web'],
+    'depends': ['base', 'web','mail'],
     'data': [
         'security/ir.model.access.csv', 
         'views/polres_views.xml',
@@ -41,7 +41,9 @@
             'petadigi/static/src/xml/geojson_map_widget.xml',
             'petadigi/static/src/css/backend.css',
             'petadigi/static/src/css/kabupaten_map_widget.css',
-            
+            'petadigi/static/src/js/latlon_leaflet_widget.js',
+            'petadigi/static/src/xml/latlon_leaflet_widget.xml',
+            'petadigi/static/src/css/latlon_leaflet_widget.css'
         ],
     },
     'installable': True,

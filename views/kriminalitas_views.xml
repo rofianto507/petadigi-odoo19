@@ -29,7 +29,7 @@
                             <field name="penanggung_jawab"/>
                         </group>
                         <group>
-                            <field name="latitude"/>
+                            <field name="latitude" widget="latlong_map_picker" options="{'longitude_field': 'longitude'}"/>
                             <field name="longitude"/>
                         </group>
                         <notebook>
@@ -54,6 +54,7 @@
                             </page>
                         </notebook>
                     </sheet>
+                    <chatter/>
                 </form>
             </field>
         </record>

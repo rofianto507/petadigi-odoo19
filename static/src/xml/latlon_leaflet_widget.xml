@@ -1,0 +1,14 @@
+<templates>
+    <t t-name="petadigi.LatLongMapPicker">
+        <div class="oe_latlong_mappicker" t-ref="mapDiv">
+            <t t-if="props.readonly">
+                <div class="latlong-mappicker-overlay">
+                    Klik <b>Edit</b> untuk mengganti koordinat.
+                </div>
+            </t>
+        </div>
+        <div class="latlong-mappicker-coords">
+            Lat: <span t-esc="props.latitude"/> | Lng: <span t-esc="props.longitude"/>
+        </div>
+    </t>
+</templates>
