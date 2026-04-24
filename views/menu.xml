@@ -13,6 +13,17 @@
             action="action_petadigi_dashboard_client"
             sequence="1"/>
         <menuitem
+            id="menu_petadigi_maps"
+            name="Maps"
+            parent="menu_petadigi_root"
+            sequence="10"/>
+        <menuitem
+            id="menu_kriminalitas"
+            name="Kriminalitas"
+            parent="menu_petadigi_maps"
+            action="action_petadigi_kriminalitas"
+            sequence="1"/>    
+        <menuitem
             id="menu_petadigi_configuration"
             name="Configuration"
             parent="menu_petadigi_root"

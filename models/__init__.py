@@ -14,4 +14,5 @@ from . import jenis_jalan
 from . import modus_operandi
 from . import jenis_tkp
 from . import subdit
+from . import kriminalitas
 from . import dashboard
