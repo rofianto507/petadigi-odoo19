@@ -1,102 +1,107 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { Component,onWillUpdateProps, onWillStart, onMounted } from "@odoo/owl";
-import { standardFieldProps, useInputField } from "@web/views/fields/standard_field_props";
+import { Component, onWillUpdateProps, onMounted, useRef } from "@odoo/owl";
+import { standardFieldProps } from "@web/views/fields/standard_field_props";
 
 export class LatLongMapPicker extends Component {
     static template = "petadigi.LatLongMapPicker";
     static props = {
         ...standardFieldProps,
-        latitude: Number,
-        longitude: Number,
-        readonly: Boolean,
-        // fieldName: String, // opsional
+        longitude_field: { type: String, optional: true },
     };
 
     setup() {
-        this.input = useInputField(this.props);
-        onWillStart(async () => {
-            await Promise.all([
-                this._loadLeafletAssets()
-            ]);
-        });
+        this.mapRef = useRef("mapDiv");
+
         onMounted(() => this.initMap());
+
         onWillUpdateProps(nextProps => {
-            // Update marker jika value lat/lon berubah dari luar (input manual)
-            if (
-                nextProps.latitude !== this.props.latitude ||
-                nextProps.longitude !== this.props.longitude
-            ) {
-                this._moveMarker(nextProps.latitude, nextProps.longitude);
+            const nextLat = nextProps.value;
+            const nextLng = nextProps.record.data[this.longitudeField];
+            const curLat = this.props.value;
+            const curLng = this.props.record.data[this.longitudeField];
+
+            if (nextLat !== curLat || nextLng !== curLng) {
+                this._moveMarker(nextLat, nextLng);
             }
         });
     }
+
+    get longitudeField() {
+        return this.props.longitude_field || "longitude";
+    }
+
+    get latitude() {
+        return this.props.value || 0;
+    }
+
+    get longitude() {
+        return this.props.record.data[this.longitudeField] || 0;
+    }
+
     _moveMarker(lat, lng) {
         if (this.marker && lat && lng) {
             this.marker.setLatLng([lat, lng]);
-            this.map.setView([lat, lng]); // opsional, agar map ikut center
+            this.map.setView([lat, lng]);
         }
     }
-    async _loadLeafletAssets() {
-        if (!window.L) {
-            // Load local static asset only once (Odoo asset path)
-            await this._loadScript('/petadigi/static/lib/leaflet/leaflet.js');
-            const cssLink = document.createElement('link');
-            cssLink.rel = 'stylesheet';
-            cssLink.href = '/petadigi/static/lib/leaflet/leaflet.css';
-            document.head.appendChild(cssLink);
-        }
-    }
-    _loadScript(url) {
-        return new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = url;
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
+
+    _updateValues(lat, lng) {
+        this.props.record.update({
+            [this.props.name]: lat,
+            [this.longitudeField]: lng,
         });
     }
 
     initMap() {
-        const container = this.refs.mapDiv;
-        if (!container || window.L === undefined) return;
+        const container = this.mapRef.el;
+        if (!container || !window.L) return;
 
-        // clear previous
-        container.innerHTML = "";
-        this.map = L.map(container).setView(
-            [
-                this.props.latitude || -2.2,  // fallback to somewhere in Indonesia
-                this.props.longitude || 104.5
-            ],
-            6
-        );
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: "© OpenStreetMap"
-        }).addTo(this.map);
-
-        if (this.props.latitude && this.props.longitude) {
-            this.marker = L.marker([this.props.latitude, this.props.longitude], {draggable: !this.props.readonly}).addTo(this.map);
+        // Destroy existing map instance jika ada (cegah error re-render)
+        if (this._leafletMap) {
+            this._leafletMap.remove();
+            this._leafletMap = null;
+            this.marker = null;
         }
 
-        // click to set marker and update value
+        container.innerHTML = "";
+
+        const centerLat = this.latitude || -2.2;
+        const centerLng = this.longitude || 104.5;
+
+        this._leafletMap = L.map(container).setView([centerLat, centerLng], 6);
+        this.map = this._leafletMap;
+
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution: "\u00a9 OpenStreetMap",
+        }).addTo(this.map);
+
+        if (this.latitude && this.longitude) {
+            this.marker = L.marker([this.latitude, this.longitude], {
+                draggable: !this.props.readonly,
+            }).addTo(this.map);
+        }
+
         if (!this.props.readonly) {
-            this.map.on('click', e => {
-                const {lat, lng} = e.latlng;
+            this.map.on("click", (e) => {
+                const { lat, lng } = e.latlng;
                 if (!this.marker) {
-                    this.marker = L.marker([lat, lng], {draggable: true}).addTo(this.map);
+                    this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
                 } else {
                     this.marker.setLatLng([lat, lng]);
                 }
-                this.input.update({latitude: lat, longitude: lng});
+                this._updateValues(lat, lng);
             });
+
             if (this.marker) {
-                this.marker.on('dragend', (e) => {
-                    const {lat, lng} = e.target.getLatLng();
-                    this.input.update({latitude: lat, longitude: lng});
+                this.marker.on("dragend", (e) => {
+                    const { lat, lng } = e.target.getLatLng();
+                    this._updateValues(lat, lng);
                 });
             }
         }
     }
 }
+
 registry.category("fields").add("latlong_map_picker", LatLongMapPicker);
