@@ -28,9 +28,15 @@
                             <field name="no_lp"/>
                             <field name="penanggung_jawab"/>
                         </group>
+                        <div >
+                            <field name="latitude" widget="latlong_map_picker" 
+                            class="latlong-mappicker-wrapper"
+                                   options="{'longitude_field': 'longitude'}"
+                                   nolabel="1"/>
+                        </div>
                         <group>
-                            <field name="latitude" widget="latlong_map_picker" options="{'longitude_field': 'longitude'}"/>
-                            <field name="longitude"/>
+                            <field name="latitude" string="Latitude"/>
+                            <field name="longitude" string="Longitude"/>
                         </group>
                         <notebook>
                             <page string="Detail Informasi">

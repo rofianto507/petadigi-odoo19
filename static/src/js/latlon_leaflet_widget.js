@@ -70,7 +70,7 @@ export class LatLongMapPicker extends Component {
         const centerLat = this.latitude || -2.2;
         const centerLng = this.longitude || 104.5;
 
-        this._leafletMap = L.map(container).setView([centerLat, centerLng], 6);
+        this._leafletMap = L.map(container).setView([centerLat, centerLng], 9);
         this.map = this._leafletMap;
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

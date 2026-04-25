@@ -1,6 +1,14 @@
 /* Styling untuk widget Leaflet Map Picker */
+
+/* Wrapper full-width untuk map picker di form view */
+.latlong-mappicker-wrapper {
+    grid-column: 1 / -1 !important;
+    display: grid;
+}
+
 .oe_latlong_mappicker {
     height: 350px;
+    width: 100%;
     min-width: 220px;
     border-radius: 6px;
     border: 1.5px solid #bbb;
@@ -21,6 +29,7 @@
     font-size: 12px;
     pointer-events: none;
 }
+
 .latlong-mappicker-coords {
     margin-top: 8px;
     font-size: 11px;
