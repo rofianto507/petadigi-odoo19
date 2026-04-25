@@ -74,7 +74,7 @@ export class LatLongMapPicker extends Component {
         this.map = this._leafletMap;
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            attribution: "\u00a9 OpenStreetMap",
+            attribution: "© OpenStreetMap",
         }).addTo(this.map);
 
         if (this.latitude && this.longitude) {
@@ -104,4 +104,7 @@ export class LatLongMapPicker extends Component {
     }
 }
 
-registry.category("fields").add("latlong_map_picker", LatLongMapPicker);
+// ✅ Odoo 17+/19: harus pakai format object { component: ... }
+registry.category("fields").add("latlong_map_picker", {
+    component: LatLongMapPicker,
+});
