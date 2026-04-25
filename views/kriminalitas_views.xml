@@ -8,11 +8,10 @@
             <field name="arch" type="xml">
                 <list string="Data Kriminalitas">
                     <field name="no_lp"/>
+                    <field name="kategori_id"/>
+                    <field name="sub_kategori_id"/>
                     <field name="tanggal_kejadian"/>
-                    <field name="tempat_kejadian"/>
-                    <field name="penanggung_jawab"/>
-                    <field name="latitude"/>
-                    <field name="longitude"/>
+                     <field name="polres_id"/>
                 </list>
             </field>
         </record>
@@ -28,10 +27,24 @@
                             <field name="no_lp"/>
                             <field name="penanggung_jawab"/>
                         </group>
+                        <group>
+                            <group string="KATEGORI">
+                                <field name="kategori_id"/>
+                                <field name="sub_kategori_id" domain="[('kategori_kriminal_id', '=', kategori_id)]"/>
+                            </group>
+                            <group string="KESATUAN">
+                                <field name="polres_id"/>
+                                <field name="polsek_id" domain="[('polres_id', '=', polres_id)]"/>
+                            </group>
+                        </group>
+                        <group string="WILAYAH">
+                            <field name="kabupaten_id"/>
+                            <field name="kecamatan_id" domain="[('kabupaten_id', '=', kabupaten_id)]"/>
+                            <field name="desa_id" domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                        </group>
                         <div >
                             <field name="latitude" widget="latlong_map_picker" 
                             class="latlong-mappicker-wrapper"
-                                   options="{'longitude_field': 'longitude'}"
                                    nolabel="1"/>
                         </div>
                         <group>

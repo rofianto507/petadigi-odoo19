@@ -7,6 +7,9 @@
                 </div>
             </t>
         </div>
-       
+        <div class="latlong-mappicker-coords">
+            Lat: <span t-esc="props.value"/>
+            | Lng: <span t-esc="props.record.data[props.longitude_field || 'longitude']"/>
+        </div>
     </t>
 </templates>
