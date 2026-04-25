@@ -21,15 +21,24 @@ export class LatLongMapPicker extends Component {
             const nextLng = nextProps.record.data[this.longitudeField];
             const curLat = this.props.value;
             const curLng = this.props.record.data[this.longitudeField];
+            const readonlyChanged = nextProps.readonly !== this.props.readonly;
+
+            // Jika readonly berubah (masuk/keluar edit mode), re-init map
+            // agar draggable marker ikut terupdate
+            if (readonlyChanged) {
+                setTimeout(() => this.initMap(), 0);
+                return;
+            }
 
             if (nextLat !== curLat || nextLng !== curLng) {
-                this._moveMarker(nextLat, nextLng);
+                this._updateMarker(nextLat, nextLng, !nextProps.readonly);
             }
         });
     }
 
     get longitudeField() {
-        return this.props.longitude_field || "longitude";
+        // options dari XML view ada di props.options, bukan props langsung
+        return this.props.options?.longitude_field || this.props.longitude_field || "longitude";
     }
 
     get latitude() {
@@ -40,10 +49,32 @@ export class LatLongMapPicker extends Component {
         return this.props.record.data[this.longitudeField] || 0;
     }
 
-    _moveMarker(lat, lng) {
-        if (this.marker && lat && lng) {
+    /**
+     * Update atau buat marker baru.
+     * Berbeda dengan _moveMarker lama yang hanya update posisi jika marker sudah ada,
+     * fungsi ini juga membuat marker baru jika belum ada (kasus: data sudah ada
+     * tapi marker belum sempat dibuat saat onMounted).
+     */
+    _updateMarker(lat, lng, draggable = false) {
+        if (!this.map || !lat || !lng) return;
+
+        if (!this.marker) {
+            this._addMarker(lat, lng, draggable);
+        } else {
             this.marker.setLatLng([lat, lng]);
             this.map.setView([lat, lng]);
+        }
+    }
+
+    _addMarker(lat, lng, draggable = false) {
+        this.marker = L.marker([lat, lng], { draggable }).addTo(this.map);
+        this.map.setView([lat, lng]);
+
+        if (draggable) {
+            this.marker.on("dragend", (e) => {
+                const { lat, lng } = e.target.getLatLng();
+                this._updateValues(lat, lng);
+            });
         }
     }
 
@@ -58,6 +89,18 @@ export class LatLongMapPicker extends Component {
         const container = this.mapRef.el;
         if (!container || !window.L) return;
 
+        // Fix icon path — Odoo asset bundler merusak auto-detection path Leaflet
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconUrl: "/petadigi/static/lib/leaflet/images/marker-icon.png",
+            iconRetinaUrl: "/petadigi/static/lib/leaflet/images/marker-icon.png",
+            shadowUrl: "/petadigi/static/lib/leaflet/images/marker-shadow.png",
+            iconSize: [25, 41],
+            iconAnchor: [12, 41],
+            popupAnchor: [1, -34],
+            shadowSize: [41, 41],
+        });
+
         // Destroy existing map instance jika ada (cegah error re-render)
         if (this._leafletMap) {
             this._leafletMap.remove();
@@ -67,44 +110,36 @@ export class LatLongMapPicker extends Component {
 
         container.innerHTML = "";
 
-        const centerLat = this.latitude || -2.2;
-        const centerLng = this.longitude || 104.5;
+        const hasCoords = this.latitude && this.longitude;
+        const centerLat = hasCoords ? this.latitude : -2.2;
+        const centerLng = hasCoords ? this.longitude : 104.5;
+        const zoom = hasCoords ? 13 : 6;
 
-        this._leafletMap = L.map(container).setView([centerLat, centerLng], 9);
+        this._leafletMap = L.map(container).setView([centerLat, centerLng], zoom);
         this.map = this._leafletMap;
 
         L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
             attribution: "© OpenStreetMap",
         }).addTo(this.map);
 
-        if (this.latitude && this.longitude) {
-            this.marker = L.marker([this.latitude, this.longitude], {
-                draggable: !this.props.readonly,
-            }).addTo(this.map);
+        if (hasCoords) {
+            this._addMarker(this.latitude, this.longitude, !this.props.readonly);
         }
 
         if (!this.props.readonly) {
             this.map.on("click", (e) => {
                 const { lat, lng } = e.latlng;
                 if (!this.marker) {
-                    this.marker = L.marker([lat, lng], { draggable: true }).addTo(this.map);
+                    this._addMarker(lat, lng, true);
                 } else {
                     this.marker.setLatLng([lat, lng]);
                 }
                 this._updateValues(lat, lng);
             });
-
-            if (this.marker) {
-                this.marker.on("dragend", (e) => {
-                    const { lat, lng } = e.target.getLatLng();
-                    this._updateValues(lat, lng);
-                });
-            }
         }
     }
 }
 
-// ✅ Odoo 17+/19: harus pakai format object { component: ... }
 registry.category("fields").add("latlong_map_picker", {
     component: LatLongMapPicker,
 });
