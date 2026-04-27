@@ -21,8 +21,7 @@ export class KriminalitasListController extends ListController {
     }
 }
 
-KriminalitasListController.template = "petadigi.KriminalitasListController";
-
+// Tidak perlu set custom template - gunakan template web.ListController yang sudah di-extend
 const kriminalitasListView = {
     ...listView,
     Controller: KriminalitasListController,
