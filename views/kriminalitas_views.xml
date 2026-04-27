@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- LIST VIEW Kriminalitas -->
         <record id="view_petadigi_kriminalitas_list" model="ir.ui.view">
             <field name="name">kriminalitas.list.petadigi</field>
             <field name="model">petadigi.kriminalitas</field>
             <field name="arch" type="xml">
+           
                 <list string="Data Kriminalitas">
+                 <header>
+                <button name="%(petadigi.action_import_lp_wizard)d" 
+                        string="Import dari Dokumen" 
+                        type="action" 
+                        class="btn-secondary"/>
+            </header>
                     <field name="jenis_lp"/>
                     <field name="no_lp"/>
                     <field name="kategori_id"/>
