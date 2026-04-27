@@ -1,6 +1,30 @@
+import io
 import base64
 from odoo import models, fields, api
 from odoo.exceptions import UserError
+
+
+def _detect_jenis_lp(file_bytes: bytes) -> str:
+    """
+    Deteksi jenis LP dari isi dokumen .docx.
+    Kembalikan 'LP A' atau 'LP B'.
+    LP B ditandai dengan adanya blok 'YANG MELAPORKAN'.
+    """
+    try:
+        from docx import Document
+        doc = Document(io.BytesIO(file_bytes))
+        for para in doc.paragraphs:
+            if 'YANG MELAPORKAN' in para.text.upper():
+                return 'LP B'
+        # Cek juga di dalam tabel
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if 'YANG MELAPORKAN' in cell.text.upper():
+                        return 'LP B'
+    except Exception:
+        pass
+    return 'LP A'
 
 
 class ImportLpWizard(models.TransientModel):
@@ -87,7 +111,7 @@ class ImportLpWizard(models.TransientModel):
         if self.status_perkara != 'SELESAI':
             self.tanggal_selesai = False
 
-    # ── ACTIONS ──────────────────────────────────────────────────────────────
+    # ── ACTIONS ───────────────────────────────────────────────────────────────
 
     def action_parse_dokumen(self):
         """Parse file .docx dan tampilkan hasil di step preview."""
@@ -102,6 +126,17 @@ class ImportLpWizard(models.TransientModel):
 
         file_bytes = base64.b64decode(self.dokumen)
 
+        # ── Deteksi jenis LP dari isi dokumen ────────────────────────────────
+        jenis_dokumen = _detect_jenis_lp(file_bytes)
+        if jenis_dokumen != self.jenis_lp:
+            raise UserError(
+                'Dokumen yang diupload terdeteksi sebagai %s, '
+                'tetapi Anda memilih %s.\n\n'
+                'Silakan pilih jenis LP yang sesuai dengan dokumen, '
+                'atau upload dokumen yang benar.' % (jenis_dokumen, self.jenis_lp)
+            )
+
+        # ── Parse dokumen ─────────────────────────────────────────────────────
         if self.jenis_lp == 'LP A':
             from ..utils import parser_lp_a
             hasil = parser_lp_a.parse(file_bytes)
