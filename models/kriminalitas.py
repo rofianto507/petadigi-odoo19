@@ -104,7 +104,7 @@ class Kriminalitas(models.Model):
     @api.onchange('kecamatan_id')
     def _onchange_kecamatan_id(self):
         self.desa_id = False  # reset desa saat kecamatan diganti
-    
+
     @api.onchange('status_perkara')
     def _onchange_status_perkara(self):
         self.sub_status_perkara_id = False  # reset sub status perkara saat status perkara diganti
