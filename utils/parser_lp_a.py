@@ -1,9 +1,9 @@
 import re
 import io
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 
 
-# ── HELPERS ──────────────────────────────────────────────────────────────────
+# ── HELPERS ─────────────────────────────────────────────────────────────────
 
 def clean_pipe(text: str) -> str:
     """Hapus karakter pipe (|) dari teks."""
@@ -46,12 +46,18 @@ BULAN_MAP = {
     'september': '09', 'oktober': '10', 'november': '11', 'desember': '12',
 }
 
+# WIB = UTC+7
+WIB = timezone(timedelta(hours=7))
+
 def parse_tanggal(teks: str):
     """
-    Parse teks tanggal Bahasa Indonesia ke datetime.
+    Parse teks tanggal Bahasa Indonesia ke datetime UTC (naive).
+    Waktu di dokumen LP dianggap WIB (UTC+7), dikonversi ke UTC
+    agar Odoo menampilkan jam yang benar.
+
     Support format:
-      - 'senin tanggal 16 Februari 2026'
-      - 'Pada Hari Senin Tanggal 16 Februari 2026 Pukul 19.25 WIB'
+      - 'senin tanggal 16 Februari 2026 Pukul 02.19 WIB'
+      - 'Pada Hari Senin Tanggal 16 Februari 2026 Pukul 09.35 WIB'
       - '19-02-2026'
     """
     if not teks:
@@ -59,11 +65,13 @@ def parse_tanggal(teks: str):
 
     teks_lower = teks.lower()
 
-    # Format dd-mm-yyyy
+    # Format dd-mm-yyyy (tanpa jam)
     m = re.search(r'(\d{2})-(\d{2})-(\d{4})', teks_lower)
     if m:
         try:
-            return datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+            dt_wib = datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)),
+                              tzinfo=WIB)
+            return dt_wib.astimezone(timezone.utc).replace(tzinfo=None)
         except ValueError:
             pass
 
@@ -79,12 +87,14 @@ def parse_tanggal(teks: str):
     m = re.search(pattern, teks_lower)
     if m:
         try:
-            return datetime(
+            dt_wib = datetime(
                 int(m.group(3)),
                 int(BULAN_MAP[m.group(2)]),
                 int(m.group(1)),
-                jam, menit
+                jam, menit,
+                tzinfo=WIB
             )
+            return dt_wib.astimezone(timezone.utc).replace(tzinfo=None)
         except ValueError:
             pass
 
@@ -92,16 +102,6 @@ def parse_tanggal(teks: str):
 
 
 # ── DOCX HELPERS ─────────────────────────────────────────────────────────────
-
-def get_element_text(element) -> str:
-    """Ekstrak teks dari elemen PhpWord-style (python-docx paragraph/run)."""
-    # Untuk python-docx, elemen sudah berupa Paragraph atau Cell
-    # Fungsi ini handle teks dari paragraph dengan runs
-    try:
-        return element.text or ''
-    except Exception:
-        return ''
-
 
 def get_cell_text_parts(cell) -> list:
     """Ambil teks tiap paragraf dalam sel tabel."""
@@ -134,7 +134,7 @@ def parse(file_bytes: bytes) -> dict:
 
     doc = Document(io.BytesIO(file_bytes))
 
-    # ── Bangun allText dan tableData (mirip PHP) ──────────────────────────────
+    # ── Bangun all_text dan table_data ────────────────────────────────────────
     all_text = ''
     table_data = []
 
@@ -142,7 +142,6 @@ def parse(file_bytes: bytes) -> dict:
         tag = element.tag.split('}')[-1] if '}' in element.tag else element.tag
 
         if tag == 'tbl':
-            # Proses tabel
             from docx.table import Table
             table = Table(element, doc)
             current_table = []
@@ -161,7 +160,6 @@ def parse(file_bytes: bytes) -> dict:
             table_data.append(current_table)
 
         elif tag == 'p':
-            # Proses paragraf biasa
             from docx.text.paragraph import Paragraph
             para = Paragraph(element, doc)
             t = para.text.strip()
@@ -201,11 +199,11 @@ def parse(file_bytes: bytes) -> dict:
         bagian = m.group(1)
 
         mappings = {
-            'Waktu Kejadian':   'waktu_kejadian',
-            'Tempat Kejadian':  'tempat_kejadian',
-            'Apa Yang Terjadi': 'apa_yang_terjadi',
-            'Bagaimana Terjadi':'bagaimana_terjadi',
-            'Dilaporkan Pada':  'kapan_dilaporkan',
+            'Waktu Kejadian':    'waktu_kejadian',
+            'Tempat Kejadian':   'tempat_kejadian',
+            'Apa Yang Terjadi':  'apa_yang_terjadi',
+            'Bagaimana Terjadi': 'bagaimana_terjadi',
+            'Dilaporkan Pada':   'kapan_dilaporkan',
         }
 
         lines = bagian.split('\n')
@@ -244,7 +242,6 @@ def parse(file_bytes: bytes) -> dict:
                         data['korban'] = clean_pipe(m2.group(1).strip())
                     matched = True
                 elif siapa_sub:
-                    # Cek apakah baris ini header field lain
                     is_other = any(kw.lower() in line.lower() for kw in mappings)
                     if not is_other:
                         data[siapa_sub] += ' ' + line
@@ -314,7 +311,6 @@ def parse(file_bytes: bytes) -> dict:
             # Header TINDAK PIDANA
             if 'TINDAK PIDANA' in col0_upper:
                 mode = 'TINDAK_SAKSI'
-                # Ambil data dari parts (baris setelah header dalam sel)
                 found = False
                 for p in col0['parts'][1:]:
                     v = clean_value(p)
@@ -387,7 +383,7 @@ def parse(file_bytes: bytes) -> dict:
     data['barang_bukti']  = clean_stop_keywords(' '.join(bukti_parts))
     data['uraian']        = clean_stop_keywords(' '.join(uraian_parts))
 
-    # ── 5. PARSE TANGGAL ──────────────────────────────────────────────────────
+    # ── 5. PARSE TANGGAL (WIB → UTC) ─────────────────────────────────────────
     tanggal_kejadian = parse_tanggal(data['waktu_kejadian'])
     tanggal_laporan  = parse_tanggal(data['kapan_dilaporkan'])
 
