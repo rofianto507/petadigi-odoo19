@@ -124,5 +124,11 @@
             parent="menu_petadigi_configuration"
             action="action_petadigi_subdit"
             sequence="160"/>
+        <menuitem
+            id="menu_config_sub_status_perkara"
+            name="Sub Status Perkara"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_sub_status_perkara"
+            sequence="170"/>
     </data>
 </odoo>

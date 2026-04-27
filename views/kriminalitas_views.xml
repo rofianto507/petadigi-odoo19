@@ -7,11 +7,13 @@
             <field name="model">petadigi.kriminalitas</field>
             <field name="arch" type="xml">
                 <list string="Data Kriminalitas">
+                    <field name="jenis_lp"/>
                     <field name="no_lp"/>
                     <field name="kategori_id"/>
                     <field name="sub_kategori_id"/>
                     <field name="tanggal_kejadian"/>
-                     <field name="polres_id"/>
+                    <field name="subdit_id"/>
+                    <field name="polres_id"/>
                 </list>
             </field>
         </record>
@@ -24,29 +26,43 @@
                 <form string="Data Kriminalitas">
                     <sheet>
                         <group>
+                            <field name="jenis_lp" widget="radio" no_label="1" options="{'horizontal': true}"/>
                             <field name="no_lp"/>
                             <field name="penanggung_jawab"/>
+                            <field name="subdit_id"/>
+                            <field name="sumber_dokumen_id"/>
                         </group>
                         <group>
-                            <group string="KATEGORI">
-                                <field name="kategori_id"/>
-                                <field name="sub_kategori_id" domain="[('kategori_kriminal_id', '=', kategori_id)]"/>
-                            </group>
                             <group string="KESATUAN">
                                 <field name="polres_id"/>
                                 <field name="polsek_id" domain="[('polres_id', '=', polres_id)]"/>
                             </group>
+                            <group string="KATEGORI">
+                                <field name="kategori_id"/>
+                                <field name="sub_kategori_id" domain="[('kategori_kriminal_id', '=', kategori_id)]"/>
+                            </group>
                         </group>
-                        <group string="WILAYAH">
-                            <field name="kabupaten_id"/>
-                            <field name="kecamatan_id" domain="[('kabupaten_id', '=', kabupaten_id)]"/>
-                            <field name="desa_id" domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                        <group>
+                            <group string="WILAYAH">
+                                <field name="kabupaten_id"/>
+                                <field name="kecamatan_id" domain="[('kabupaten_id', '=', kabupaten_id)]"/>
+                                <field name="desa_id" domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                            </group>
+                            
+                            <group string="STATUS PERKARA">
+                                <field name="status_perkara"/>
+                                <field name="sub_status_perkara_id" domain="[('status_perkara', '=', status_perkara)]"/>
+                                <field name="is_perkara_selesai" invisible="1"/>
+                                <field name="tanggal_selesai" invisible="not is_perkara_selesai"/>
+                            </group>
                         </group>
-                        <div >
-                            <field name="latitude" widget="latlong_map_picker" 
-                            class="latlong-mappicker-wrapper"
-                                   nolabel="1"/>
-                        </div>
+                       
+                            <div >
+                                <field name="latitude" widget="latlong_map_picker" 
+                                class="latlong-mappicker-wrapper"
+                                    nolabel="1"/>
+                            </div>
+                       
                         <group>
                             <field name="latitude" string="Latitude"/>
                             <field name="longitude" string="Longitude"/>
@@ -56,7 +72,8 @@
                                 <group>
                                     <field name="pelapor" string="Pelapor"/>
                                 </group>
-                                <group string="PERISTIWA YANG TERJADI">   
+                                <group string="PERISTIWA YANG TERJADI">  
+                                    <field name="jenis_tkp_id" string="Jenis TKP"/>
                                     <field name="tanggal_kejadian" string="Waktu Kejadian"/> 
                                     <field name="tempat_kejadian" string="Tempat Kejadian"/>
                                     <field name="apa_yang_terjadi" string="Apa yang Terjadi"/>

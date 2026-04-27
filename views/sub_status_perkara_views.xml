@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_petadigi_sub_status_perkara_list" model="ir.ui.view">
+            <field name="name">sub_status_perkara.list.petadigi</field>
+            <field name="model">petadigi.sub_status_perkara</field>
+            <field name="arch" type="xml">
+                <list string="Sub Status Perkara">
+                    <field name="status_perkara"/>
+                    <field name="name"/>
+                    <field name="keterangan"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_petadigi_sub_status_perkara_form" model="ir.ui.view">
+            <field name="name">sub_status_perkara.form.petadigi</field>
+            <field name="model">petadigi.sub_status_perkara</field>
+            <field name="arch" type="xml">
+                <form string="Sub Status Perkara">
+                    <sheet>
+                        <group>
+                            <field name="status_perkara"/>
+                            <field name="name"/>
+                            <field name="keterangan"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_petadigi_sub_status_perkara" model="ir.actions.act_window">
+            <field name="name">Sub Status Perkara</field>
+            <field name="res_model">petadigi.sub_status_perkara</field>
+            <field name="view_mode">list,form</field>
+        </record>
+    </data>
+</odoo>

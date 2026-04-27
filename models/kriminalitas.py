@@ -9,8 +9,12 @@ class Kriminalitas(models.Model):
     _sql_constraints = [
         ('krim_no_lp_unique', 'unique(no_lp)', "No. LP harus unik!"),
     ]
-
+    jenis_lp= fields.Selection([
+        ('LP A', 'LP A'),
+        ('LP B', 'LP B'),
+    ])
     no_lp = fields.Char('No. LP', required=True,tracking=True)
+    jenis_tkp_id = fields.Many2one('petadigi.jenis_tkp', string='Jenis TKP', tracking=True)
     tempat_kejadian = fields.Text('Tempat Kejadian',tracking=True)
     latitude = fields.Float('Latitude', digits=(10, 6),tracking=True)
     longitude = fields.Float('Longitude', digits=(10, 6),tracking=True)
@@ -25,6 +29,13 @@ class Kriminalitas(models.Model):
     barang_bukti = fields.Text('Barang Bukti',tracking=True)
     uraian_singkat = fields.Text('Uraian Singkat',tracking=True)
     penanggung_jawab = fields.Char('Penanggung Jawab',tracking=True)
+    subdit_id = fields.Many2one('petadigi.subdit', string='Tujuan', tracking=True)
+    sumber_dokumen_id = fields.Many2one(
+        'petadigi.sumber_dokumen',
+        string='Sumber Dokumen',
+        domain=[('tipe_sumber', '=', 'KRIMINALITAS')],
+        tracking=True
+    )
     kategori_id = fields.Many2one('petadigi.kategori_kriminal', string='Kategori', tracking=True)
     sub_kategori_id = fields.Many2one(
         'petadigi.sub_kategori_kriminal',
@@ -52,6 +63,32 @@ class Kriminalitas(models.Model):
         domain="[('kecamatan_id', '=', kecamatan_id)]",
         tracking=True
     )
+    status_perkara = fields.Selection([
+        ('PROSES', 'PROSES'),
+        ('SELESAI', 'SELESAI'),
+    ], string='Status Perkara', tracking=True, required=True)
+    
+    sub_perkara_id = fields.Many2one(
+        'petadigi.sub_status_perkara',
+        string='Sub Status Perkara',
+        domain="[('perkara_id', '=', perkara_id)]",
+        tracking=True
+    )
+    sub_status_perkara_id = fields.Many2one(
+        'petadigi.sub_status_perkara',
+        string='Sub Status Perkara',
+        domain="[('status_perkara', '=', status_perkara)]",
+        tracking=True,
+    )
+    tanggal_selesai = fields.Datetime('Tanggal Selesai', tracking=True)
+    is_perkara_selesai = fields.Boolean(
+        compute='_compute_is_perkara_selesai',
+        store=False
+    )
+    @api.depends('status_perkara')
+    def _compute_is_perkara_selesai(self):
+        for rec in self:
+            rec.is_perkara_selesai = (rec.status_perkara == 'SELESAI')
 
     @api.onchange('polres_id')
     def _onchange_polres_id(self):
@@ -67,3 +104,9 @@ class Kriminalitas(models.Model):
     @api.onchange('kecamatan_id')
     def _onchange_kecamatan_id(self):
         self.desa_id = False  # reset desa saat kecamatan diganti
+    
+    @api.onchange('status_perkara')
+    def _onchange_status_perkara(self):
+        self.sub_status_perkara_id = False  # reset sub status perkara saat status perkara diganti
+        if self.status_perkara != 'SELESAI':
+            self.tanggal_selesai = False

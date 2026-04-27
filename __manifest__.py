@@ -27,6 +27,7 @@
         'views/dashboard_views.xml',
         'views/subdit_views.xml',
         'views/kriminalitas_views.xml',
+        'views/sub_status_perkara_views.xml',
         'views/menu.xml',
     ],
     'assets': {
