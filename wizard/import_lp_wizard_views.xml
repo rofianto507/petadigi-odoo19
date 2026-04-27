@@ -8,36 +8,127 @@
             <field name="model">petadigi.import.lp.wizard</field>
             <field name="arch" type="xml">
                 <form string="Import Dokumen Laporan Polisi">
+                    <field name="stage" invisible="1"/>
 
-                    <!-- Instruksi -->
-                    <div class="alert alert-info" role="alert">
-                        <strong>📋 Petunjuk Import Dokumen LP</strong>
-                        <ol style="margin-top:8px; margin-bottom:0; padding-left:18px;">
-                            <li>Pilih jenis Laporan Polisi sesuai dokumen yang akan diupload (<strong>LP A</strong> atau <strong>LP B</strong>).</li>
-                            <li>Upload file dokumen dalam format <strong>.docx</strong> (Microsoft Word).</li>
-                            <li>Klik tombol <strong>"Parse Dokumen"</strong> untuk membaca dan mengekstrak data secara otomatis.</li>
-                            <li>Setelah proses parsing, Anda akan diarahkan ke halaman preview untuk melengkapi data yang belum terbaca.</li>
-                        </ol>
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- STEP 1: UPLOAD                                      -->
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <div invisible="stage != 'upload'">
+
+                        <div class="alert alert-info" role="alert">
+                            <strong>📋 Petunjuk Import Dokumen LP</strong>
+                            <ol style="margin-top:8px; margin-bottom:0; padding-left:18px;">
+                                <li>Pilih jenis Laporan Polisi sesuai dokumen yang akan diupload (<strong>LP A</strong> atau <strong>LP B</strong>).</li>
+                                <li>Upload file dokumen dalam format <strong>.docx</strong> (Microsoft Word).</li>
+                                <li>Klik tombol <strong>"Parse Dokumen"</strong> untuk membaca dan mengekstrak data secara otomatis.</li>
+                                <li>Setelah proses parsing, Anda akan diarahkan ke halaman preview untuk melengkapi data yang belum terbaca.</li>
+                            </ol>
+                        </div>
+
+                        <group string="UPLOAD DOKUMEN">
+                            <field name="jenis_lp"
+                                   widget="radio"
+                                   options="{'horizontal': true}"
+                                   string="Jenis LP"/>
+                            <field name="dokumen"
+                                   widget="binary"
+                                   filename="dokumen_filename"
+                                   string="File Dokumen (.docx)"/>
+                            <field name="dokumen_filename" invisible="1"/>
+                        </group>
+
                     </div>
 
-                    <group string="UPLOAD DOKUMEN">
-                        <field name="jenis_lp"
-                               widget="radio"
-                               options="{'horizontal': true}"
-                               string="Jenis LP"/>
-                        <field name="dokumen"
-                               widget="binary"
-                               filename="dokumen_filename"
-                               string="File Dokumen (.docx)"/>
-                        <field name="dokumen_filename" invisible="1"/>
-                    </group>
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- STEP 2: PREVIEW + ISI MANUAL                       -->
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <div invisible="stage != 'preview'">
 
+                        <div class="alert alert-success" role="alert">
+                            <strong>✅ Dokumen berhasil diparse!</strong>
+                            Periksa data di bawah, koreksi jika perlu, lalu lengkapi bagian yang kosong sebelum menyimpan.
+                        </div>
+
+                        <!-- HASIL PARSING -->
+                        <group string="DATA DARI DOKUMEN">
+                            <group>
+                                <field name="no_lp" string="No. LP"/>
+                                <field name="tanggal_kejadian" string="Waktu Kejadian"/>
+                                <field name="tanggal_laporan" string="Tanggal Laporan"/>
+                                <field name="pelapor" string="Pelapor"/>
+                                <field name="latitude" string="Latitude"/>
+                                <field name="longitude" string="Longitude"/>
+                            </group>
+                            <group>
+                                <field name="tempat_kejadian" string="Tempat Kejadian"/>
+                                <field name="apa_yang_terjadi" string="Apa yang Terjadi"/>
+                                <field name="terlapor" string="Terlapor"/>
+                                <field name="korban" string="Korban"/>
+                            </group>
+                        </group>
+
+                        <group string="TINDAK PIDANA &amp; BARANG BUKTI">
+                            <field name="tindak_pidana" string="Tindak Pidana" nolabel="1"
+                                   colspan="2"/>
+                            <field name="barang_bukti" string="Barang Bukti" nolabel="1"
+                                   colspan="2"/>
+                        </group>
+
+                        <group string="SAKSI &amp; URAIAN SINGKAT">
+                            <field name="saksi" string="Saksi" nolabel="1" colspan="2"/>
+                            <field name="uraian_singkat" string="Uraian Singkat" nolabel="1"
+                                   colspan="2"/>
+                        </group>
+
+                        <!-- ISI MANUAL -->
+                        <group string="LENGKAPI DATA (wajib diisi)">
+                            <group string="KESATUAN">
+                                <field name="polres_id"/>
+                                <field name="polsek_id"
+                                       domain="[('polres_id', '=', polres_id)]"/>
+                            </group>
+                            <group string="KATEGORI">
+                                <field name="kategori_id"/>
+                                <field name="sub_kategori_id"
+                                       domain="[('kategori_kriminal_id', '=', kategori_id)]"/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <group string="WILAYAH">
+                                <field name="kabupaten_id"/>
+                                <field name="kecamatan_id"
+                                       domain="[('kabupaten_id', '=', kabupaten_id)]"/>
+                                <field name="desa_id"
+                                       domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                            </group>
+                            <group string="STATUS PERKARA">
+                                <field name="status_perkara"/>
+                            </group>
+                        </group>
+
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════════ -->
+                    <!-- FOOTER TOMBOL                                       -->
+                    <!-- ═══════════════════════════════════════════════════ -->
                     <footer>
-                        <button name="action_parse_dokumen"
+                        <!-- Step 1 -->
+                        <button invisible="stage != 'upload'"
+                                name="action_parse_dokumen"
                                 string="Parse Dokumen"
                                 type="object"
                                 class="btn-primary"
                                 data-hotkey="q"/>
+
+                        <!-- Step 2 -->
+                        <button invisible="stage != 'preview'"
+                                name="action_simpan"
+                                string="Simpan sebagai Record Baru"
+                                type="object"
+                                class="btn-primary"
+                                data-hotkey="s"/>
+
                         <button string="Batal"
                                 class="btn-secondary"
                                 special="cancel"/>
