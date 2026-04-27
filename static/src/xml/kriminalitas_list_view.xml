@@ -3,8 +3,8 @@
     <t t-name="petadigi.KriminalitasListController"
        t-inherit="web.ListController"
        t-inherit-mode="extension">
-        <xpath expr="//button[hasclass('o_list_button_add')]" position="after">
-            <button class="btn btn-secondary ms-1" t-on-click="openImportWizard">
+        <xpath expr="//div[hasclass('o_control_panel_actions')]" position="inside">
+            <button class="btn btn-secondary" t-on-click="openImportWizard">
                 Import LP
             </button>
         </xpath>

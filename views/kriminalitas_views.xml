@@ -6,13 +6,8 @@
             <field name="model">petadigi.kriminalitas</field>
             <field name="arch" type="xml">
            
-                <list string="Data Kriminalitas">
-                    <header>
-                        <button name="action_open_import_wizard"
-                                string="Import LP"
-                                type="object"
-                                class="btn-secondary"/>
-                    </header>
+                <list string="Data Kriminalitas" js_class="kriminalitas_list">
+                    
                     <field name="jenis_lp"/>
                     <field name="no_lp"/>
                     <field name="kategori_id"/>
