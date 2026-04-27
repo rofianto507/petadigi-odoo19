@@ -2,7 +2,7 @@
 <templates xml:space="preserve">
     <t t-name="petadigi.KriminalitasListController"
        t-inherit="web.ListController"
-       t-inherit-mode="extension">
+       t-inherit-mode="primary">
         <xpath expr="//div[hasclass('o_control_panel_actions')]" position="inside">
             <button class="btn btn-secondary" t-on-click="openImportWizard">
                 Import LP
