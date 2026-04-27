@@ -92,11 +92,13 @@
                                 <field name="polres_id"/>
                                 <field name="polsek_id"
                                        domain="[('polres_id', '=', polres_id)]"/>
+                                <field name="subdit_id" />
                             </group>
                             <group string="KATEGORI">
                                 <field name="kategori_id"/>
                                 <field name="sub_kategori_id"
                                        domain="[('kategori_kriminal_id', '=', kategori_id)]"/>
+                                <field name="jenis_tkp_id" />
                             </group>
                         </group>
 

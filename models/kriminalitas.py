@@ -91,6 +91,7 @@ class Kriminalitas(models.Model):
             'res_model': 'petadigi.import.lp.wizard',
             'view_mode': 'form',
             'target': 'new',
+            
         }
     
     @api.onchange('polres_id')

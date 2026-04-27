@@ -73,7 +73,8 @@ class ImportLpWizard(models.TransientModel):
     )
     tanggal_selesai = fields.Datetime('Tanggal Selesai')
     is_perkara_selesai = fields.Boolean(compute='_compute_is_perkara_selesai')
-
+    jenis_tkp_id = fields.Many2one('petadigi.jenis_tkp', string='Jenis TKP')
+    subdit_id = fields.Many2one('petadigi.subdit', string='Tujuan')
     @api.depends('status_perkara')
     def _compute_is_perkara_selesai(self):
         for rec in self:
@@ -125,10 +126,12 @@ class ImportLpWizard(models.TransientModel):
         # Kembalikan action untuk refresh wizard (tetap di popup yang sama)
         return {
             'type': 'ir.actions.act_window',
+            'name': 'Preview Dokumen ' + self.jenis_lp,
             'res_model': self._name,
             'res_id': self.id,
             'view_mode': 'form',
             'target': 'new',
+            'context':{'dialog_size': 'large'},
         }
 
     def action_simpan(self):
@@ -165,6 +168,10 @@ class ImportLpWizard(models.TransientModel):
             'kategori_id': self.kategori_id.id,
             'sub_kategori_id': self.sub_kategori_id.id,
             'status_perkara': self.status_perkara,
+            'sub_status_perkara_id': self.sub_status_perkara_id.id,
+            'tanggal_selesai': self.tanggal_selesai,
+            'jenis_tkp_id': self.jenis_tkp_id.id,
+            'subdit_id': self.subdit_id.id,
         }
 
         record = self.env['petadigi.kriminalitas'].create(vals)
