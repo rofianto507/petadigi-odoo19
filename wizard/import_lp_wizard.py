@@ -41,6 +41,7 @@ class ImportLpWizard(models.TransientModel):
     barang_bukti = fields.Text('Barang Bukti')
     uraian_singkat = fields.Text('Uraian Singkat')
     pelapor = fields.Text('Pelapor')
+    penanggung_jawab = fields.Text('Penanggung Jawab')
 
     # ── STEP 2: ISI MANUAL ───────────────────────────────────────────────────
     polres_id = fields.Many2one('petadigi.polres', string='Polres')
@@ -155,6 +156,7 @@ class ImportLpWizard(models.TransientModel):
             'barang_bukti': self.barang_bukti,
             'uraian_singkat': self.uraian_singkat,
             'pelapor': self.pelapor,
+            'penanggung_jawab': self.penanggung_jawab,
             'polres_id': self.polres_id.id,
             'polsek_id': self.polsek_id.id,
             'kabupaten_id': self.kabupaten_id.id,

@@ -382,7 +382,20 @@ def parse(file_bytes: bytes) -> dict:
     data['saksi']         = clean_stop_keywords(' '.join(saksi_parts))
     data['barang_bukti']  = clean_stop_keywords(' '.join(bukti_parts))
     data['uraian']        = clean_stop_keywords(' '.join(uraian_parts))
+    # Cari setelah MENGETAHUI
+    m = re.search(r'MENGETAHUI(.+?)$', all_text, re.IGNORECASE | re.DOTALL)
 
+    SKIP_KEYWORDS = ['KA SPKT', 'SEKTOR', 'POLRES', 'POLSEK', 'RESOR']
+    RANK_KEYWORDS = ['NRP', 'INSPEKTUR', 'KOMISARIS', 'BRIGADIR', 'AIPDA',
+                    'AIPTU', 'BRIPDA', 'BRIPTU', 'IPTU', 'IPDA', 'AKP',
+                    'KOMPOL', 'AJUN']
+
+    for line in lines:
+        if any(kw in line.upper() for kw in SKIP_KEYWORDS): continue  # lewati
+        if any(kw in line.upper() for kw in RANK_KEYWORDS): break     # berhenti
+        if re.match(r'^[A-Z\s\.]+$', line) and len(line) > 2:
+            data['penanggung_jawab'] = line  # ✅ nama ditemukan
+            break
     # ── 5. PARSE TANGGAL (WIB → UTC) ─────────────────────────────────────────
     tanggal_kejadian = parse_tanggal(data['waktu_kejadian'])
     tanggal_laporan  = parse_tanggal(data['kapan_dilaporkan'])
@@ -414,6 +427,7 @@ def parse(file_bytes: bytes) -> dict:
         'saksi':            data['saksi'],
         'barang_bukti':     data['barang_bukti'],
         'pelapor':          data['pelapor'],
+        'penanggung_jawab': data['penanggung_jawab'],
     }
 
     # Hapus nilai kosong/None agar tidak overwrite field yang sudah ada

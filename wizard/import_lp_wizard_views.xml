@@ -58,6 +58,7 @@
                                 <field name="tanggal_kejadian" string="Waktu Kejadian"/>
                                 <field name="tanggal_laporan" string="Tanggal Laporan"/>
                                 <field name="pelapor" string="Pelapor"/>
+                                <field name="penanggung_jawab" string="Penanggung Jawab"/>
                                 <field name="latitude" string="Latitude"/>
                                 <field name="longitude" string="Longitude"/>
                             </group>
