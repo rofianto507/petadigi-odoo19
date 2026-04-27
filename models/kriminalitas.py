@@ -89,7 +89,16 @@ class Kriminalitas(models.Model):
     def _compute_is_perkara_selesai(self):
         for rec in self:
             rec.is_perkara_selesai = (rec.status_perkara == 'SELESAI')
-
+    def action_open_import_wizard(self):
+        """Buka wizard import dokumen LP"""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Import Dokumen LP',
+            'res_model': 'petadigi.import.lp.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+    
     @api.onchange('polres_id')
     def _onchange_polres_id(self):
         self.polsek_id = False  # reset polsek saat polres diganti

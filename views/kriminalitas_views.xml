@@ -7,12 +7,12 @@
             <field name="arch" type="xml">
            
                 <list string="Data Kriminalitas">
-                 <header>
-                <button name="%(petadigi.action_import_lp_wizard)d" 
-                        string="Import dari Dokumen" 
-                        type="action" 
-                        class="btn-secondary"/>
-            </header>
+                    <header>
+                        <button name="action_open_import_wizard"
+                                string="Import LP"
+                                type="object"
+                                class="btn-secondary"/>
+                    </header>
                     <field name="jenis_lp"/>
                     <field name="no_lp"/>
                     <field name="kategori_id"/>
