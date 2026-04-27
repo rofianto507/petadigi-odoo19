@@ -26,10 +26,11 @@
         'views/jenis_tkp_views.xml',
         'views/dashboard_views.xml',
         'views/subdit_views.xml',
+        'wizard/import_lp_wizard_views.xml',
         'views/kriminalitas_views.xml',
         'views/sub_status_perkara_views.xml',
         'views/menu.xml',
-        'wizard/import_lp_wizard_views.xml',
+        
     ],
     'assets': {
          'web.assets_backend': [
