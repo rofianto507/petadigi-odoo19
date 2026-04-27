@@ -3,7 +3,7 @@ import io
 from datetime import datetime, timezone, timedelta
 
 
-# ── HELPERS ─────────────────────────────────────────────────────────────────
+# ── HELPERS ──────────────────────────────────────────────────────────────────
 
 def clean_pipe(text: str) -> str:
     """Hapus karakter pipe (|) dari teks."""
@@ -183,6 +183,7 @@ def parse(file_bytes: bytes) -> dict:
         'saksi': '',
         'barang_bukti': '',
         'uraian': '',
+        'penanggung_jawab': '',   # ← inisialisasi wajib
     }
 
     # ── 1. NOMOR LP ───────────────────────────────────────────────────────────
@@ -382,25 +383,34 @@ def parse(file_bytes: bytes) -> dict:
     data['saksi']         = clean_stop_keywords(' '.join(saksi_parts))
     data['barang_bukti']  = clean_stop_keywords(' '.join(bukti_parts))
     data['uraian']        = clean_stop_keywords(' '.join(uraian_parts))
-    # Cari setelah MENGETAHUI
-    m = re.search(r'MENGETAHUI(.+?)$', all_text, re.IGNORECASE | re.DOTALL)
 
-    SKIP_KEYWORDS = ['KA SPKT', 'SEKTOR', 'POLRES', 'POLSEK', 'RESOR']
-    RANK_KEYWORDS = ['NRP', 'INSPEKTUR', 'KOMISARIS', 'BRIGADIR', 'AIPDA',
-                    'AIPTU', 'BRIPDA', 'BRIPTU', 'IPTU', 'IPDA', 'AKP',
-                    'KOMPOL', 'AJUN']
+    # ── 5. PENANGGUNG JAWAB (setelah MENGETAHUI) ──────────────────────────────
+    SKIP_PJ = ['KA SPKT', 'SEKTOR', 'POLRES', 'POLSEK', 'RESOR']
+    RANK_PJ = ['NRP', 'INSPEKTUR', 'KOMISARIS', 'BRIGADIR', 'AIPDA',
+               'AIPTU', 'BRIPDA', 'BRIPTU', 'IPTU', 'IPDA', 'AKP',
+               'KOMPOL', 'AJUN']
 
-    for line in lines:
-        if any(kw in line.upper() for kw in SKIP_KEYWORDS): continue  # lewati
-        if any(kw in line.upper() for kw in RANK_KEYWORDS): break     # berhenti
-        if re.match(r'^[A-Z\s\.]+$', line) and len(line) > 2:
-            data['penanggung_jawab'] = line  # ✅ nama ditemukan
-            break
-    # ── 5. PARSE TANGGAL (WIB → UTC) ─────────────────────────────────────────
+    m_pj = re.search(r'MENGETAHUI(.+?)$', all_text, re.IGNORECASE | re.DOTALL)
+    if m_pj:
+        pj_lines = m_pj.group(1).split('\n')
+        for line in pj_lines:
+            line = line.strip()
+            if not line:
+                continue
+            line_upper = line.upper()
+            if any(kw in line_upper for kw in SKIP_PJ):
+                continue   # lewati baris jabatan/satuan
+            if any(kw in line_upper for kw in RANK_PJ):
+                break      # berhenti saat ketemu baris pangkat/NRP
+            if re.match(r'^[A-Z][A-Z\s\.]+$', line) and len(line) > 2:
+                data['penanggung_jawab'] = line
+                break
+
+    # ── 6. PARSE TANGGAL (WIB → UTC) ─────────────────────────────────────────
     tanggal_kejadian = parse_tanggal(data['waktu_kejadian'])
     tanggal_laporan  = parse_tanggal(data['kapan_dilaporkan'])
 
-    # ── 6. BERSIHKAN SEMUA DATA ───────────────────────────────────────────────
+    # ── 7. BERSIHKAN SEMUA DATA ───────────────────────────────────────────────
     multiline_fields = {'pelapor', 'korban', 'saksi', 'terlapor', 'bagaimana_terjadi'}
     for key, value in data.items():
         if not isinstance(value, str):
@@ -411,23 +421,23 @@ def parse(file_bytes: bytes) -> dict:
         else:
             data[key] = re.sub(r'\s+', ' ', value).strip()
 
-    # ── 7. MAPPING KE FIELD ODOO ──────────────────────────────────────────────
+    # ── 8. MAPPING KE FIELD ODOO ──────────────────────────────────────────────
     result = {
-        'no_lp':            data['no_lp'],
-        'tanggal_kejadian': tanggal_kejadian,
-        'tempat_kejadian':  data['tempat_kejadian'],
-        'latitude':         data['latitude'],
-        'longitude':        data['longitude'],
-        'apa_yang_terjadi': data['apa_yang_terjadi'],
-        'terlapor':         data['terlapor'],
-        'korban':           data['korban'],
-        'uraian_singkat':   data['bagaimana_terjadi'] or data['uraian'],
-        'tanggal_laporan':  tanggal_laporan,
-        'tindak_pidana':    data['tindak_pidana'],
-        'saksi':            data['saksi'],
-        'barang_bukti':     data['barang_bukti'],
-        'pelapor':          data['pelapor'],
-        'penanggung_jawab': data['penanggung_jawab'],
+        'no_lp':             data['no_lp'],
+        'tanggal_kejadian':  tanggal_kejadian,
+        'tempat_kejadian':   data['tempat_kejadian'],
+        'latitude':          data['latitude'],
+        'longitude':         data['longitude'],
+        'apa_yang_terjadi':  data['apa_yang_terjadi'],
+        'terlapor':          data['terlapor'],
+        'korban':            data['korban'],
+        'uraian_singkat':    data['bagaimana_terjadi'] or data['uraian'],
+        'tanggal_laporan':   tanggal_laporan,
+        'tindak_pidana':     data['tindak_pidana'],
+        'saksi':             data['saksi'],
+        'barang_bukti':      data['barang_bukti'],
+        'pelapor':           data['pelapor'],
+        'penanggung_jawab':  data['penanggung_jawab'],
     }
 
     # Hapus nilai kosong/None agar tidak overwrite field yang sudah ada
