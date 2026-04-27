@@ -1,7 +1,123 @@
 import re
-import base64
 import io
 from datetime import datetime
+
+
+# ── HELPERS ──────────────────────────────────────────────────────────────────
+
+def clean_pipe(text: str) -> str:
+    """Hapus karakter pipe (|) dari teks."""
+    text = re.sub(r'^\|\s*', '', text, flags=re.MULTILINE)
+    text = re.sub(r'\s*\|\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'\s*\|\s*', ' ', text)
+    text = re.sub(r'  +', ' ', text)
+    return text.strip()
+
+
+def clean_value(text: str) -> str:
+    """Hapus prefix titik dua dan nomor urut."""
+    text = text.strip()
+    text = re.sub(r'^[\s:]+', '', text)
+    text = re.sub(r'^\d+\.\s*', '', text)
+    return text.strip()
+
+
+STOP_KEYWORDS = [
+    'Pelapor atau Pengadu',
+    'TINDAKAN YANG TELAH DILAKUKAN',
+    'TINDAKAN YANG DILAKUKAN',
+    'MENGETAHUI',
+    'KA SPKT',
+    'Yang menerima laporan',
+]
+
+def clean_stop_keywords(text: str) -> str:
+    """Potong teks saat menemui keyword stop."""
+    for kw in STOP_KEYWORDS:
+        pos = text.lower().find(kw.lower())
+        if pos != -1:
+            text = text[:pos]
+    return text.strip()
+
+
+BULAN_MAP = {
+    'januari': '01', 'februari': '02', 'maret': '03', 'april': '04',
+    'mei': '05', 'juni': '06', 'juli': '07', 'agustus': '08',
+    'september': '09', 'oktober': '10', 'november': '11', 'desember': '12',
+}
+
+def parse_tanggal(teks: str):
+    """
+    Parse teks tanggal Bahasa Indonesia ke datetime.
+    Support format:
+      - 'senin tanggal 16 Februari 2026'
+      - 'Pada Hari Senin Tanggal 16 Februari 2026 Pukul 19.25 WIB'
+      - '19-02-2026'
+    """
+    if not teks:
+        return None
+
+    teks_lower = teks.lower()
+
+    # Format dd-mm-yyyy
+    m = re.search(r'(\d{2})-(\d{2})-(\d{4})', teks_lower)
+    if m:
+        try:
+            return datetime(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        except ValueError:
+            pass
+
+    # Ekstrak jam jika ada (pukul HH.MM atau HH:MM)
+    jam, menit = 0, 0
+    m_jam = re.search(r'(?:pukul|jam)\s+(\d{1,2})[.:\-](\d{2})', teks_lower)
+    if m_jam:
+        jam = int(m_jam.group(1))
+        menit = int(m_jam.group(2))
+
+    # Format: dd BulanIndo yyyy
+    pattern = r'(\d{1,2})\s+(' + '|'.join(BULAN_MAP.keys()) + r')\s+(\d{4})'
+    m = re.search(pattern, teks_lower)
+    if m:
+        try:
+            return datetime(
+                int(m.group(3)),
+                int(BULAN_MAP[m.group(2)]),
+                int(m.group(1)),
+                jam, menit
+            )
+        except ValueError:
+            pass
+
+    return None
+
+
+# ── DOCX HELPERS ─────────────────────────────────────────────────────────────
+
+def get_element_text(element) -> str:
+    """Ekstrak teks dari elemen PhpWord-style (python-docx paragraph/run)."""
+    # Untuk python-docx, elemen sudah berupa Paragraph atau Cell
+    # Fungsi ini handle teks dari paragraph dengan runs
+    try:
+        return element.text or ''
+    except Exception:
+        return ''
+
+
+def get_cell_text_parts(cell) -> list:
+    """Ambil teks tiap paragraf dalam sel tabel."""
+    parts = []
+    for para in cell.paragraphs:
+        t = para.text.strip()
+        if t:
+            parts.append(t)
+    return parts
+
+
+def get_cell_text(cell) -> str:
+    return ' '.join(get_cell_text_parts(cell))
+
+
+# ── MAIN PARSER ───────────────────────────────────────────────────────────────
 
 def parse(file_bytes: bytes) -> dict:
     """
@@ -17,184 +133,294 @@ def parse(file_bytes: bytes) -> dict:
         )
 
     doc = Document(io.BytesIO(file_bytes))
-    result = {}
 
-    # Kumpulkan semua teks paragraf
-    paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
-    full_text = "\n".join(paragraphs)
+    # ── Bangun allText dan tableData (mirip PHP) ──────────────────────────────
+    all_text = ''
+    table_data = []
 
-    # ── NO. LP ──────────────────────────────────────────────────────────────
-    # Pola: "Nomor :" atau "Nomor:" diikuti teks LP
-    for para in paragraphs:
-        m = re.match(r'Nomor\s*:\s*(.+)', para, re.IGNORECASE)
-        if m:
-            result['no_lp'] = m.group(1).strip()
-            break
+    for element in doc.element.body:
+        tag = element.tag.split('}')[-1] if '}' in element.tag else element.tag
 
-    # ── PERISTIWA (numbered list) ────────────────────────────────────────────
-    # 1. Waktu Kejadian
+        if tag == 'tbl':
+            # Proses tabel
+            from docx.table import Table
+            table = Table(element, doc)
+            current_table = []
+            for row in table.rows:
+                row_data = []
+                line_texts = []
+                for cell in row.cells:
+                    text = get_cell_text(cell)
+                    parts = get_cell_text_parts(cell)
+                    row_data.append({'text': text, 'parts': parts})
+                    if text:
+                        line_texts.append(text)
+                current_table.append(row_data)
+                if line_texts:
+                    all_text += ' | '.join(line_texts) + '\n'
+            table_data.append(current_table)
+
+        elif tag == 'p':
+            # Proses paragraf biasa
+            from docx.text.paragraph import Paragraph
+            para = Paragraph(element, doc)
+            t = para.text.strip()
+            if t:
+                all_text += t + '\n'
+
+    # ── Inisialisasi data ─────────────────────────────────────────────────────
+    data = {
+        'no_lp': '',
+        'pelapor': '',
+        'waktu_kejadian': '',
+        'tempat_kejadian': '',
+        'apa_yang_terjadi': '',
+        'terlapor': '',
+        'korban': '',
+        'bagaimana_terjadi': '',
+        'kapan_dilaporkan': '',
+        'latitude': None,
+        'longitude': None,
+        'tindak_pidana': '',
+        'saksi': '',
+        'barang_bukti': '',
+        'uraian': '',
+    }
+
+    # ── 1. NOMOR LP ───────────────────────────────────────────────────────────
+    m = re.search(r'Nomor\s*:?\s*(LP[^\n]+)', all_text, re.IGNORECASE)
+    if m:
+        data['no_lp'] = clean_pipe(m.group(1).strip())
+
+    # ── 2. PERISTIWA YANG TERJADI ─────────────────────────────────────────────
     m = re.search(
-        r'1\.?\s*Waktu Kejadian\s*:?\s*(.+?)(?=\n2\.)',
-        full_text, re.IGNORECASE | re.DOTALL
+        r'PERISTIWA YANG TERJADI(.+?)(?=TINDAK PIDANA APA|$)',
+        all_text, re.IGNORECASE | re.DOTALL
     )
     if m:
-        result['tanggal_kejadian_raw'] = m.group(1).strip()
-        result['tanggal_kejadian'] = _parse_tanggal(m.group(1).strip())
+        bagian = m.group(1)
 
-    # 2. Tempat Kejadian (termasuk koordinat)
+        mappings = {
+            'Waktu Kejadian':   'waktu_kejadian',
+            'Tempat Kejadian':  'tempat_kejadian',
+            'Apa Yang Terjadi': 'apa_yang_terjadi',
+            'Bagaimana Terjadi':'bagaimana_terjadi',
+            'Dilaporkan Pada':  'kapan_dilaporkan',
+        }
+
+        lines = bagian.split('\n')
+        current_field = ''
+        in_siapa = False
+        siapa_sub = ''
+
+        for line in lines:
+            line = line.strip().strip('| ')
+            line = re.sub(r'^\d+\.\s*', '', line)
+            line = clean_pipe(line)
+            if not line:
+                continue
+
+            matched = False
+
+            # Cek header "Siapa"
+            if re.match(r'^Siapa\s*:?\s*$', line, re.IGNORECASE):
+                in_siapa = True
+                siapa_sub = ''
+                current_field = ''
+                matched = True
+
+            # Sub-field dalam "Siapa"
+            if in_siapa and not matched:
+                if line.lower().startswith('terlapor'):
+                    siapa_sub = 'terlapor'
+                    m2 = re.match(r'^Terlapor\s*:?\s*(.+)', line, re.IGNORECASE)
+                    if m2:
+                        data['terlapor'] = clean_pipe(m2.group(1).strip())
+                    matched = True
+                elif line.lower().startswith('korban'):
+                    siapa_sub = 'korban'
+                    m2 = re.match(r'^Korban\s*:?\s*(.+)', line, re.IGNORECASE)
+                    if m2:
+                        data['korban'] = clean_pipe(m2.group(1).strip())
+                    matched = True
+                elif siapa_sub:
+                    # Cek apakah baris ini header field lain
+                    is_other = any(kw.lower() in line.lower() for kw in mappings)
+                    if not is_other:
+                        data[siapa_sub] += ' ' + line
+                        matched = True
+                    else:
+                        in_siapa = False
+                        siapa_sub = ''
+
+            # Cek mapping field biasa
+            if not matched:
+                for keyword, field in mappings.items():
+                    if keyword.lower() in line.lower() and ':' in line:
+                        parts = line.split(':', 1)
+                        if len(parts) > 1:
+                            data[field] = clean_pipe(parts[1].strip())
+                        current_field = field
+                        in_siapa = False
+                        siapa_sub = ''
+                        matched = True
+                        break
+
+            # Data lanjutan multi-line
+            if not matched and current_field and not in_siapa:
+                data[current_field] += ' ' + line
+
+    # ── 3. KOORDINAT ──────────────────────────────────────────────────────────
+    coord_source = data['tempat_kejadian'] or all_text
     m = re.search(
-        r'2\.?\s*Tempat Kejadian\s*:?\s*(.+?)(?=\n3\.)',
-        full_text, re.IGNORECASE | re.DOTALL
+        r'TITIK KOORDINAT\s*(-?[\d\.]+)\s*[,\s]\s*(-?[\d\.]+)',
+        coord_source, re.IGNORECASE
     )
-    if m:
-        tempat = m.group(1).strip()
-        result['tempat_kejadian'] = tempat
-
-        # Ekstrak TITIK KOORDINAT lat,lon
-        coord = re.search(
-            r'TITIK KOORDINAT\s*([\-\d\.]+)[\s,]+([\-\d\.]+)',
-            tempat, re.IGNORECASE
+    if not m:
+        m = re.search(
+            r'TITIK KOORDINAT\s*(-?[\d\.]+)\s*[,\s]\s*(-?[\d\.]+)',
+            all_text, re.IGNORECASE
         )
-        if coord:
-            try:
-                result['latitude'] = float(coord.group(1))
-                result['longitude'] = float(coord.group(2))
-            except ValueError:
-                pass
-
-    # 3. Apa Yang Terjadi
-    m = re.search(
-        r'3\.?\s*Apa\s+[Yy]ang\s+[Tt]erjadi\s*:?\s*(.+?)(?=\n4\.)',
-        full_text, re.IGNORECASE | re.DOTALL
-    )
-    if m:
-        result['apa_yang_terjadi'] = m.group(1).strip()
-
-    # 4. Terlapor & Korban
-    m = re.search(
-        r'4\.?\s*Siapa\s*:?(.+?)(?=\n5\.)',
-        full_text, re.IGNORECASE | re.DOTALL
-    )
-    if m:
-        blok = m.group(1)
-        # Terlapor
-        t = re.search(r'Terlapor\s*:?\s*(.+?)(?=Korban\s*:|$)',
-                      blok, re.IGNORECASE | re.DOTALL)
-        if t:
-            result['terlapor'] = t.group(1).strip()
-        # Korban
-        k = re.search(r'Korban\s*:?\s*(.+?)$',
-                      blok, re.IGNORECASE | re.DOTALL)
-        if k:
-            val = k.group(1).strip()
-            if val and val != '-':
-                result['korban'] = val
-
-    # 5. Bagaimana Terjadi -> uraian_singkat
-    m = re.search(
-        r'5\.?\s*Bagaimana\s+[Tt]erjadi\s*:?\s*(.+?)(?=\n6\.)',
-        full_text, re.IGNORECASE | re.DOTALL
-    )
-    if m:
-        result['uraian_singkat'] = m.group(1).strip()
-
-    # 6. Dilaporkan Pada -> tanggal_laporan
-    m = re.search(
-        r'6\.?\s*Dilaporkan\s+Pada\s*:?\s*(.+?)(?=\n|$)',
-        full_text, re.IGNORECASE | re.DOTALL
-    )
-    if m:
-        result['tanggal_laporan_raw'] = m.group(1).strip()
-        result['tanggal_laporan'] = _parse_tanggal(m.group(1).strip())
-
-    # ── TABEL ────────────────────────────────────────────────────────────────
-    # Struktur tabel LP A:
-    # Baris 1: [TINDAK PIDANA APA | NAMA DAN ALAMAT SAKSI-SAKSI]
-    # Baris 2: [isi tindak pidana | isi saksi]
-    # Baris 3: [BARANG BUKTI | URAIAN SINGKAT YANG DILAPORKAN]
-    # Baris 4: [isi barang bukti | isi uraian singkat]
-    for table in doc.tables:
-        teks_sel = [[cell.text.strip() for cell in row.cells] for row in table.rows]
-
-        for i, row in enumerate(teks_sel):
-            # Header TINDAK PIDANA
-            if any('TINDAK PIDANA' in c.upper() for c in row):
-                if i + 1 < len(teks_sel):
-                    next_row = teks_sel[i + 1]
-                    if len(next_row) >= 1:
-                        result['tindak_pidana'] = next_row[0].strip()
-                    if len(next_row) >= 2:
-                        result['saksi'] = next_row[1].strip()
-
-            # Header BARANG BUKTI
-            if any('BARANG BUKTI' in c.upper() for c in row):
-                if i + 1 < len(teks_sel):
-                    next_row = teks_sel[i + 1]
-                    if len(next_row) >= 1:
-                        result['barang_bukti'] = next_row[0].strip()
-                    if len(next_row) >= 2:
-                        # Ambil uraian singkat dari tabel jika belum ada
-                        uraian_tabel = next_row[1].strip()
-                        if uraian_tabel and 'uraian_singkat' not in result:
-                            result['uraian_singkat'] = uraian_tabel
-
-    # ── PELAPOR (dari footer / tanda tangan) ────────────────────────────────
-    # Cari pola: paragraf "Pelapor" diikuti nama
-    for idx, para in enumerate(paragraphs):
-        if re.match(r'^Pelapor\s*$', para, re.IGNORECASE):
-            # Ambil 2 baris setelah "Pelapor"
-            nama_lines = []
-            for j in range(idx + 1, min(idx + 4, len(paragraphs))):
-                line = paragraphs[j].strip()
-                if line:
-                    nama_lines.append(line)
-                if len(nama_lines) == 2:
-                    break
-            if nama_lines:
-                result['pelapor'] = '\n'.join(nama_lines)
-            break
-
-    return result
-
-
-# ── HELPER ──────────────────────────────────────────────────────────────────
-
-BULAN = {
-    'januari': 1, 'februari': 2, 'maret': 3, 'april': 4,
-    'mei': 5, 'juni': 6, 'juli': 7, 'agustus': 8,
-    'september': 9, 'oktober': 10, 'november': 11, 'desember': 12,
-}
-
-def _parse_tanggal(teks: str):
-    """
-    Coba parse teks tanggal Bahasa Indonesia ke datetime.
-    Contoh:
-      'senin tanggal 16 Februari 2026'
-      'Pada Hari Senin Tanggal 16 Februari 2026 Pukul 19.25 WIB'
-    Kembalikan datetime atau None jika gagal.
-    """
-    teks_lower = teks.lower()
-
-    # Ekstrak jam jika ada (pukul HH.MM)
-    jam, menit = 0, 0
-    m_jam = re.search(r'pukul\s+(\d{1,2})[.:\-](\d{2})', teks_lower)
-    if m_jam:
-        jam = int(m_jam.group(1))
-        menit = int(m_jam.group(2))
-
-    # Cari pola: (tanggal)? <angka> <bulan> <tahun>
-    m = re.search(
-        r'(\d{1,2})\s+(' + '|'.join(BULAN.keys()) + r')\s+(\d{4})',
-        teks_lower
-    )
     if m:
         try:
-            return datetime(
-                int(m.group(3)),
-                BULAN[m.group(2)],
-                int(m.group(1)),
-                jam, menit
-            )
+            data['latitude'] = float(m.group(1))
+            data['longitude'] = float(m.group(2))
         except ValueError:
             pass
-    return None
+
+    # ── 4. TABEL: Tindak Pidana, Saksi, Barang Bukti, Uraian ─────────────────
+    tindak_parts = []
+    saksi_parts = []
+    bukti_parts = []
+    uraian_parts = []
+
+    STOP_UPPER = [kw.upper() for kw in STOP_KEYWORDS]
+
+    for table in table_data:
+        mode = ''
+        for row in table:
+            col0 = row[0] if len(row) > 0 else {'text': '', 'parts': []}
+            col1 = row[1] if len(row) > 1 else {'text': '', 'parts': []}
+            col0_text = col0['text']
+            col1_text = col1['text']
+            col0_upper = col0_text.upper()
+            row_upper = (col0_text + ' ' + col1_text).upper()
+
+            # Stop keywords
+            if any(kw in row_upper for kw in STOP_UPPER):
+                mode = ''
+                continue
+
+            # Header TINDAK PIDANA
+            if 'TINDAK PIDANA' in col0_upper:
+                mode = 'TINDAK_SAKSI'
+                # Ambil data dari parts (baris setelah header dalam sel)
+                found = False
+                for p in col0['parts'][1:]:
+                    v = clean_value(p)
+                    if v:
+                        tindak_parts.append(v)
+                        found = True
+                for p in col1['parts'][1:]:
+                    v = clean_value(p)
+                    if v:
+                        saksi_parts.append(v)
+                        found = True
+                if not found:
+                    m2 = re.search(r'TINDAK PIDANA APA\s*:?\s*(.+)', col0_text, re.IGNORECASE | re.DOTALL)
+                    if m2:
+                        v = clean_value(m2.group(1))
+                        if v:
+                            tindak_parts.append(v)
+                    m2 = re.search(r'NAMA DAN ALAMAT SAKSI[^:]*:?\s*(.+)', col1_text, re.IGNORECASE | re.DOTALL)
+                    if m2:
+                        v = clean_value(m2.group(1))
+                        if v:
+                            saksi_parts.append(v)
+                continue
+
+            # Header BARANG BUKTI
+            if 'BARANG BUKTI' in col0_upper:
+                mode = 'BUKTI_URAIAN'
+                found = False
+                for p in col0['parts'][1:]:
+                    v = clean_value(p)
+                    if v:
+                        bukti_parts.append(v)
+                        found = True
+                for p in col1['parts'][1:]:
+                    v = clean_value(p)
+                    if v:
+                        uraian_parts.append(v)
+                        found = True
+                if not found:
+                    m2 = re.search(r'BARANG BUKTI\s*:?\s*(.+)', col0_text, re.IGNORECASE | re.DOTALL)
+                    if m2:
+                        v = clean_value(m2.group(1))
+                        if v:
+                            bukti_parts.append(v)
+                    m2 = re.search(r'URAIAN SINGKAT[^:]*:?\s*(.+)', col1_text, re.IGNORECASE | re.DOTALL)
+                    if m2:
+                        v = clean_value(m2.group(1))
+                        if v:
+                            uraian_parts.append(v)
+                continue
+
+            # Data baris
+            if mode == 'TINDAK_SAKSI':
+                v0 = clean_value(col0_text)
+                v1 = clean_value(col1_text)
+                if v0:
+                    tindak_parts.append(v0)
+                if v1:
+                    saksi_parts.append(v1)
+            elif mode == 'BUKTI_URAIAN':
+                v0 = clean_value(col0_text)
+                v1 = clean_value(col1_text)
+                if v0:
+                    bukti_parts.append(v0)
+                if v1:
+                    uraian_parts.append(v1)
+
+    data['tindak_pidana'] = clean_stop_keywords(' '.join(tindak_parts))
+    data['saksi']         = clean_stop_keywords(' '.join(saksi_parts))
+    data['barang_bukti']  = clean_stop_keywords(' '.join(bukti_parts))
+    data['uraian']        = clean_stop_keywords(' '.join(uraian_parts))
+
+    # ── 5. PARSE TANGGAL ──────────────────────────────────────────────────────
+    tanggal_kejadian = parse_tanggal(data['waktu_kejadian'])
+    tanggal_laporan  = parse_tanggal(data['kapan_dilaporkan'])
+
+    # ── 6. BERSIHKAN SEMUA DATA ───────────────────────────────────────────────
+    multiline_fields = {'pelapor', 'korban', 'saksi', 'terlapor', 'bagaimana_terjadi'}
+    for key, value in data.items():
+        if not isinstance(value, str):
+            continue
+        value = clean_pipe(value)
+        if key in multiline_fields:
+            data[key] = re.sub(r'[^\S\n]+', ' ', value).strip()
+        else:
+            data[key] = re.sub(r'\s+', ' ', value).strip()
+
+    # ── 7. MAPPING KE FIELD ODOO ──────────────────────────────────────────────
+    result = {
+        'no_lp':            data['no_lp'],
+        'tanggal_kejadian': tanggal_kejadian,
+        'tempat_kejadian':  data['tempat_kejadian'],
+        'latitude':         data['latitude'],
+        'longitude':        data['longitude'],
+        'apa_yang_terjadi': data['apa_yang_terjadi'],
+        'terlapor':         data['terlapor'],
+        'korban':           data['korban'],
+        'uraian_singkat':   data['bagaimana_terjadi'] or data['uraian'],
+        'tanggal_laporan':  tanggal_laporan,
+        'tindak_pidana':    data['tindak_pidana'],
+        'saksi':            data['saksi'],
+        'barang_bukti':     data['barang_bukti'],
+        'pelapor':          data['pelapor'],
+    }
+
+    # Hapus nilai kosong/None agar tidak overwrite field yang sudah ada
+    result = {k: v for k, v in result.items() if v not in (None, '', 0.0)}
+
+    return result
