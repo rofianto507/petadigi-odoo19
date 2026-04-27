@@ -111,7 +111,7 @@ class ImportLpWizard(models.TransientModel):
         if self.status_perkara != 'SELESAI':
             self.tanggal_selesai = False
 
-    # ── ACTIONS ───────────────────────────────────────────────────────────────
+    # ── ACTIONS ──────────────────────────────────────────────────────────────
 
     def action_parse_dokumen(self):
         """Parse file .docx dan tampilkan hasil di step preview."""
@@ -212,6 +212,28 @@ class ImportLpWizard(models.TransientModel):
         }
 
         record = self.env['petadigi.kriminalitas'].create(vals)
+
+        # ── Simpan dokumen asli sebagai attachment di chatter ─────────────────
+        if self.dokumen:
+            filename = self.dokumen_filename or ('%s.docx' % self.no_lp)
+            self.env['ir.attachment'].create({
+                'name': filename,
+                'type': 'binary',
+                'datas': self.dokumen,
+                'res_model': 'petadigi.kriminalitas',
+                'res_id': record.id,
+                'mimetype': 'application/vnd.openxmlformats-officedocument'
+                            '.wordprocessingml.document',
+            })
+            # Log pesan di chatter
+            record.message_post(
+                body='📄 Dokumen <b>%s</b> berhasil diimport dan dilampirkan.' % filename,
+                attachment_ids=self.env['ir.attachment'].search([
+                    ('res_model', '=', 'petadigi.kriminalitas'),
+                    ('res_id', '=', record.id),
+                    ('name', '=', filename),
+                ]).ids,
+            )
 
         return {
             'type': 'ir.actions.act_window',
