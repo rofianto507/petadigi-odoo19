@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- FORM VIEW Wizard Import LP -->
+        <record id="view_import_lp_wizard_form" model="ir.ui.view">
+            <field name="name">import.lp.wizard.form</field>
+            <field name="model">petadigi.import.lp.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Import Dokumen Laporan Polisi">
+
+                    <!-- Instruksi -->
+                    <div class="alert alert-info" role="alert">
+                        <strong>📋 Petunjuk Import Dokumen LP</strong>
+                        <ol style="margin-top:8px; margin-bottom:0; padding-left:18px;">
+                            <li>Pilih jenis Laporan Polisi sesuai dokumen yang akan diupload (<strong>LP A</strong> atau <strong>LP B</strong>).</li>
+                            <li>Upload file dokumen dalam format <strong>.docx</strong> (Microsoft Word).</li>
+                            <li>Klik tombol <strong>"Parse Dokumen"</strong> untuk membaca dan mengekstrak data secara otomatis.</li>
+                            <li>Setelah proses parsing, Anda akan diarahkan ke halaman preview untuk melengkapi data yang belum terbaca.</li>
+                        </ol>
+                    </div>
+
+                    <group string="UPLOAD DOKUMEN">
+                        <field name="jenis_lp"
+                               widget="radio"
+                               options="{'horizontal': true}"
+                               string="Jenis LP"/>
+                        <field name="dokumen"
+                               widget="binary"
+                               filename="dokumen_filename"
+                               string="File Dokumen (.docx)"/>
+                        <field name="dokumen_filename" invisible="1"/>
+                    </group>
+
+                    <footer>
+                        <button name="action_parse_dokumen"
+                                string="Parse Dokumen"
+                                type="object"
+                                class="btn-primary"
+                                data-hotkey="q"/>
+                        <button string="Batal"
+                                class="btn-secondary"
+                                special="cancel"/>
+                    </footer>
+
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION untuk membuka wizard -->
+        <record id="action_import_lp_wizard" model="ir.actions.act_window">
+            <field name="name">Import Dokumen LP</field>
+            <field name="res_model">petadigi.import.lp.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

@@ -17,4 +17,4 @@ access_petadigi_jenis_tkp,petadigi.jenis_tkp,model_petadigi_jenis_tkp,,1,1,1,1
 access_petadigi_subdit,petadigi.subdit,model_petadigi_subdit,,1,1,1,1
 access_petadigi_kriminalitas,petadigi.kriminalitas,model_petadigi_kriminalitas,,1,1,1,1
 access_petadigi_sub_status_perkara,petadigi.sub_status_perkara,model_petadigi_sub_status_perkara,,1,1,1,1
-access_petadigi_dashboard,petadigi.dashboard,model_petadigi_dashboard,,1,1,1,1
+access_petadigi_import_lp_wizard,petadigi.import.lp.wizard,model_petadigi_import_lp_wizard,,1,1,1,1

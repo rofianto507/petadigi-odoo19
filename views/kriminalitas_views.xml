@@ -14,6 +14,7 @@
                     <field name="tanggal_kejadian"/>
                     <field name="subdit_id"/>
                     <field name="polres_id"/>
+                     
                 </list>
             </field>
         </record>
