@@ -47,8 +47,9 @@
             'petadigi/static/src/js/latlon_leaflet_widget.js',
             'petadigi/static/src/xml/latlon_leaflet_widget.xml',
             'petadigi/static/src/css/latlon_leaflet_widget.css',
-            'petadigi/static/src/js/kriminalitas_list_view.js',
             'petadigi/static/src/xml/kriminalitas_list_view.xml',
+            'petadigi/static/src/js/kriminalitas_list_view.js',
+            
         ],
     },
     'installable': True,
