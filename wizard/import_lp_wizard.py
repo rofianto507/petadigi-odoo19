@@ -227,7 +227,7 @@ class ImportLpWizard(models.TransientModel):
             })
             # Log pesan di chatter
             record.message_post(
-                body='📄 Dokumen <b>%s</b> berhasil diimport dan dilampirkan.' % filename,
+                body=Markup('📄 Dokumen <b>%s</b> berhasil diimport dan dilampirkan.') % filename, #fungsi markup adalah untuk mengubah teks biasa menjadi format HTML
                 attachment_ids=self.env['ir.attachment'].search([
                     ('res_model', '=', 'petadigi.kriminalitas'),
                     ('res_id', '=', record.id),
