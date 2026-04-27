@@ -66,6 +66,23 @@ class ImportLpWizard(models.TransientModel):
         ('PROSES', 'PROSES'),
         ('SELESAI', 'SELESAI'),
     ], string='Status Perkara', default='PROSES')
+    sub_status_perkara_id = fields.Many2one(
+        'petadigi.sub_status_perkara', string='Sub Status Perkara',
+        domain="[('status_perkara', '=', status_perkara)]"
+    )
+    tanggal_selesai = fields.Datetime('Tanggal Selesai')
+    is_perkara_selesai = fields.Boolean(compute='_compute_is_perkara_selesai')
+
+    @api.depends('status_perkara')
+    def _compute_is_perkara_selesai(self):
+        for rec in self:
+            rec.is_perkara_selesai = (rec.status_perkara == 'SELESAI')
+    
+    @api.onchange('status_perkara')
+    def _onchange_status_perkara(self):
+        self.sub_status_perkara_id = False
+        if self.status_perkara != 'SELESAI':
+            self.tanggal_selesai = False
 
     # ── ACTIONS ──────────────────────────────────────────────────────────────
 

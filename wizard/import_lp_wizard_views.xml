@@ -51,8 +51,10 @@
 
                         <!-- HASIL PARSING -->
                         <group string="DATA DARI DOKUMEN">
+                            <field name="no_lp" string="No. LP" colspan="2"/>
+                        </group>
+                        <group>
                             <group>
-                                <field name="no_lp" string="No. LP"/>
                                 <field name="tanggal_kejadian" string="Waktu Kejadian"/>
                                 <field name="tanggal_laporan" string="Tanggal Laporan"/>
                                 <field name="pelapor" string="Pelapor"/>
@@ -67,15 +69,18 @@
                             </group>
                         </group>
 
-                        <group string="TINDAK PIDANA &amp; BARANG BUKTI">
+                        <group string="TINDAK PIDANA APA">
                             <field name="tindak_pidana" string="Tindak Pidana" nolabel="1"
                                    colspan="2"/>
+                        </group>
+                        <group string="NAMA DAN ALAMAT SAKSI-SAKSI">
+                            <field name="saksi" string="Saksi" nolabel="1" colspan="2"/>
+                        </group>
+                        <group string="BARANG BUKTI">
                             <field name="barang_bukti" string="Barang Bukti" nolabel="1"
                                    colspan="2"/>
-                        </group>
-
-                        <group string="SAKSI &amp; URAIAN SINGKAT">
-                            <field name="saksi" string="Saksi" nolabel="1" colspan="2"/>
+                        </group>                     
+                        <group string="URAIAN SINGKAT YANG DILAPORKAN">
                             <field name="uraian_singkat" string="Uraian Singkat" nolabel="1"
                                    colspan="2"/>
                         </group>
@@ -104,6 +109,9 @@
                             </group>
                             <group string="STATUS PERKARA">
                                 <field name="status_perkara"/>
+                                <field name="sub_status_perkara_id" domain="[('status_perkara', '=', status_perkara)]"/>
+                                <field name="is_perkara_selesai" invisible="1"/>
+                                <field name="tanggal_selesai" invisible="not is_perkara_selesai"/>
                             </group>
                         </group>
 
