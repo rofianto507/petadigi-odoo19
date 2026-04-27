@@ -68,12 +68,6 @@ class Kriminalitas(models.Model):
         ('SELESAI', 'SELESAI'),
     ], string='Status Perkara', tracking=True, required=True)
     
-    sub_perkara_id = fields.Many2one(
-        'petadigi.sub_status_perkara',
-        string='Sub Status Perkara',
-        domain="[('perkara_id', '=', perkara_id)]",
-        tracking=True
-    )
     sub_status_perkara_id = fields.Many2one(
         'petadigi.sub_status_perkara',
         string='Sub Status Perkara',
