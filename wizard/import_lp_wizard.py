@@ -41,7 +41,7 @@ class ImportLpWizard(models.TransientModel):
     barang_bukti = fields.Text('Barang Bukti')
     uraian_singkat = fields.Text('Uraian Singkat')
     pelapor = fields.Text('Pelapor')
-    penanggung_jawab = fields.Text('Penanggung Jawab')
+    penanggung_jawab = fields.Char('Penanggung Jawab')
 
     # ── STEP 2: ISI MANUAL ───────────────────────────────────────────────────
     polres_id = fields.Many2one('petadigi.polres', string='Polres')
@@ -75,11 +75,12 @@ class ImportLpWizard(models.TransientModel):
     is_perkara_selesai = fields.Boolean(compute='_compute_is_perkara_selesai')
     jenis_tkp_id = fields.Many2one('petadigi.jenis_tkp', string='Jenis TKP')
     subdit_id = fields.Many2one('petadigi.subdit', string='Tujuan')
+
     @api.depends('status_perkara')
     def _compute_is_perkara_selesai(self):
         for rec in self:
             rec.is_perkara_selesai = (rec.status_perkara == 'SELESAI')
-    
+
     @api.onchange('status_perkara')
     def _onchange_status_perkara(self):
         self.sub_status_perkara_id = False
@@ -104,26 +105,27 @@ class ImportLpWizard(models.TransientModel):
         if self.jenis_lp == 'LP A':
             from ..utils import parser_lp_a
             hasil = parser_lp_a.parse(file_bytes)
+        elif self.jenis_lp == 'LP B':
+            from ..utils import parser_lp_b
+            hasil = parser_lp_b.parse(file_bytes)
         else:
-            raise UserError('Parser LP B belum tersedia.')
+            raise UserError('Jenis LP tidak dikenali.')
 
         if not hasil:
             raise UserError(
                 'Dokumen tidak dapat diparse. '
-                'Pastikan format dokumen sesuai template LP A.'
+                'Pastikan format dokumen sesuai template %s.' % self.jenis_lp
             )
 
-        # Tulis hasil parsing ke field wizard
         vals = {'stage': 'preview'}
         for key, val in hasil.items():
             if key.endswith('_raw'):
-                continue  # skip field bantu
+                continue
             if hasattr(self, key) and val is not None:
                 vals[key] = val
 
         self.write(vals)
 
-        # Kembalikan action untuk refresh wizard (tetap di popup yang sama)
         return {
             'type': 'ir.actions.act_window',
             'name': 'Preview Dokumen ' + self.jenis_lp,
@@ -131,7 +133,7 @@ class ImportLpWizard(models.TransientModel):
             'res_id': self.id,
             'view_mode': 'form',
             'target': 'new',
-            'context':{'dialog_size': 'large'},
+            'context': {'dialog_size': 'large'},
         }
 
     def action_simpan(self):
@@ -176,7 +178,6 @@ class ImportLpWizard(models.TransientModel):
 
         record = self.env['petadigi.kriminalitas'].create(vals)
 
-        # Tutup wizard dan buka record yang baru dibuat
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'petadigi.kriminalitas',
