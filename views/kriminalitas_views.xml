@@ -46,7 +46,27 @@
                     <filter string="LP B" name="filter_lp_b" domain="[('jenis_lp','=','LP B')]" />
                     <separator/>
                     <filter string="Tanggal Kejadian" name="filter_tanggal_kejadian" date="tanggal_kejadian"/>
+                    <group>
+                        <filter string="Tujuan" name="groupby_tujuan" context="{'group_by': 'subdit_id'}"/>
+                        <filter string="Kategori" name="groupby_kategori" context="{'group_by': 'kategori_id'}"/>
+                        <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>
+                        <filter string="Status Perkara" name="groupby_status_perkara" context="{'group_by': 'status_perkara'}"/>
+                    </group>
                 </search>
+            </field>
+        </record>
+        <!-- Graph VIEW Kriminalitas -->
+        <record id="view_petadigi_kriminalitas_graph" model="ir.ui.view">
+            <field name="name">kriminalitas.graph.petadigi</field>
+            <field name="model">petadigi.kriminalitas</field>
+            <field name="arch" type="xml">
+                <graph string="Grafik Kriminalitas" type="bar">
+                    <field name="tanggal_kejadian" interval="month"/>
+                    <field name="kategori_id"/>
+                    <field name="status_perkara"/>
+                    <field name="jenis_lp"/>
+                    <field name="id" type="measure"/>
+                </graph>
             </field>
         </record>
         <!-- FORM VIEW Kriminalitas -->
@@ -130,7 +150,12 @@
         <record id="action_petadigi_kriminalitas" model="ir.actions.act_window">
             <field name="name">Kriminalitas</field>
             <field name="res_model">petadigi.kriminalitas</field>
-            <field name="view_mode">list,form</field>
+            <field name="view_mode">list,form,graph</field>
+            <field name="view_ids" eval="[(5, 0, 0), 
+                (0, 0, {'view_mode': 'list', 'view_id': ref('view_petadigi_kriminalitas_list')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_petadigi_kriminalitas_form')}),
+                (0, 0, {'view_mode': 'graph', 'view_id': ref('view_petadigi_kriminalitas_graph')}),
+            ]"/>
             <field name="search_view_id" ref="petadigi.view_petadigi_kriminalitas_search"/>
         </record>
     </data>
