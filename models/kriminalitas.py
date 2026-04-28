@@ -79,6 +79,8 @@ class Kriminalitas(models.Model):
         compute='_compute_is_perkara_selesai',
         store=False
     )
+     
+
     @api.depends('status_perkara')
     def _compute_is_perkara_selesai(self):
         for rec in self:
@@ -91,7 +93,7 @@ class Kriminalitas(models.Model):
             'res_model': 'petadigi.import.lp.wizard',
             'view_mode': 'form',
             'target': 'new',
-            
+
         }
     
     @api.onchange('polres_id')

@@ -5,15 +5,14 @@
             <field name="name">kriminalitas.list.petadigi</field>
             <field name="model">petadigi.kriminalitas</field>
             <field name="arch" type="xml">
-           
                 <list string="Data Kriminalitas">
                     <header>
-                <button name="action_open_import_wizard" 
-                        string="Import LP" 
-                        type="object" 
-                        class="btn-secondary" 
-                        display="always"/>
-            </header>
+                        <button name="action_open_import_wizard" 
+                            string="Import LP" 
+                            type="object" 
+                            class="btn-secondary" 
+                            display="always"/>
+                    </header>
                     <field name="jenis_lp"/>
                     <field name="no_lp"/>
                     <field name="kategori_id"/>
@@ -21,11 +20,35 @@
                     <field name="tanggal_kejadian"/>
                     <field name="subdit_id"/>
                     <field name="polres_id"/>
-                     
+                    <field name="status_perkara" widget="badge"
+                        decoration-success="status_perkara == 'SELESAI'"
+                        decoration-warning="status_perkara == 'PROSES'"/>
                 </list>
+                
             </field>
         </record>
-
+        <!-- Search VIEW Kriminalitas -->
+        <record id="view_petadigi_kriminalitas_search" model="ir.ui.view">
+            <field name="name">kriminalitas.search.petadigi</field>
+            <field name="model">petadigi.kriminalitas</field>
+            <field name="arch" type="xml">
+                <search string="Cari Data Kriminalitas">
+                    <field name="no_lp"/>
+                    <field name="tempat_kejadian"/>
+                    <field name="pelapor"/>
+                    <field name="terlapor"/>
+                    <field name="tindak_pidana"/>
+                    <separator/>                    
+                    <filter string="Status PROSES" name="filter_status_proses" domain="[('status_perkara','=','PROSES')]" />
+                    <filter string="Status SELESAI" name="filter_status_selesai" domain="[('status_perkara','=','SELESAI')]" />
+                    <separator/>
+                    <filter string="LP A" name="filter_lp_a" domain="[('jenis_lp','=','LP A')]" />
+                    <filter string="LP B" name="filter_lp_b" domain="[('jenis_lp','=','LP B')]" />
+                    <separator/>
+                    <filter string="Tanggal Kejadian" name="filter_tanggal_kejadian" date="tanggal_kejadian"/>
+                </search>
+            </field>
+        </record>
         <!-- FORM VIEW Kriminalitas -->
         <record id="view_petadigi_kriminalitas_form" model="ir.ui.view">
             <field name="name">kriminalitas.form.petadigi</field>
@@ -108,6 +131,7 @@
             <field name="name">Kriminalitas</field>
             <field name="res_model">petadigi.kriminalitas</field>
             <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="petadigi.view_petadigi_kriminalitas_search"/>
         </record>
     </data>
 </odoo>
