@@ -47,7 +47,14 @@
             'petadigi/static/src/js/latlon_leaflet_widget.js',
             'petadigi/static/src/xml/latlon_leaflet_widget.xml',
             'petadigi/static/src/css/latlon_leaflet_widget.css',
-
+             # Dashboard modular
+            'petadigi/static/src/js/dashboard_helpers.js',
+            'petadigi/static/src/js/dashboard_layer_umum.js',
+            'petadigi/static/src/js/dashboard_layer_kriminal.js',
+            'petadigi/static/src/js/dashboard_layer_lalin.js',
+            'petadigi/static/src/js/dashboard_layer_bencana.js',
+            'petadigi/static/src/js/dashboard_layer_lokasi.js',
+            'petadigi/static/src/js/dashboard_map.js',
         ],
     },
     'installable': True,
