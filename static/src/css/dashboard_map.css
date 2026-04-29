@@ -290,7 +290,7 @@
 }
 
 .petadigi-map-container {
-    flex: 1;
+    /* flex: 1; ✅ Map container mengisi sisa ruang yang tersedia */
     width: 100%;
     min-height: 0;           /* ✅ Wajib agar flex child bisa shrink */
     outline: none;           /* ✅ Hilangkan focus ring bawaan browser */
