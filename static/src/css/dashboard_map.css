@@ -446,3 +446,63 @@
 .petadigi-coming-soon i { font-size: 16px; color: #888; margin-bottom: 4px; }
 .petadigi-coming-soon strong { font-size: 13px; color: #2c3e50; }
 .petadigi-coming-soon span { color: #999; font-size: 11px; }
+/* ════════════════════════════════════════════
+   LEGENDA PETA
+════════════════════════════════════════════ */
+.petadigi-legend {
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 10px 14px 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+    font-size: 12px;
+    min-width: 170px;
+    margin: 0 8px 8px 0;
+    border-top: 3px solid #e74c3c;
+}
+
+.petadigi-legend--kriminal {
+    border-top-color: #e74c3c;
+}
+
+.petadigi-legend-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.petadigi-legend--kriminal .petadigi-legend-title i {
+    color: #e74c3c;
+}
+
+.petadigi-legend-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.petadigi-legend-list li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.petadigi-legend-swatch {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    border: 1px solid rgba(0,0,0,0.12);
+}
+
+.petadigi-legend-label {
+    color: #444;
+    font-size: 12px;
+    line-height: 1;
+}
