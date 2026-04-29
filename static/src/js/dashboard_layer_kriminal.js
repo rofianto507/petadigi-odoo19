@@ -77,7 +77,7 @@ export async function loadModeKriminal(ctx) {
     const { tahun, kabupatenId } = _getActiveFilters(ctx);
 
     try {
-        // 1. Ambil data kriminalitas — group by kabupaten_id
+        // 1. Bangun domain filter
         const domain = [];
         if (tahun) {
             domain.push(['tanggal_kejadian', '>=', `${tahun}-01-01 00:00:00`]);
@@ -87,11 +87,13 @@ export async function loadModeKriminal(ctx) {
             domain.push(['kabupaten_id', '=', kabupatenId]);
         }
 
-        const groups = await ctx.orm.readGroup(
+        // 2. Ambil jumlah kasus per kabupaten via orm.call (read_group)
+        //    orm.readGroup tidak tersedia di Odoo 17+/19, gunakan orm.call
+        const groups = await ctx.orm.call(
             'petadigi.kriminalitas',
-            domain,
-            ['kabupaten_id'],
-            ['kabupaten_id'],
+            'read_group',
+            [domain, ['kabupaten_id'], ['kabupaten_id']],
+            { lazy: false }
         );
 
         // Buat map: kabupaten_id → jumlah kasus
@@ -103,7 +105,7 @@ export async function loadModeKriminal(ctx) {
             }
         }
 
-        // 2. Ambil geometry semua kabupaten
+        // 3. Ambil geometry semua kabupaten
         const kabDomain = kabupatenId ? [['id', '=', kabupatenId]] : [];
         const records = await ctx.orm.searchRead(
             'petadigi.kabupaten',
@@ -138,7 +140,7 @@ export async function loadModeKriminal(ctx) {
 
         if (features.length === 0) return;
 
-        // 3. Render choropleth
+        // 4. Render choropleth
         const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
             style: (feature) => ({
                 color: '#555555',
@@ -189,9 +191,9 @@ export async function loadModeKriminal(ctx) {
 
 // ── Popup ────────────────────────────────────────────────────────────────────
 function _showKriminalPopup(ctx, e, props, tahun) {
-    const tipeLabel   = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
-    const tahunLabel  = tahun ? `Tahun ${tahun}` : 'Semua Tahun';
-    const kasusLabel  = props.jumlah_kasus > 0
+    const tipeLabel  = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+    const tahunLabel = tahun ? `Tahun ${tahun}` : 'Semua Tahun';
+    const kasusLabel = props.jumlah_kasus > 0
         ? `<strong style="color:${props.color};">${props.jumlah_kasus.toLocaleString('id-ID')} Kasus</strong>`
         : `<strong style="color:#27ae60;">Tidak Ada Kasus</strong>`;
 
