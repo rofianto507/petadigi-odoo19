@@ -6,7 +6,7 @@ import { useService } from "@web/core/utils/hooks";
 
 import { initFilters } from "./dashboard_helpers";
 import { loadKabupatenLayer } from "./dashboard_layer_umum";
-import { loadModeKriminal } from "./dashboard_layer_kriminal";
+import { loadModeKriminal, removeKriminalLegend } from "./dashboard_layer_kriminal";
 import { loadModeLayLin } from "./dashboard_layer_lalin";
 import { loadModeBencana } from "./dashboard_layer_bencana";
 import { loadModeLokasi } from "./dashboard_layer_lokasi";
@@ -157,6 +157,7 @@ export class DashboardMap extends Component {
         if (this.desaLabelGroup)      this.desaLabelGroup.clearLayers();
         if (this.markerLayerGroup)    this.markerLayerGroup.clearLayers();
         if (this.comingSoonControl)   { this.comingSoonControl.remove(); this.comingSoonControl = null; }
+        removeKriminalLegend(this);
     }
 }
 
