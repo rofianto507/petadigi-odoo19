@@ -73,9 +73,7 @@ function _getActiveFilters(ctx) {
 export async function loadModeKriminal(ctx) {
     // Tampilkan legenda
     addKriminalLegend(ctx);
-
     const { tahun, kabupatenId } = _getActiveFilters(ctx);
-
     try {
         // 1. Bangun domain filter
         const domain = [];
@@ -88,20 +86,22 @@ export async function loadModeKriminal(ctx) {
         }
 
         // 2. Ambil jumlah kasus per kabupaten via orm.call (read_group)
-        //    orm.readGroup tidak tersedia di Odoo 17+/19, gunakan orm.call
         const groups = await ctx.orm.call(
             'petadigi.kriminalitas',
             'read_group',
             [domain, ['kabupaten_id'], ['kabupaten_id']],
             { lazy: false }
         );
-
         // Buat map: kabupaten_id → jumlah kasus
         const kasusMap = {};
         for (const g of groups) {
-            if (g.kabupaten_id) {
-                const kabId = Array.isArray(g.kabupaten_id) ? g.kabupaten_id[0] : g.kabupaten_id;
-                kasusMap[kabId] = g.kabupaten_id_count;
+            if (g.kabupaten_id && Array.isArray(g.kabupaten_id) && g.kabupaten_id.length > 0) {
+                const kabId = g.kabupaten_id[0];
+                kasusMap[kabId] = g.__count || 0;
+            } else if (typeof g.kabupaten_id === 'number') {
+                kasusMap[g.kabupaten_id] = g.__count || 0;
+            } else {
+                console.warn('[loadModeKriminal] kabupaten_id tidak valid:', g.kabupaten_id);
             }
         }
 
@@ -112,7 +112,6 @@ export async function loadModeKriminal(ctx) {
             kabDomain,
             ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
         );
-
         const features = records
             .filter(r => r.geometry)
             .map(r => {
@@ -137,8 +136,10 @@ export async function loadModeKriminal(ctx) {
                 }
             })
             .filter(Boolean);
-
-        if (features.length === 0) return;
+        if (features.length === 0) {
+            console.warn('[loadModeKriminal] Tidak ada fitur yang bisa dirender.');
+            return;
+        }
 
         // 4. Render choropleth
         const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
@@ -183,7 +184,6 @@ export async function loadModeKriminal(ctx) {
 
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-
     } catch (error) {
         console.error("Gagal memuat data kriminalitas:", error);
     }
