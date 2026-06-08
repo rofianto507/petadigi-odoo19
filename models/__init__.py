@@ -16,3 +16,7 @@ from . import jenis_tkp
 from . import subdit
 from . import kriminalitas
 from . import sub_status_perkara
+from . import kasus_menonjol
+from . import bencana
+from . import lalu_lintas
+from . import lokasi_penting

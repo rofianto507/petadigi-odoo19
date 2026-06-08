@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- LIST VIEW -->
+        <record id="view_petadigi_lalu_lintas_list" model="ir.ui.view">
+            <field name="name">lalu_lintas.list.petadigi</field>
+            <field name="model">petadigi.lalu_lintas</field>
+            <field name="arch" type="xml">
+                <list string="Data Lalu Lintas">
+                    <field name="code"/>
+                    <field name="nama_lokasi"/>
+                    <field name="kategori_id"/>
+                    <field name="jenis_jalan_id"/>
+                    <field name="tanggal_kejadian"/>
+                    <field name="kabupaten_id"/>
+                    <field name="kecamatan_id"/>
+                    <field name="penanggung_jawab"/>
+                    <field name="state" widget="badge"
+                        decoration-success="state == 'SELESAI'"
+                        decoration-warning="state == 'PROSES'"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- SEARCH VIEW -->
+        <record id="view_petadigi_lalu_lintas_search" model="ir.ui.view">
+            <field name="name">lalu_lintas.search.petadigi</field>
+            <field name="model">petadigi.lalu_lintas</field>
+            <field name="arch" type="xml">
+                <search string="Cari Data Lalu Lintas">
+                    <field name="code"/>
+                    <field name="nama_lokasi"/>
+                    <field name="penanggung_jawab"/>
+                    <field name="keterangan"/>
+                    <separator/>
+                    <filter string="Status PROSES" name="filter_proses" domain="[('state','=','PROSES')]"/>
+                    <filter string="Status SELESAI" name="filter_selesai" domain="[('state','=','SELESAI')]"/>
+                    <separator/>
+                    <filter string="Tanggal Kejadian" name="filter_tanggal_kejadian" date="tanggal_kejadian"/>
+                    <group>
+                        <filter string="Kategori" name="groupby_kategori" context="{'group_by': 'kategori_id'}"/>
+                        <filter string="Jenis Jalan" name="groupby_jenis_jalan" context="{'group_by': 'jenis_jalan_id'}"/>
+                        <filter string="Kabupaten" name="groupby_kabupaten" context="{'group_by': 'kabupaten_id'}"/>
+                        <filter string="State" name="groupby_state" context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- GRAPH VIEW -->
+        <record id="view_petadigi_lalu_lintas_graph" model="ir.ui.view">
+            <field name="name">lalu_lintas.graph.petadigi</field>
+            <field name="model">petadigi.lalu_lintas</field>
+            <field name="arch" type="xml">
+                <graph string="Grafik Lalu Lintas" type="bar">
+                    <field name="kategori_id"/>
+                    <field name="jenis_jalan_id"/>
+                    <field name="state"/>
+                    <field name="id" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- FORM VIEW -->
+        <record id="view_petadigi_lalu_lintas_form" model="ir.ui.view">
+            <field name="name">lalu_lintas.form.petadigi</field>
+            <field name="model">petadigi.lalu_lintas</field>
+            <field name="arch" type="xml">
+                <form string="Data Lalu Lintas">
+                    <header>
+                        <button name="action_set_selesai" string="Selesai" type="object"
+                            class="btn-primary" invisible="state == 'SELESAI'"/>
+                        <button name="action_set_proses" string="Kembalikan ke Proses" type="object"
+                            class="btn-secondary" invisible="state == 'PROSES'"/>
+                        <field name="state" widget="statusbar" statusbar_visible="PROSES,SELESAI"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="code" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="nama_lokasi"/>
+                                <field name="tanggal_kejadian"/>
+                                <field name="kategori_id"/>
+                                <field name="jenis_jalan_id"/>
+                                <field name="penanggung_jawab"/>
+                            </group>
+                            <group>
+                                <field name="sumber_dokumen_id"/>
+                                <field name="foto" widget="image" class="oe_avatar"
+                                    options="{'preview_image': 'foto'}"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="WILAYAH">
+                                <field name="kabupaten_id"/>
+                                <field name="kecamatan_id" domain="[('kabupaten_id', '=', kabupaten_id)]"/>
+                                <field name="desa_id" domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                            </group>
+                        </group>
+
+                        <div>
+                            <field name="latitude" widget="latlong_map_picker"
+                                class="latlong-mappicker-wrapper"
+                                nolabel="1"/>
+                        </div>
+
+                        <group>
+                            <field name="latitude" string="Latitude"/>
+                            <field name="longitude" string="Longitude"/>
+                        </group>
+
+                        <notebook>
+                            <page string="Detail Lalu Lintas">
+                                <group>
+                                    <field name="penyebab" />
+                                    <field name="tindak_lanjut" />
+                                    <field name="keterangan" />
+                                </group>
+                                 
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION -->
+        <record id="action_petadigi_lalu_lintas" model="ir.actions.act_window">
+            <field name="name">Lalu Lintas</field>
+            <field name="res_model">petadigi.lalu_lintas</field>
+            <field name="view_mode">list,form,graph</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'list', 'view_id': ref('view_petadigi_lalu_lintas_list')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_petadigi_lalu_lintas_form')}),
+                (0, 0, {'view_mode': 'graph', 'view_id': ref('view_petadigi_lalu_lintas_graph')}),
+            ]"/>
+            <field name="search_view_id" ref="petadigi.view_petadigi_lalu_lintas_search"/>
+        </record>
+    </data>
+</odoo>

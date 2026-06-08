@@ -1,153 +1,108 @@
 /* ════════════════════════════════════════════
-   LAYOUT UTAMA DASHBOARD
+   LAYOUT UTAMA
+   flex-row: sidebar | main-content
 ════════════════════════════════════════════ */
 .petadigi-dashboard {
     display: flex;
-    flex-direction: column;
-    /* height: 100% mengisi parent Odoo action container,
-       TIDAK overlap navbar Odoo di atas */
+    flex-direction: row;
     height: 100%;
     width: 100%;
-    font-family: inherit;
-    background: #f4f5f7;
     overflow: hidden;
-}
-
-/* ── TOOLBAR ── */
-.petadigi-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 52px;
-    min-height: 52px;
-    flex-shrink: 0;          /* ✅ Cegah toolbar menyusut/terdorong */
-    position: relative;      /* ✅ Pastikan toolbar selalu di atas */
-    background: #2c3e50;
-    color: #ffffff;
-    padding: 0 16px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    z-index: 1000;
-}
-
-.petadigi-toolbar-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.petadigi-toolbar-title {
-    font-size: 15px;
-    font-weight: 700;
-    letter-spacing: 0.3px;
-    white-space: nowrap;
-}
-
-.petadigi-sidebar-toggle {
-    background: transparent;
-    border: none;
-    color: #ffffff;
-    font-size: 18px;
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 4px;
-    transition: background 0.2s;
-}
-.petadigi-sidebar-toggle:hover {
-    background: rgba(255,255,255,0.15);
-}
-
-.petadigi-toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.petadigi-filter-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #bdc3c7;
-    font-size: 13px;
-}
-
-.petadigi-select {
-    background: rgba(255,255,255,0.12);
-    color: #ffffff;
-    border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 5px;
-    padding: 5px 10px;
-    font-size: 12px;
-    cursor: pointer;
-    outline: none;
-    transition: border 0.2s;
-}
-.petadigi-select option {
-    background: #2c3e50;
-    color: #fff;
-}
-.petadigi-select:hover,
-.petadigi-select:focus {
-    border-color: rgba(255,255,255,0.6);
-}
-
-/* ── MAIN (SIDEBAR + MAP) ── */
-.petadigi-main {
-    display: flex;
-    flex: 1;
-    overflow: hidden;        /* ✅ Cegah konten meluap ke luar toolbar */
-    min-height: 0;           /* ✅ Wajib untuk flex child dengan overflow */
+    background: #f0f2f5;
+    font-family: inherit;
 }
 
 /* ════════════════════════════════════════════
    SIDEBAR
 ════════════════════════════════════════════ */
 .petadigi-sidebar {
-    width: 200px;
-    min-width: 200px;
+    width: 190px;
+    min-width: 190px;
     background: #1a252f;
     color: #ecf0f1;
     display: flex;
     flex-direction: column;
+    flex-shrink: 0;
     transition: width 0.3s ease, min-width 0.3s ease;
     overflow: hidden;
-    flex-shrink: 0;          /* ✅ Sidebar tidak menyusut */
-    z-index: 999;
+    z-index: 10;
 }
 
 .petadigi-sidebar.collapsed {
-    width: 52px;
-    min-width: 52px;
+    width: 48px;
+    min-width: 48px;
 }
 
+/* ── Collapse button di atas ── */
+.petadigi-sidebar-top {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 8px 4px;
+    flex-shrink: 0;
+}
+
+.petadigi-collapse-btn {
+    background: transparent;
+    border: none;
+    color: #7f8c8d;
+    font-size: 14px;
+    cursor: pointer;
+    padding: 5px 7px;
+    border-radius: 4px;
+    transition: background 0.2s, color 0.2s;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.petadigi-collapse-btn:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ecf0f1;
+}
+
+/* Saat collapsed: icon rotate dan center */
+.petadigi-sidebar.collapsed .petadigi-sidebar-top {
+    justify-content: center;
+    padding: 8px 0 4px;
+}
+.petadigi-sidebar.collapsed .petadigi-collapse-btn i {
+    transform: rotate(180deg);
+}
+
+/* ── Section title ── */
 .petadigi-sidebar-section-title {
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 1.5px;
     color: #7f8c8d;
-    padding: 16px 14px 6px;
+    padding: 8px 14px 4px;
     white-space: nowrap;
     overflow: hidden;
+    flex-shrink: 0;
 }
 .petadigi-sidebar.collapsed .petadigi-sidebar-section-title {
     opacity: 0;
+    padding: 0;
+    height: 0;
 }
 
-/* ── NAV ITEMS ── */
+/* ── Nav items ── */
 .petadigi-nav {
     display: flex;
     flex-direction: column;
     flex: 1;
-    padding: 4px 0;
+    padding: 2px 0;
+    overflow: hidden;
 }
 
 .petadigi-nav-item {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 11px 14px;
+    padding: 10px 14px;
     color: #bdc3c7;
     text-decoration: none;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     cursor: pointer;
     border-left: 3px solid transparent;
@@ -158,142 +113,381 @@
 }
 
 .petadigi-nav-item i {
-    font-size: 14px;
-    min-width: 18px;
+    font-size: 13px;
+    min-width: 16px;
     text-align: center;
     color: #7f8c8d;
-    transition: color 0.15s;
     flex-shrink: 0;
+    transition: color 0.15s;
 }
 
-.petadigi-nav-item span:not(.petadigi-nav-badge) {
+.petadigi-nav-item span {
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .petadigi-nav-item:hover {
-    background: rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.06);
     color: #ffffff;
 }
-.petadigi-nav-item:hover i {
-    color: #ecf0f1;
-}
+.petadigi-nav-item:hover i { color: #ecf0f1; }
 
 .petadigi-nav-item.active {
-    background: rgba(52, 152, 219, 0.18);
+    background: rgba(52,152,219,0.18);
     color: #ffffff;
     border-left-color: #3498db;
 }
-.petadigi-nav-item.active i {
-    color: #3498db;
-}
+.petadigi-nav-item.active i { color: #3498db; }
 
-/* Badge counter */
-.petadigi-nav-badge {
-    font-size: 10px;
-    font-weight: 700;
-    padding: 1px 6px;
-    border-radius: 10px;
-    color: #fff;
-    flex-shrink: 0;
-}
-.petadigi-nav-badge--red    { background: #e74c3c; }
-.petadigi-nav-badge--orange { background: #e67e22; }
-.petadigi-nav-badge--blue   { background: #2980b9; }
-.petadigi-nav-badge--green  { background: #27ae60; }
-
-/* Sembunyikan teks saat collapsed */
-.petadigi-sidebar.collapsed .petadigi-nav-item span,
-.petadigi-sidebar.collapsed .petadigi-nav-badge {
+/* ── Collapsed state ── */
+.petadigi-sidebar.collapsed .petadigi-nav-item span {
     display: none;
 }
 .petadigi-sidebar.collapsed .petadigi-nav-item {
     justify-content: center;
-    padding: 12px 0;
+    padding: 11px 0;
     border-left: none;
     border-bottom: 3px solid transparent;
 }
 .petadigi-sidebar.collapsed .petadigi-nav-item.active {
-    background: rgba(52, 152, 219, 0.2);
+    background: rgba(52,152,219,0.2);
     border-bottom-color: #3498db;
 }
 .petadigi-sidebar.collapsed .petadigi-nav-item i {
-    font-size: 16px;
+    font-size: 15px;
     min-width: unset;
 }
 
-/* ── Footer sidebar ── */
-.petadigi-sidebar-footer {
-    padding: 12px 8px;
-    border-top: 1px solid rgba(255,255,255,0.07);
+/* ════════════════════════════════════════════
+   MAIN CONTENT AREA
+   flex-column: top-row | kpi | map
+════════════════════════════════════════════ */
+.petadigi-main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 14px;
+    gap: 12px;
+}
+
+/* ── TOP ROW: breadcrumb + filter ── */
+.petadigi-top-row {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
     flex-shrink: 0;
 }
 
-.petadigi-sidebar-collapse-btn {
+.petadigi-breadcrumb-box {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 8px;
-    width: 100%;
-    background: transparent;
-    border: none;
-    color: #7f8c8d;
-    font-size: 12px;
-    cursor: pointer;
-    padding: 6px 8px;
-    border-radius: 4px;
-    transition: background 0.2s, color 0.2s;
-    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
     overflow: hidden;
-}
-.petadigi-sidebar-collapse-btn:hover {
-    background: rgba(255,255,255,0.08);
-    color: #ecf0f1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
+.petadigi-breadcrumb-box i {
+    font-size: 13px;
+    color: #2980b9;
+    flex-shrink: 0;
+}
+
+.petadigi-filter-box {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: #7f8c8d;
+}
+
+.petadigi-filter-box i { color: #95a5a6; }
+
+/* ── Selects di filter box ── */
+.petadigi-select {
+    background: #ffffff;
+    color: #2c3e50;
+    border: 1px solid #d0d7de;
+    border-radius: 5px;
+    padding: 4px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    outline: none;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.petadigi-select option { background: #fff; color: #2c3e50; }
+.petadigi-select:hover,
+.petadigi-select:focus {
+    border-color: #2980b9;
+    box-shadow: 0 0 0 2px rgba(41,128,185,0.15);
+}
+
+/* ── Date range di filter box ── */
+.petadigi-date-range {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border-left: 1px solid #d0d7de;
+    padding-left: 10px;
+}
+
+.petadigi-date-range > i { color: #95a5a6; font-size: 11px; flex-shrink: 0; }
+
+.petadigi-flatpickr-input {
+    background: #ffffff;
+    color: #2c3e50;
+    border: 1px solid #d0d7de;
+    border-radius: 5px;
+    padding: 4px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    outline: none;
+    width: 190px;
+    transition: border 0.2s, box-shadow 0.2s;
+}
+.petadigi-flatpickr-input:hover,
+.petadigi-flatpickr-input:focus {
+    border-color: #2980b9;
+    box-shadow: 0 0 0 2px rgba(41,128,185,0.15);
+}
+
+.petadigi-date-clear {
+    background: transparent;
+    border: none;
+    color: #bbb;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 3px 5px;
+    border-radius: 3px;
+    line-height: 1;
+    flex-shrink: 0;
+    transition: color 0.2s;
+}
+.petadigi-date-clear:hover { color: #e74c3c; }
+
 /* ════════════════════════════════════════════
-   MAP WRAPPER
+   FLATPICKR CALENDAR THEME
 ════════════════════════════════════════════ */
+.flatpickr-calendar {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
+    font-size: 12px !important;
+    border: 1px solid #d0d7de !important;
+}
+
+/* ── Header bulan/tahun ── */
+.flatpickr-months .flatpickr-month {
+    background: #2c3e50 !important;
+    color: #ecf0f1 !important;
+    fill: #ecf0f1 !important;
+    border-radius: 8px 8px 0 0 !important;
+    height: 38px !important;
+}
+.flatpickr-current-month {
+    color: #ecf0f1 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    background: #2c3e50 !important;
+    color: #ecf0f1 !important;
+    border: none !important;
+    outline: none !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    padding: 0 2px !important;
+    -webkit-appearance: none;
+    appearance: none;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months:hover {
+    background: #34495e !important;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months option,
+.flatpickr-monthDropdown-month {
+    background: #2c3e50 !important;
+    color: #ecf0f1 !important;
+}
+.flatpickr-current-month input.cur-year {
+    color: #ecf0f1 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+}
+.flatpickr-current-month input.cur-year:hover { background: #34495e !important; }
+
+/* ── Tombol prev/next ── */
+.flatpickr-prev-month,
+.flatpickr-next-month {
+    color: #ecf0f1 !important;
+    fill: #ecf0f1 !important;
+}
+.flatpickr-prev-month:hover svg,
+.flatpickr-next-month:hover svg { fill: #3498db !important; }
+
+/* ── Header hari ── */
+.flatpickr-weekdays { background: #34495e !important; }
+span.flatpickr-weekday {
+    background: #34495e !important;
+    color: #bdc3c7 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+
+/* ── Hari-hari ── */
+.flatpickr-day {
+    border-radius: 4px !important;
+    font-size: 12px !important;
+}
+.flatpickr-day:hover { background: #eaf3fb !important; border-color: #eaf3fb !important; }
+.flatpickr-day.today { border-color: #2980b9 !important; font-weight: 700 !important; }
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+    background: #2980b9 !important;
+    border-color: #2980b9 !important;
+    color: #fff !important;
+}
+.flatpickr-day.startRange { border-radius: 4px 0 0 4px !important; }
+.flatpickr-day.endRange   { border-radius: 0 4px 4px 0 !important; }
+.flatpickr-day.inRange {
+    background: rgba(41,128,185,0.12) !important;
+    border-color: transparent !important;
+    box-shadow: -5px 0 0 rgba(41,128,185,0.12), 5px 0 0 rgba(41,128,185,0.12) !important;
+    border-radius: 0 !important;
+}
+.flatpickr-day.flatpickr-disabled,
+.flatpickr-day.flatpickr-disabled:hover {
+    color: #c0c0c0 !important;
+}
+
+/* ── 2-bulan side-by-side (range mode) ── */
+.flatpickr-calendar.hasTime .flatpickr-time { border-top-color: #d0d7de !important; }
+
+/* Breadcrumb separator & item */
+.petadigi-breadcrumb-item { font-weight: 600; }
+.petadigi-breadcrumb-sep { opacity: 0.6; font-size: 10px; }
+
+/* ── Filter active summary ── */
+.petadigi-filter-summary {
+    font-size: 11px;
+    color: #7f8c8d;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-height: 16px;
+    padding: 0 2px;
+    margin-top: -4px;
+}
+.petadigi-filter-summary-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #eaf3fb;
+    color: #1a6b9a;
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+.petadigi-filter-summary-chip i { font-size: 10px; opacity: 0.75; }
+.petadigi-filter-summary-sep {
+    color: #bdc3c7;
+    font-size: 10px;
+}
+
+/* ── KPI ROW ── */
+.petadigi-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 1100px) {
+    .petadigi-kpi-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* KPI Card (dibuat oleh JS) */
+.petadigi-kpi-card {
+    background: #ffffff;
+    border-radius: 4px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: box-shadow 0.2s;
+}
+.petadigi-kpi-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.petadigi-kpi-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0eff5;
+    font-size: 20px;
+    flex-shrink: 0;
+     
+}
+
+.petadigi-kpi-body { flex: 1; min-width: 0; }
+
+.petadigi-kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.petadigi-kpi-label {
+    font-size: 11px;
+    color: #95a5a6;
+    margin-top: 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── MAP WRAPPER ── */
 .petadigi-map-wrapper {
     flex: 1;
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    min-width: 0;            /* ✅ Cegah overflow horizontal */
+    min-height: 0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-/* ── Breadcrumb ── */
-.petadigi-breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 14px;
-    background: #ffffff;
-    border-bottom: 1px solid #e0e0e0;
-    font-size: 12px;
-    color: #7f8c8d;
-    flex-shrink: 0;          /* ✅ Breadcrumb tidak menyusut */
-}
-
-.petadigi-breadcrumb-item {
-    color: #555;
-    font-weight: 500;
-}
-.petadigi-breadcrumb-item.active {
-    color: #2c3e50;
-    font-weight: 600;
-}
-.petadigi-breadcrumb-sep {
-    font-size: 10px;
-    color: #bbb;
+/* Mode selain Peta Umum: map tinggi tetap agar konten di bawah bisa tampil */
+.petadigi-map-wrapper--fixed {
+    flex: none;
+    height: 500px;
 }
 
 .petadigi-map-container {
-    /* flex: 1; ✅ Map container mengisi sisa ruang yang tersedia */
+    flex: 1;
     width: 100%;
-    min-height: 0;           /* ✅ Wajib agar flex child bisa shrink */
-    outline: none;           /* ✅ Hilangkan focus ring bawaan browser */
+    min-height: 0;
+    outline: none;
 }
 
 /* ════════════════════════════════════════════
@@ -304,7 +498,6 @@
     border: none !important;
     box-shadow: none !important;
 }
-
 .kabupaten-label span {
     font-size: 11px;
     font-weight: 600;
@@ -315,10 +508,8 @@
     line-height: 1.3;
     display: inline-block;
     text-shadow:
-        -1px -1px 0 #fff,
-         1px -1px 0 #fff,
-        -1px  1px 0 #fff,
-         1px  1px 0 #fff;
+        -1px -1px 0 #fff,  1px -1px 0 #fff,
+        -1px  1px 0 #fff,  1px  1px 0 #fff;
 }
 
 /* ════════════════════════════════════════════
@@ -330,7 +521,6 @@
     overflow: hidden;
     box-shadow: 0 4px 16px rgba(0,0,0,0.18);
 }
-
 .petadigi-leaflet-popup .leaflet-popup-content {
     margin: 0;
     min-width: 220px;
@@ -353,7 +543,6 @@
     padding: 10px 14px;
     background: #ffffff;
 }
-
 .petadigi-popup-body table {
     width: 100%;
     border-collapse: collapse;
@@ -375,7 +564,6 @@
     gap: 6px;
 }
 .petadigi-popup-body table td i { color: #3498db; width: 14px; text-align: center; }
-
 .petadigi-leaflet-popup .leaflet-popup-tip { background: #34495e; }
 
 .petadigi-popup-footer {
@@ -409,7 +597,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 14px;
+    padding: 6px 12px;
     background: #ffffff;
     color: #34495e;
     border: 1.5px solid #bbb;
@@ -417,7 +605,7 @@
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     transition: background 0.2s, color 0.2s;
     margin-top: 8px;
     white-space: nowrap;
@@ -428,24 +616,24 @@
     border-color: #34495e;
 }
 
-/* ── Coming Soon overlay ── */
+/* ── Coming Soon ── */
 .petadigi-coming-soon {
     background: #ffffff;
     border-radius: 8px;
-    padding: 12px 16px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    padding: 10px 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
     gap: 2px;
     font-size: 12px;
     border-left: 4px solid #888;
-    min-width: 160px;
+    min-width: 150px;
     margin: 8px;
 }
-.petadigi-coming-soon i { font-size: 16px; color: #888; margin-bottom: 4px; }
-.petadigi-coming-soon strong { font-size: 13px; color: #2c3e50; }
+.petadigi-coming-soon i { font-size: 15px; color: #888; margin-bottom: 3px; }
+.petadigi-coming-soon strong { font-size: 12px; color: #2c3e50; }
 .petadigi-coming-soon span { color: #999; font-size: 11px; }
+
 /* ════════════════════════════════════════════
    LEGENDA PETA
 ════════════════════════════════════════════ */
@@ -453,16 +641,13 @@
     background: #ffffff;
     border-radius: 8px;
     padding: 10px 14px 12px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
     font-size: 12px;
-    min-width: 170px;
+    min-width: 165px;
     margin: 0 8px 8px 0;
     border-top: 3px solid #e74c3c;
 }
-
-.petadigi-legend--kriminal {
-    border-top-color: #e74c3c;
-}
+.petadigi-legend--kriminal { border-top-color: #e74c3c; }
 
 .petadigi-legend-title {
     font-size: 12px;
@@ -473,36 +658,76 @@
     align-items: center;
     gap: 6px;
 }
-.petadigi-legend--kriminal .petadigi-legend-title i {
-    color: #e74c3c;
-}
+.petadigi-legend--kriminal .petadigi-legend-title i { color: #e74c3c; }
 
 .petadigi-legend-list {
     list-style: none;
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
     display: flex;
     flex-direction: column;
     gap: 5px;
 }
-
-.petadigi-legend-list li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
+.petadigi-legend-list li { display: flex; align-items: center; gap: 8px; }
 .petadigi-legend-swatch {
     display: inline-block;
-    width: 16px;
-    height: 16px;
+    width: 14px; height: 14px;
     border-radius: 3px;
     flex-shrink: 0;
-    border: 1px solid rgba(0,0,0,0.12);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+.petadigi-legend-label { color: #444; font-size: 11px; line-height: 1; }
+
+/* ── Crime Marker ── */
+.petadigi-crime-marker {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.92);
+    border: 2px solid #e74c3c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    font-size: 11px;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.petadigi-crime-marker:hover { transform: scale(1.25); }
+
+/* ════════════════════════════════════════════
+   CHART ROW (ECharts — kriminal mode)
+════════════════════════════════════════════ */
+.petadigi-chart-row {
+    display: none;
+    gap: 12px;
+    flex-shrink: 0;
 }
 
-.petadigi-legend-label {
-    color: #444;
-    font-size: 12px;
-    line-height: 1;
+.petadigi-chart-card {
+    flex: 1;
+    min-width: 0;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px 16px 14px;
+    display: flex;
+    flex-direction: column;
+}
+
+.petadigi-chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.petadigi-chart-title i { color: #875A7B; }
+
+.petadigi-chart-body {
+    flex: 1;
+    height: 240px;
+    min-height: 240px;
 }

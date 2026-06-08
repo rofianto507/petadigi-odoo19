@@ -3,81 +3,105 @@
     <t t-name="petadigi.DashboardMap">
         <div class="petadigi-dashboard">
 
-            <!-- ── TOOLBAR TOP ── -->
-            <div class="petadigi-toolbar">
-                <div class="petadigi-toolbar-left">
-                    <button class="petadigi-sidebar-toggle" t-on-click="onToggleSidebar">
-                        <i class="fa fa-bars"/>
+            <!-- ══ SIDEBAR ══ -->
+            <div class="petadigi-sidebar" t-ref="sidebar">
+                <!-- Collapse button di atas -->
+                <div class="petadigi-sidebar-top">
+                    <button class="petadigi-collapse-btn" t-on-click="onToggleSidebar">
+                        <i class="fa fa-angle-double-left" t-ref="collapseIcon"/>
+                        <span t-ref="collapseText"/>
                     </button>
-                    <span class="petadigi-toolbar-title">
-                        <i class="fa fa-map" style="margin-right:6px;"/>
-                        PetaDigi — Peta Digital Provinsi Sumsel
-                    </span>
                 </div>
-                <div class="petadigi-toolbar-right">
-                    <div class="petadigi-filter-group">
+
+                <div class="petadigi-sidebar-section-title">PETA</div>
+
+                <nav class="petadigi-nav">
+                    <a class="petadigi-nav-item active" data-mode="umum" t-on-click="onNavClick">
+                        <i class="fa fa-map"/>
+                        <span>Peta Umum</span>
+                    </a>
+                    <a class="petadigi-nav-item" data-mode="kriminal" t-on-click="onNavClick">
+                        <i class="fa fa-exclamation-triangle"/>
+                        <span>Peta Kriminalitas</span>
+                    </a>
+                    <a class="petadigi-nav-item" data-mode="kam" t-on-click="onNavClick">
+                        <i class="fa fa-shield"/>
+                        <span>Peta Kasus Menonjol</span>
+                    </a>
+                    <a class="petadigi-nav-item" data-mode="bencana" t-on-click="onNavClick">
+                        <i class="fa fa-bolt"/>
+                        <span>Peta Bencana</span>
+                    </a>
+                    <a class="petadigi-nav-item" data-mode="lalin" t-on-click="onNavClick">
+                        <i class="fa fa-car"/>
+                        <span>Peta Lalu Lintas</span>
+                    </a>
+                    <a class="petadigi-nav-item" data-mode="lokasi" t-on-click="onNavClick">
+                        <i class="fa fa-map-marker"/>
+                        <span>Lokasi Penting</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- ══ MAIN CONTENT ══ -->
+            <div class="petadigi-main-content">
+
+                <!-- TOP ROW: breadcrumb + filter -->
+                <div class="petadigi-top-row">
+                    <div class="petadigi-breadcrumb-box" t-ref="breadcrumb">
+                        <i class="fa fa-map"/> Peta Umum
+                    </div>
+                    <div class="petadigi-filter-box">
                         <i class="fa fa-filter"/>
+                        <select class="petadigi-select" t-ref="filterKategori" t-on-change="onKategoriChange">
+                            <option value="">Semua Kategori</option>
+                        </select>
+                        <select class="petadigi-select" t-ref="filterSubKategori" t-on-change="onFilterChange">
+                            <option value="">Semua Sub Kategori</option>
+                        </select>
                         <select class="petadigi-select" t-ref="filterTahun" t-on-change="onFilterChange">
                             <option value="">Semua Tahun</option>
                         </select>
                         <select class="petadigi-select" t-ref="filterKabupaten" t-on-change="onFilterChange">
                             <option value="">Semua Kabupaten</option>
                         </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── MAIN AREA ── -->
-            <div class="petadigi-main">
-
-                <!-- SIDEBAR -->
-                <div class="petadigi-sidebar" t-ref="sidebar">
-                    <div class="petadigi-sidebar-section-title">PETA</div>
-                    <nav class="petadigi-nav">
-                        <a class="petadigi-nav-item active" data-mode="umum" t-on-click="onNavClick">
-                            <i class="fa fa-map"/>
-                            <span>Peta Umum</span>
-                        </a>
-                        <a class="petadigi-nav-item" data-mode="kriminal" t-on-click="onNavClick">
-                            <i class="fa fa-exclamation-triangle"/>
-                            <span>Peta Kriminal</span>
-                            <span class="petadigi-nav-badge petadigi-nav-badge--red" t-ref="badgeKriminal">0</span>
-                        </a>
-                        <a class="petadigi-nav-item" data-mode="lalin" t-on-click="onNavClick">
-                            <i class="fa fa-car"/>
-                            <span>Peta Lalu Lintas</span>
-                            <span class="petadigi-nav-badge petadigi-nav-badge--orange" t-ref="badgeLatlin">0</span>
-                        </a>
-                        <a class="petadigi-nav-item" data-mode="bencana" t-on-click="onNavClick">
-                            <i class="fa fa-bolt"/>
-                            <span>Peta Bencana</span>
-                            <span class="petadigi-nav-badge petadigi-nav-badge--blue" t-ref="badgeBencana">0</span>
-                        </a>
-                        <a class="petadigi-nav-item" data-mode="lokasi" t-on-click="onNavClick">
-                            <i class="fa fa-map-marker"/>
-                            <span>Lokasi Penting</span>
-                            <span class="petadigi-nav-badge petadigi-nav-badge--green" t-ref="badgeLokasi">0</span>
-                        </a>
-                    </nav>
-
-                    <div class="petadigi-sidebar-footer">
-                        <button class="petadigi-sidebar-collapse-btn" t-on-click="onToggleSidebar">
-                            <i class="fa fa-chevron-left" t-ref="collapseIcon"/>
-                            <span t-ref="collapseText">Sembunyikan</span>
-                        </button>
+                        <div class="petadigi-date-range" t-ref="filterDateRangeWrapper">
+                            <i class="fa fa-calendar"/>
+                            <input type="text" class="petadigi-flatpickr-input" t-ref="filterDateRange"
+                                placeholder="Pilih Rentang Tanggal" readonly="true"/>
+                            <button class="petadigi-date-clear" t-ref="filterDateClear"
+                                t-on-click="onClearDate" title="Reset Tanggal">
+                                <i class="fa fa-times"/>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- MAP AREA -->
-                <div class="petadigi-map-wrapper">
-                    <!-- Breadcrumb level -->
-                    <div class="petadigi-breadcrumb" t-ref="breadcrumb">
-                        <span class="petadigi-breadcrumb-item active">
-                            <i class="fa fa-map"/> Peta Umum
-                        </span>
-                    </div>
-                    <!-- tabindex="-1" mencegah browser scroll saat map diklik -->
+                <!-- Filter aktif summary -->
+                <div class="petadigi-filter-summary" t-ref="filterSummary"/>
+
+                <!-- KPI ROW — diisi oleh JS sesuai mode aktif -->
+                <div class="petadigi-kpi-row" t-ref="kpiRow"/>
+
+                <!-- MAP -->
+                <div class="petadigi-map-wrapper" t-ref="mapWrapper">
                     <div t-ref="mapContainer" class="petadigi-map-container" tabindex="-1"/>
+                </div>
+
+                <!-- CHART ROW — di bawah map, hanya untuk mode kriminal -->
+                <div class="petadigi-chart-row" t-ref="chartRow">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-bar-chart"/> Grafik Total Kriminalitas per Kabupaten
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartBar"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title" t-ref="chartDonutTitle">
+                            <i class="fa fa-pie-chart"/> Grafik Kriminalitas Berdasarkan Kategori (Semua Wilayah)
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartDonut"/>
+                    </div>
                 </div>
 
             </div>

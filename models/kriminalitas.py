@@ -5,10 +5,11 @@ class Kriminalitas(models.Model):
     _description = 'Kasus Kriminalitas'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'tanggal_kejadian desc'
-    _rec_name = 'no_lp'
+    _rec_name = 'code'
     _sql_constraints = [
         ('krim_no_lp_unique', 'unique(no_lp)', "No. LP harus unik!"),
     ]
+    code = fields.Char('Kode', readonly=True, copy=False, default='New', tracking=True)
     jenis_lp= fields.Selection([
         ('LP A', 'LP A'),
         ('LP B', 'LP B'),
@@ -85,6 +86,19 @@ class Kriminalitas(models.Model):
     def _compute_is_perkara_selesai(self):
         for rec in self:
             rec.is_perkara_selesai = (rec.status_perkara == 'SELESAI')
+    def action_set_proses(self):
+        self.write({'status_perkara': 'PROSES', 'sub_status_perkara_id': False, 'tanggal_selesai': False})
+
+    def action_set_selesai(self):
+        self.write({'status_perkara': 'SELESAI', 'sub_status_perkara_id': False})
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('code') or vals['code'] == 'New':
+                vals['code'] = self.env['ir.sequence'].next_by_code('petadigi.kriminalitas.sequence') or 'New'
+        return super().create(vals_list)
+
     def action_open_import_wizard(self):
         """Buka wizard import dokumen LP"""
         return {

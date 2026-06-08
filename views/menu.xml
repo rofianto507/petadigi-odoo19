@@ -22,7 +22,31 @@
             name="Kriminalitas"
             parent="menu_petadigi_maps"
             action="action_petadigi_kriminalitas"
-            sequence="1"/>    
+            sequence="1"/>
+        <menuitem
+            id="menu_kasus_menonjol"
+            name="Kasus Menonjol"
+            parent="menu_petadigi_maps"
+            action="action_petadigi_kasus_menonjol"
+            sequence="2"/>
+        <menuitem
+            id="menu_bencana"
+            name="Bencana"
+            parent="menu_petadigi_maps"
+            action="action_petadigi_bencana"
+            sequence="3"/>
+        <menuitem
+            id="menu_lalu_lintas"
+            name="Lalu Lintas"
+            parent="menu_petadigi_maps"
+            action="action_petadigi_lalu_lintas"
+            sequence="4"/>
+        <menuitem
+            id="menu_lokasi_penting"
+            name="Lokasi Penting"
+            parent="menu_petadigi_maps"
+            action="action_petadigi_lokasi_penting"
+            sequence="5"/>
         <menuitem
             id="menu_petadigi_configuration"
             name="Configuration"

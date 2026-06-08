@@ -1,6 +1,6 @@
 {
     'name': 'PetaDigi',
-    'version': '1.0.0',
+    'version': '19.0.2.0.0',
     'summary': 'Module for Digital Map.',
     'description': 'Digital map module for Odoo, providing interactive mapping features and geolocation services.',
     'category': 'Tools',
@@ -8,7 +8,8 @@
     'website': 'https://selstudio.id',
     'depends': ['base', 'web','mail'],
     'data': [
-        'security/ir.model.access.csv', 
+        'security/ir.model.access.csv',
+        'data/sequence_data.xml',
         'views/polres_views.xml',
         'views/polsek_views.xml',
         'views/kabupaten_views.xml',
@@ -28,6 +29,10 @@
         'views/subdit_views.xml',
         'wizard/import_lp_wizard_views.xml',
         'views/kriminalitas_views.xml',
+        'views/kasus_menonjol_views.xml',
+        'views/bencana_views.xml',
+        'views/lalu_lintas_views.xml',
+        'views/lokasi_penting_views.xml',
         'views/sub_status_perkara_views.xml',
         'views/menu.xml',
         
@@ -36,8 +41,10 @@
          'web.assets_backend': [
             'petadigi/static/lib/leaflet/leaflet.css',
             'petadigi/static/lib/leaflet/leaflet.js',
+            'petadigi/static/lib/flatpickr/flatpickr.min.css',
+            'petadigi/static/lib/flatpickr/flatpickr.min.js',
+            'petadigi/static/lib/echart/echarts.min.js',
             'petadigi/static/src/css/dashboard_map.css',
-            'petadigi/static/src/js/dashboard_map.js',
             'petadigi/static/src/xml/dashboard_map.xml',
             'petadigi/static/lib/leaflet/leaflet.editable.js',
             'petadigi/static/src/js/kabupaten_map_widget.js',
@@ -47,7 +54,7 @@
             'petadigi/static/src/js/latlon_leaflet_widget.js',
             'petadigi/static/src/xml/latlon_leaflet_widget.xml',
             'petadigi/static/src/css/latlon_leaflet_widget.css',
-             # Dashboard modular
+            # Dashboard modular
             'petadigi/static/src/js/dashboard_helpers.js',
             'petadigi/static/src/js/dashboard_layer_umum.js',
             'petadigi/static/src/js/dashboard_layer_kriminal.js',

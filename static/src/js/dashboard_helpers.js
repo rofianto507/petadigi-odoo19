@@ -9,16 +9,33 @@
  * @param {DashboardMap} ctx - instance komponen utama
  */
 export async function initFilters(ctx) {
-    // Dropdown Tahun
+    // Dropdown Tahun — diambil dari field tahun pada model sumber_dokumen
     const tahunEl = ctx.filterTahun.el;
     if (tahunEl) {
-        const currentYear = new Date().getFullYear();
-        for (let y = currentYear; y >= 2020; y--) {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            tahunEl.appendChild(opt);
-        }
+        try {
+            const groups = await ctx.orm.call(
+                'petadigi.sumber_dokumen',
+                'read_group',
+                [[], ['tahun'], ['tahun']],
+                { lazy: false }
+            );
+            const tahunList = groups
+                .map(g => g.tahun)
+                .filter(Boolean)
+                .sort()
+                .reverse();
+            tahunList.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                tahunEl.appendChild(opt);
+            });
+            // Default ke tahun saat ini jika tersedia
+            const currentYear = String(new Date().getFullYear());
+            if (tahunList.includes(currentYear)) {
+                tahunEl.value = currentYear;
+            }
+        } catch (_) {}
     }
 
     // Dropdown Kabupaten

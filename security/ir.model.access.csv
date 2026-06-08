@@ -18,3 +18,7 @@ access_petadigi_subdit,petadigi.subdit,model_petadigi_subdit,,1,1,1,1
 access_petadigi_kriminalitas,petadigi.kriminalitas,model_petadigi_kriminalitas,,1,1,1,1
 access_petadigi_sub_status_perkara,petadigi.sub_status_perkara,model_petadigi_sub_status_perkara,,1,1,1,1
 access_petadigi_import_lp_wizard,petadigi.import.lp.wizard,model_petadigi_import_lp_wizard,,1,1,1,1
+access_petadigi_kasus_menonjol,petadigi.kasus_menonjol,model_petadigi_kasus_menonjol,,1,1,1,1
+access_petadigi_bencana,petadigi.bencana,model_petadigi_bencana,,1,1,1,1
+access_petadigi_lalu_lintas,petadigi.lalu_lintas,model_petadigi_lalu_lintas,,1,1,1,1
+access_petadigi_lokasi_penting,petadigi.lokasi_penting,model_petadigi_lokasi_penting,,1,1,1,1

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="seq_petadigi_kriminalitas" model="ir.sequence">
+            <field name="name">Kode Kriminalitas</field>
+            <field name="code">petadigi.kriminalitas.sequence</field>
+            <field name="prefix">KRI</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        <record id="seq_petadigi_kasus_menonjol" model="ir.sequence">
+            <field name="name">Kode Kasus Menonjol</field>
+            <field name="code">petadigi.kasus_menonjol.sequence</field>
+            <field name="prefix">KAM</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        <record id="seq_petadigi_lokasi_penting" model="ir.sequence">
+            <field name="name">Kode Lokasi Penting</field>
+            <field name="code">petadigi.lokasi_penting.sequence</field>
+            <field name="prefix">LOK</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        <record id="seq_petadigi_lalu_lintas" model="ir.sequence">
+            <field name="name">Kode Lalu Lintas</field>
+            <field name="code">petadigi.lalu_lintas.sequence</field>
+            <field name="prefix">LTS</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        <record id="seq_petadigi_bencana" model="ir.sequence">
+            <field name="name">Kode Bencana</field>
+            <field name="code">petadigi.bencana.sequence</field>
+            <field name="prefix">BCN</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+    </data>
+</odoo>

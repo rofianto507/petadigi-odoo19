@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- LIST VIEW -->
+        <record id="view_petadigi_kasus_menonjol_list" model="ir.ui.view">
+            <field name="name">kasus_menonjol.list.petadigi</field>
+            <field name="model">petadigi.kasus_menonjol</field>
+            <field name="arch" type="xml">
+                <list string="Kasus Menonjol">
+                    <field name="code"/>
+                    <field name="no_lp"/>
+                    <field name="kategori_id"/>
+                    <field name="tanggal_kejadian"/>
+                    <field name="polres_id"/>
+                    <field name="kabupaten_id"/>
+                    <field name="subdit_id"/>
+                    <field name="state" widget="badge"
+                        decoration-success="state == 'SELESAI'"
+                        decoration-warning="state == 'PROSES'"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- SEARCH VIEW -->
+        <record id="view_petadigi_kasus_menonjol_search" model="ir.ui.view">
+            <field name="name">kasus_menonjol.search.petadigi</field>
+            <field name="model">petadigi.kasus_menonjol</field>
+            <field name="arch" type="xml">
+                <search string="Cari Kasus Menonjol">
+                    <field name="no_lp"/>
+                    <field name="tersangka"/>
+                    <field name="permasalahan"/>
+                    <separator/>
+                    <filter string="Status PROSES" name="filter_status_proses" domain="[('state','=','PROSES')]"/>
+                    <filter string="Status SELESAI" name="filter_status_selesai" domain="[('state','=','SELESAI')]"/>
+                    <separator/>
+                    <filter string="Tanggal Kejadian" name="filter_tanggal_kejadian" date="tanggal_kejadian"/>
+                    <group>
+                        <filter string="Tujuan" name="groupby_tujuan" context="{'group_by': 'subdit_id'}"/>
+                        <filter string="Kategori" name="groupby_kategori" context="{'group_by': 'kategori_id'}"/>
+                        <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>
+                        <filter string="State" name="groupby_state" context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- GRAPH VIEW -->
+        <record id="view_petadigi_kasus_menonjol_graph" model="ir.ui.view">
+            <field name="name">kasus_menonjol.graph.petadigi</field>
+            <field name="model">petadigi.kasus_menonjol</field>
+            <field name="arch" type="xml">
+                <graph string="Grafik Kasus Menonjol" type="bar">
+                    <field name="tanggal_kejadian" interval="month"/>
+                    <field name="kategori_id"/>
+                    <field name="state"/>
+                    <field name="id" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- FORM VIEW -->
+        <record id="view_petadigi_kasus_menonjol_form" model="ir.ui.view">
+            <field name="name">kasus_menonjol.form.petadigi</field>
+            <field name="model">petadigi.kasus_menonjol</field>
+            <field name="arch" type="xml">
+                <form string="Kasus Menonjol">
+                    <header>
+                        <button name="action_set_selesai" string="Selesai" type="object"
+                            class="btn-primary" invisible="state == 'SELESAI'"/>
+                        <button name="action_set_proses" string="Kembalikan ke Proses" type="object"
+                            class="btn-secondary" invisible="state == 'PROSES'"/>
+                        <field name="state" widget="statusbar"
+                            statusbar_visible="PROSES,SELESAI"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="code" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <field name="no_lp"/>
+                            <field name="subdit_id"/>
+                            <field name="sumber_dokumen_id"/>
+                        </group>
+                        <group>
+                            <group string="KESATUAN">
+                                <field name="polres_id"/>
+                                <field name="polsek_id" domain="[('polres_id', '=', polres_id)]"/>
+                            </group>
+                            <group string="KATEGORI">
+                                <field name="kategori_id"/>
+                                <field name="modus_operandi_id"/>
+                                <field name="jenis_tkp_id"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="WILAYAH">
+                                <field name="kabupaten_id"/>
+                                <field name="kecamatan_id" domain="[('kabupaten_id', '=', kabupaten_id)]"/>
+                                <field name="desa_id" domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                            </group>
+                            <group string="STATUS">
+                                <field name="tanggal_kejadian"/>
+                            </group>
+                        </group>
+
+                        <div>
+                            <field name="latitude" widget="latlong_map_picker"
+                                class="latlong-mappicker-wrapper"
+                                nolabel="1"/>
+                        </div>
+
+                        <group>
+                            <field name="latitude" string="Latitude"/>
+                            <field name="longitude" string="Longitude"/>
+                        </group>
+
+                        <notebook>
+                            <page string="Detail Kasus">
+                                <group >
+                                    <field name="tersangka" />
+                                    <field name="permasalahan" />
+                                    <field name="penanganan" />
+                                    <field name="tindak_lanjut" />
+                                </group>                              
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION -->
+        <record id="action_petadigi_kasus_menonjol" model="ir.actions.act_window">
+            <field name="name">Kasus Menonjol</field>
+            <field name="res_model">petadigi.kasus_menonjol</field>
+            <field name="view_mode">list,form,graph</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'list', 'view_id': ref('view_petadigi_kasus_menonjol_list')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_petadigi_kasus_menonjol_form')}),
+                (0, 0, {'view_mode': 'graph', 'view_id': ref('view_petadigi_kasus_menonjol_graph')}),
+            ]"/>
+            <field name="search_view_id" ref="petadigi.view_petadigi_kasus_menonjol_search"/>
+        </record>
+    </data>
+</odoo>
