@@ -377,11 +377,21 @@ span.flatpickr-weekday {
 .petadigi-breadcrumb-item { font-weight: 600; }
 .petadigi-breadcrumb-sep { opacity: 0.6; font-size: 10px; }
 
+/* ── Summary row: filter chips (kiri) + sumber dokumen (kanan) ── */
+.petadigi-summary-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 20px;
+    flex-shrink: 0;
+}
+
 /* ── Filter active summary ── */
 .petadigi-filter-summary {
+    flex: 1;
     font-size: 11px;
     color: #7f8c8d;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -389,6 +399,65 @@ span.flatpickr-weekday {
     min-height: 16px;
     padding: 0 2px;
     margin-top: -4px;
+}
+
+/* ── Sumber dokumen info (kanan) ── */
+.petadigi-sumber-info {
+    flex-shrink: 0;
+    max-width: 340px;
+    font-size: 11px;
+    color: #7f8c8d;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    text-align: right;
+    margin-top: -4px;
+}
+.petadigi-sumber-info i {
+    color: #875A7B;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+.petadigi-sumber-label {
+    color: #7f8c8d;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.petadigi-sumber-text {
+    color: #444;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+    display: inline-block;
+    vertical-align: bottom;
+}
+.petadigi-sumber-text.expanded {
+    white-space: normal;
+    text-overflow: unset;
+    max-width: none;
+}
+.petadigi-sumber-toggle {
+    flex-shrink: 0;
+    background: none;
+    border: 1px solid #c39bd3;
+    color: #875A7B;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    transition: background 0.15s, color 0.15s;
+}
+.petadigi-sumber-toggle:hover {
+    background: #875A7B;
+    color: #fff;
+    border-color: #875A7B;
 }
 .petadigi-filter-summary-chip {
     display: inline-flex;
@@ -677,6 +746,26 @@ span.flatpickr-weekday {
 }
 .petadigi-legend-label { color: #444; font-size: 11px; line-height: 1; }
 
+/* ── KAM Legend ── */
+.petadigi-legend--kam { border-top-color: #922b21; }
+.petadigi-legend--kam .petadigi-legend-title i { color: #e74c3c; }
+
+/* ── KAM Marker ── */
+.petadigi-kam-marker {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.92);
+    border: 2px solid #2471a3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    font-size: 11px;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.petadigi-kam-marker:hover { transform: scale(1.25); }
+
 /* ── Crime Marker ── */
 .petadigi-crime-marker {
     width: 24px; height: 24px;
@@ -693,6 +782,22 @@ span.flatpickr-weekday {
 }
 .petadigi-crime-marker:hover { transform: scale(1.25); }
 
+/* ── Generic marker (bencana, lalin, lokasi) ── */
+.petadigi-bencana-marker {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.92);
+    border: 2px solid #e67e22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+    font-size: 11px;
+    cursor: pointer;
+    transition: transform 0.15s;
+}
+.petadigi-bencana-marker:hover { transform: scale(1.25); }
+
 /* ════════════════════════════════════════════
    CHART ROW (ECharts — kriminal mode)
 ════════════════════════════════════════════ */
@@ -700,6 +805,18 @@ span.flatpickr-weekday {
     display: none;
     gap: 12px;
     flex-shrink: 0;
+}
+
+.petadigi-chart-row + .petadigi-chart-row {
+    margin-top: 12px;
+}
+
+.petadigi-chart-card--wide   { flex: 2; }
+.petadigi-chart-card--narrow { flex: 1; }
+
+.petadigi-chart-body--tall {
+    height: 280px;
+    min-height: 280px;
 }
 
 .petadigi-chart-card {

@@ -71,6 +71,7 @@ function _getActiveFilters(ctx) {
         dateTo:       ctx.activeDateTo                   || '',
         kategoriId:   ctx.filterKategori?.el?.value     ? parseInt(ctx.filterKategori.el.value)     : null,
         subKategoriId:ctx.filterSubKategori?.el?.value  ? parseInt(ctx.filterSubKategori.el.value)  : null,
+        stateValue:   ctx.filterState?.el?.value        || '',
     };
 }
 
@@ -82,6 +83,7 @@ function _buildDomain(filters, extraDomain = []) {
     if (filters.dateTo)       domain.push(['tanggal_kejadian',        '<=', filters.dateTo   + ' 23:59:59']);
     if (filters.kategoriId)   domain.push(['kategori_id',             '=',  filters.kategoriId]);
     if (filters.subKategoriId)domain.push(['sub_kategori_id',         '=',  filters.subKategoriId]);
+    if (filters.stateValue)   domain.push(['status_perkara',          '=',  filters.stateValue]);
     return domain;
 }
 
@@ -127,6 +129,15 @@ function _buildDesaKasusMap(groups) {
 
 // ── Helper: load marker titik koordinat kriminalitas ─────────────────────────
 async function _loadKriminalMarkers(ctx, domain) {
+    ctx.markerLayerGroup.clearLayers();
+
+    // Ambil icon dari setiap kategori kriminal
+    const categories = await ctx.orm.searchRead('petadigi.kategori_kriminal', [], ['id', 'icon']);
+    const categoryIconMap = {};
+    for (const cat of categories) {
+        categoryIconMap[cat.id] = cat.icon || 'fa-exclamation-triangle';
+    }
+
     const records = await ctx.orm.searchRead(
         'petadigi.kriminalitas',
         [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
@@ -140,14 +151,18 @@ async function _loadKriminalMarkers(ctx, domain) {
         const kategori     = Array.isArray(r.kategori_id)     ? r.kategori_id[1]     : '-';
         const subKategori  = Array.isArray(r.sub_kategori_id) ? r.sub_kategori_id[1] : '-';
         const jenisTkp     = Array.isArray(r.jenis_tkp_id)    ? r.jenis_tkp_id[1]    : '-';
-        const tglKejadian  = r.tanggal_kejadian
-            ? new Date(r.tanggal_kejadian).toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' })
+        const tglStr       = r.tanggal_kejadian;
+        const tglKejadian  = tglStr
+            ? new Date(tglStr.replace(' ', 'T') + 'Z').toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' })
             : '-';
+
+        const katId  = Array.isArray(r.kategori_id) ? r.kategori_id[0] : null;
+        const faIcon = (katId && categoryIconMap[katId]) ? categoryIconMap[katId] : 'fa-exclamation-triangle';
 
         const icon = L.divIcon({
             className: '',
             html: `<div class="petadigi-crime-marker" style="border-color:${statusColor};">
-                       <i class="fa fa-exclamation" style="color:${statusColor};"></i>
+                       <i class="fa ${faIcon}" style="color:${statusColor};"></i>
                    </div>`,
             iconSize:   [24, 24],
             iconAnchor: [12, 12],
@@ -158,7 +173,7 @@ async function _loadKriminalMarkers(ctx, domain) {
         marker.bindPopup(`
             <div class="petadigi-popup">
                 <div class="petadigi-popup-header" style="background:#922b21;">
-                    <i class="fa fa-map-pin"></i>
+                    <i class="fa ${faIcon}"></i>
                     <strong>${r.no_lp}</strong>
                 </div>
                 <div class="petadigi-popup-body">
@@ -189,8 +204,26 @@ async function _loadKriminalMarkers(ctx, domain) {
                         </tr>
                     </table>
                 </div>
+                <div class="petadigi-popup-footer">
+                    <button class="petadigi-btn-detail" style="background:#922b21;" id="btn-detail-kriminal-${r.id}">
+                        <i class="fa fa-external-link"></i> Lihat Detail
+                    </button>
+                </div>
             </div>
         `, { maxWidth: 280, className: 'petadigi-leaflet-popup' });
+
+        marker.on('popupopen', () => {
+            setTimeout(() => {
+                const btn = document.getElementById(`btn-detail-kriminal-${r.id}`);
+                if (btn) btn.addEventListener('click', () => ctx.action.doAction({
+                    type: 'ir.actions.act_window',
+                    res_model: 'petadigi.kriminalitas',
+                    res_id: r.id,
+                    views: [[false, 'form']],
+                    target: 'current',
+                }));
+            }, 0);
+        });
 
         ctx.markerLayerGroup.addLayer(marker);
     });
@@ -420,6 +453,14 @@ export async function drillDownKriminalKecamatan(ctx, kabProps, kabLayer, filter
         await _loadKriminalMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]));
         _addKriminalBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
+        // Sinkronkan dropdown kabupaten + KPI + grafik ke scope kabupaten yang dipilih
+        ctx.drillKabupatenId = kabProps.id;
+        ctx.drillKecamatanId = null;
+        if (ctx.filterKabupaten?.el) ctx.filterKabupaten.el.value = String(kabProps.id);
+        ctx._updateFilterSummary(ctx.currentMode);
+        ctx._updateKpiCards(ctx.currentMode);
+        ctx._updateCharts(ctx.currentMode);
+
     } catch (error) {
         console.error("Gagal memuat data kecamatan kriminal:", error);
     }
@@ -560,6 +601,11 @@ export async function drillDownKriminalDesa(ctx, kecProps, kecLayer, filters, ka
         await _loadKriminalMarkers(ctx, _buildDomain(filters, [['kecamatan_id', '=', kecProps.id]]));
         _addKriminalBackButton(ctx, 'kecamatan', { kecProps, kecLayer, filters, kabProps, kabLayer });
 
+        // Sinkronkan KPI dan grafik ke scope kecamatan yang dipilih
+        ctx.drillKecamatanId = kecProps.id;
+        ctx._updateKpiCards(ctx.currentMode);
+        ctx._updateCharts(ctx.currentMode);
+
     } catch (error) {
         console.error("Gagal memuat data desa kriminal:", error);
     }
@@ -616,12 +662,19 @@ function _addKriminalBackButton(ctx, targetLevel, backCtx) {
                 if (targetLevel === 'kabupaten') {
                     ctx.kecamatanLayerGroup.clearLayers();
                     ctx.kecamatanLabelGroup.clearLayers();
+                    ctx.drillKabupatenId = null;
+                    ctx.drillKecamatanId = null;
+                    if (ctx.filterKabupaten?.el) ctx.filterKabupaten.el.value = '';
                     ctx._updateBreadcrumb(`<i class="fa fa-exclamation-triangle"></i> Peta Kriminal`);
+                    ctx._updateFilterSummary(ctx.currentMode);
                     await loadModeKriminal(ctx);
+                    ctx._updateKpiCards(ctx.currentMode);
+                    ctx._updateCharts(ctx.currentMode);
 
                 } else if (targetLevel === 'kecamatan' && backCtx) {
                     ctx.desaLayerGroup.clearLayers();
                     ctx.desaLabelGroup.clearLayers();
+                    ctx.drillKecamatanId = null;
                     const items = ctx.breadcrumbRef.el.querySelectorAll('.petadigi-breadcrumb-item');
                     if (items.length > 1) {
                         items[items.length - 1].previousSibling?.remove();

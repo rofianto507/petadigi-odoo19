@@ -7,9 +7,15 @@ import { useService } from "@web/core/utils/hooks";
 import { initFilters } from "./dashboard_helpers";
 import { loadKabupatenLayer } from "./dashboard_layer_umum";
 import { loadModeKriminal, removeKriminalLegend } from "./dashboard_layer_kriminal";
-import { loadModeLayLin } from "./dashboard_layer_lalin";
-import { loadModeBencana } from "./dashboard_layer_bencana";
-import { loadModeLokasi } from "./dashboard_layer_lokasi";
+import { loadModeKam, removeKamLegend } from "./dashboard_layer_kam";
+import { loadModeLalin, removeLalinLegend } from "./dashboard_layer_lalin";
+import { loadModeBencana, removeBencanaLegend } from "./dashboard_layer_bencana";
+import { loadModeLokasi, removeLokasiLegend } from "./dashboard_layer_lokasi";
+import { updateKriminalCharts, disposeKriminalCharts } from "./dashboard_charts_kriminal";
+import { updateKamCharts, disposeKamCharts } from "./dashboard_charts_kam";
+import { updateBencanaCharts, disposeBencanaCharts } from "./dashboard_charts_bencana";
+import { updateLalinCharts, disposeLalinCharts } from "./dashboard_charts_lalin";
+import { updateLokasiCharts, disposeLokasiCharts } from "./dashboard_charts_lokasi";
 
 export class DashboardMap extends Component {
     static template = "petadigi.DashboardMap";
@@ -24,18 +30,57 @@ export class DashboardMap extends Component {
         this.filterSubKategori      = useRef("filterSubKategori");
         this.filterTahun            = useRef("filterTahun");
         this.filterKabupaten        = useRef("filterKabupaten");
+        this.filterState            = useRef("filterState");
         this.filterDateRange        = useRef("filterDateRange");
         this.filterDateClear        = useRef("filterDateClear");
         this.filterDateRangeWrapper = useRef("filterDateRangeWrapper");
         this.filterSummaryRef       = useRef("filterSummary");
+        this.sumberInfoRef          = useRef("sumberInfo");
         this.kpiRowRef              = useRef("kpiRow");
         this.mapWrapperRef          = useRef("mapWrapper");
         this.chartRowRef            = useRef("chartRow");
         this.chartBarRef            = useRef("chartBar");
         this.chartDonutRef          = useRef("chartDonut");
         this.chartDonutTitleRef     = useRef("chartDonutTitle");
+        this.chartRow2Ref           = useRef("chartRow2");
+        this.chartTkpRef            = useRef("chartTkp");
+        this.chartSubKatRef         = useRef("chartSubKat");
+        this.chartRow3Ref           = useRef("chartRow3");
+        this.chartTrendRef          = useRef("chartTrend");
+        this.chartWaktuRef          = useRef("chartWaktu");
+        this.chartRow4Ref           = useRef("chartRow4");
+        this.chartCuratRef          = useRef("chartCurat");
+        this.chartCurasRef          = useRef("chartCuras");
+        this.chartCuranmorRef       = useRef("chartCuranmor");
+        this.chartRow5Ref           = useRef("chartRow5");
+        this.chartTahunanRef        = useRef("chartTahunan");
+        this.chartKamRowRef         = useRef("chartKamRow");
+        this.chartKamBarRef         = useRef("chartKamBar");
+        this.chartKamDonutRef       = useRef("chartKamDonut");
+        this.chartKamDonutTitleRef  = useRef("chartKamDonutTitle");
+        this.chartKamRow2Ref        = useRef("chartKamRow2");
+        this.chartKamModusRef       = useRef("chartKamModus");
+        this.chartKamTkpRef         = useRef("chartKamTkp");
+        this.chartKamRow3Ref           = useRef("chartKamRow3");
+        this.chartKamTahunanRef        = useRef("chartKamTahunan");
+        this.chartBencanaRowRef        = useRef("chartBencanaRow");
+        this.chartBencanaBarRef        = useRef("chartBencanaBar");
+        this.chartBencanaDonutRef      = useRef("chartBencanaDonut");
+        this.chartBencanaDonutTitleRef = useRef("chartBencanaDonutTitle");
+        this.chartLalinRowRef          = useRef("chartLalinRow");
+        this.chartLalinBarRef          = useRef("chartLalinBar");
+        this.chartLalinDonutRef        = useRef("chartLalinDonut");
+        this.chartLalinDonutTitleRef   = useRef("chartLalinDonutTitle");
+        this.chartLalinRow2Ref         = useRef("chartLalinRow2");
+        this.chartLalinJenisJalanRef   = useRef("chartLalinJenisJalan");
+        this.chartLalinWaktuRef        = useRef("chartLalinWaktu");
+        this.chartLokasiRowRef         = useRef("chartLokasiRow");
+        this.chartLokasiBarRef         = useRef("chartLokasiBar");
+        this.chartLokasiDonutRef       = useRef("chartLokasiDonut");
+        this.chartLokasiDonutTitleRef  = useRef("chartLokasiDonutTitle");
 
-        this.orm = useService("orm");
+        this.orm    = useService("orm");
+        this.action = useService("action");
 
         this.sidebarOpen    = true;
         this.currentMode    = 'umum';
@@ -47,6 +92,31 @@ export class DashboardMap extends Component {
         this._filterMode    = null;
         this._echartsBar    = null;
         this._echartsDonut  = null;
+        this._echartsTkp    = null;
+        this._echartsSubKat = null;
+        this._echartsTrend  = null;
+        this._echartsWaktu  = null;
+        this._echartsCurat    = null;
+        this._echartsCuras    = null;
+        this._echartsCuranmor = null;
+        this._echartsTahunan  = null;
+        this._echartsKamBar     = null;
+        this._echartsKamDonut   = null;
+        this._echartsKamModus   = null;
+        this._echartsKamTkp     = null;
+        this._echartsKamTahunan = null;
+        this._echartsBencanaBar   = null;
+        this._echartsBencanaDonut = null;
+        this._echartsLalinBar        = null;
+        this._echartsLalinDonut      = null;
+        this._echartsLalinJenisJalan = null;
+        this._echartsLalinWaktu      = null;
+        this._echartsLokasiBar       = null;
+        this._echartsLokasiDonut     = null;
+
+        // Drill-down context — set oleh layer file saat user klik polygon
+        this.drillKabupatenId = null;
+        this.drillKecamatanId = null;
 
         this._KATEGORI_MODEL = {
             kriminal: 'petadigi.kategori_kriminal',
@@ -63,6 +133,7 @@ export class DashboardMap extends Component {
             await this._initMap();
             await this._updateKpiCards('umum');
             this._updateFilterSummary('umum');
+            this._updateSumberDokumenInfo('umum');
             this._updateCharts('umum');
         });
     }
@@ -150,6 +221,9 @@ export class DashboardMap extends Component {
         this._clearAllLayers();
         if (this.backButton) { this.backButton.remove(); this.backButton = null; }
         this.currentLevel = 'kabupaten';
+        // Reset drill context setiap ganti mode atau re-filter
+        this.drillKabupatenId = null;
+        this.drillKecamatanId = null;
 
         const modeLabels = {
             umum:    { icon: 'fa-map',                  label: 'Peta Umum' },
@@ -176,12 +250,14 @@ export class DashboardMap extends Component {
         this._updateFilterVisibility(mode);
         this._updateKpiCards(mode);
         this._updateFilterSummary(mode);
+        this._updateSumberDokumenInfo(mode);
         this._updateCharts(mode);
 
         switch (mode) {
             case 'umum':     loadKabupatenLayer(this); break;
             case 'kriminal': loadModeKriminal(this); break;
-            case 'lalin':    loadModeLayLin(this); break;
+            case 'kam':      loadModeKam(this); break;
+            case 'lalin':    loadModeLalin(this); break;
             case 'bencana':  loadModeBencana(this); break;
             case 'lokasi':   loadModeLokasi(this); break;
             default:         loadKabupatenLayer(this); break;
@@ -200,7 +276,7 @@ export class DashboardMap extends Component {
     _appendBreadcrumb(html) {
         if (this.breadcrumbRef.el) {
             this.breadcrumbRef.el.innerHTML +=
-                `<i class="fa fa-chevron-right petadigi-breadcrumb-sep" style="margin:0 6px;font-size:9px;opacity:.6;"></i>${html}`;
+                `<i class="fa fa-chevron-right petadigi-breadcrumb-sep" style="margin:0 6px;font-size:9px;opacity:.6;"></i><span class="petadigi-breadcrumb-item">${html}</span>`;
         }
     }
 
@@ -211,16 +287,19 @@ export class DashboardMap extends Component {
         const showKategori    = mode !== 'umum';
         const showSubKategori = mode === 'kriminal';
         const showExtended    = !['umum', 'lokasi'].includes(mode);
+        const showState       = mode !== 'umum';
 
         const tahunEl       = this.filterTahun?.el;
         const dateWrap      = this.filterDateRangeWrapper?.el;
         const kategoriEl    = this.filterKategori?.el;
         const subKategoriEl = this.filterSubKategori?.el;
+        const stateEl       = this.filterState?.el;
 
         if (tahunEl)       tahunEl.style.display       = showExtended    ? '' : 'none';
         if (dateWrap)      dateWrap.style.display       = showExtended    ? '' : 'none';
         if (kategoriEl)    kategoriEl.style.display     = showKategori    ? '' : 'none';
         if (subKategoriEl) subKategoriEl.style.display  = showSubKategori ? '' : 'none';
+        if (stateEl)       stateEl.style.display        = showState       ? '' : 'none';
 
         const modeChanged = mode !== this._filterMode;
         this._filterMode = mode;
@@ -232,8 +311,29 @@ export class DashboardMap extends Component {
                 subKategoriEl.innerHTML = '<option value="">Semua Sub Kategori</option>';
                 subKategoriEl.value = '';
             }
+            if (stateEl) { stateEl.value = ''; }
             if (showKategori) await this._populateKategori(mode);
+            if (showState)    await this._populateState(mode);
         }
+    }
+
+    async _populateState(mode) {
+        const el = this.filterState?.el;
+        if (!el) return;
+        el.innerHTML = '<option value="">Semua Status</option>';
+        const OPTIONS = {
+            kriminal: [{ value: 'PROSES', label: 'Proses' }, { value: 'SELESAI', label: 'Selesai' }],
+            bencana:  [{ value: 'AKTIF', label: 'Aktif' }, { value: 'NON AKTIF', label: 'Non Aktif' }],
+            lalin:    [{ value: 'PROSES', label: 'Proses' }, { value: 'SELESAI', label: 'Selesai' }],
+            kam:      [{ value: 'PROSES', label: 'Proses' }, { value: 'SELESAI', label: 'Selesai' }],
+            lokasi:   [{ value: 'AKTIF', label: 'Aktif' }, { value: 'NON AKTIF', label: 'Non Aktif' }],
+        };
+        (OPTIONS[mode] || []).forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.value;
+            opt.textContent = o.label;
+            el.appendChild(opt);
+        });
     }
 
     async _populateKategori(mode) {
@@ -319,6 +419,14 @@ export class DashboardMap extends Component {
             }
         }
 
+        // Status
+        if (mode !== 'umum') {
+            const stEl = this.filterState?.el;
+            if (stEl && stEl.value) {
+                chips.push(chip('fa-circle', stEl.options[stEl.selectedIndex]?.text || stEl.value));
+            }
+        }
+
         // Tanggal kejadian
         if (hasDateFilter) {
             const df = this.activeDateFrom || '';
@@ -335,6 +443,79 @@ export class DashboardMap extends Component {
     }
 
     // ─────────────────────────────────────────────
+    // SUMBER DOKUMEN INFO (kanan filter summary)
+    // ─────────────────────────────────────────────
+    async _updateSumberDokumenInfo(mode) {
+        const el = this.sumberInfoRef?.el;
+        if (!el) return;
+
+        const tahun = this.filterTahun?.el?.value || '';
+
+        // lokasi_penting tidak punya sumber_dokumen_id; umum tidak relevan
+        const MODEL_MAP = {
+            kriminal: 'petadigi.kriminalitas',
+            bencana:  'petadigi.bencana',
+            lalin:    'petadigi.lalu_lintas',
+            kam:      'petadigi.kasus_menonjol',
+        };
+        const model = MODEL_MAP[mode];
+        if (!model || !tahun) { el.innerHTML = ''; return; }
+
+        try {
+            const groups = await this.orm.call(
+                model,
+                'read_group',
+                [
+                    [['sumber_dokumen_id.tahun', '=', tahun]],
+                    ['sumber_dokumen_id'],
+                    ['sumber_dokumen_id'],
+                ],
+                { lazy: false }
+            );
+
+            const names = groups
+                .filter(g => g.sumber_dokumen_id)
+                .map(g => Array.isArray(g.sumber_dokumen_id) ? g.sumber_dokumen_id[1] : String(g.sumber_dokumen_id))
+                .sort();
+
+            if (!names.length) { el.innerHTML = ''; return; }
+
+            const joined    = names.join(' / ');
+            const CHAR_LIMIT = 48;
+            const first     = names[0];
+            const firstTrunc = first.length > CHAR_LIMIT ? first.slice(0, CHAR_LIMIT) + '…' : first;
+            const hasMore   = names.length > 1 || first.length > CHAR_LIMIT;
+            const shortTxt  = names.length > 1
+                ? `${firstTrunc}${names.length > 1 ? ` (+${names.length - 1})` : ''}`
+                : firstTrunc;
+            const uid       = 'sd-' + Math.random().toString(36).slice(2, 7);
+
+            el.innerHTML = `
+                <i class="fa fa-file-text-o"></i>
+                <span class="petadigi-sumber-label">Sumber:</span>
+                <span class="petadigi-sumber-text" id="${uid}-text">${shortTxt}</span>
+                ${hasMore ? `<button class="petadigi-sumber-toggle" id="${uid}-btn" title="${joined}"><i class="fa fa-chevron-down"></i></button>` : ''}
+            `;
+
+            if (hasMore) {
+                let expanded = false;
+                const btn    = el.querySelector(`#${uid}-btn`);
+                const textEl = el.querySelector(`#${uid}-text`);
+                btn.addEventListener('click', () => {
+                    expanded = !expanded;
+                    textEl.textContent = expanded ? joined : shortTxt;
+                    textEl.classList.toggle('expanded', expanded);
+                    btn.innerHTML = expanded
+                        ? '<i class="fa fa-chevron-up"></i>'
+                        : '<i class="fa fa-chevron-down"></i>';
+                });
+            }
+        } catch (_) {
+            el.innerHTML = '';
+        }
+    }
+
+    // ─────────────────────────────────────────────
     // KPI CARDS — dinamis per mode
     // ─────────────────────────────────────────────
     async _updateKpiCards(mode) {
@@ -342,24 +523,37 @@ export class DashboardMap extends Component {
         if (!row) return;
         row.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#bbb;font-size:12px;padding:8px 0;">Memuat data...</div>`;
 
-        const tahun        = this.filterTahun?.el?.value        || '';
-        const dateFrom     = this.activeDateFrom                  || '';
-        const dateTo       = this.activeDateTo                    || '';
-        const kategoriId   = parseInt(this.filterKategori?.el?.value)    || null;
-        const subKategoriId= parseInt(this.filterSubKategori?.el?.value) || null;
-        const tf = tahun        ? [['sumber_dokumen_id.tahun', '=', tahun]]        : [];
-        const df = [
+        const tahun         = this.filterTahun?.el?.value         || '';
+        const dateFrom      = this.activeDateFrom                   || '';
+        const dateTo        = this.activeDateTo                     || '';
+        const kabupatenId   = parseInt(this.filterKabupaten?.el?.value)    || null;
+        const kategoriId    = parseInt(this.filterKategori?.el?.value)     || null;
+        const subKategoriId = parseInt(this.filterSubKategori?.el?.value)  || null;
+        const stateValue    = this.filterState?.el?.value          || '';
+
+        const tf  = tahun        ? [['sumber_dokumen_id.tahun', '=', tahun]]        : [];
+        const df  = [
             ...(dateFrom ? [['tanggal_kejadian', '>=', dateFrom + ' 00:00:00']] : []),
             ...(dateTo   ? [['tanggal_kejadian', '<=', dateTo   + ' 23:59:59']] : []),
         ];
-        const kf = kategoriId    ? [['kategori_id',    '=', kategoriId]]    : [];
-        const sf = subKategoriId ? [['sub_kategori_id','=', subKategoriId]] : [];
+        const kabf = kabupatenId   ? [['kabupaten_id',   '=', kabupatenId]]   : [];
+        const kf  = kategoriId    ? [['kategori_id',    '=', kategoriId]]    : [];
+        const sf  = subKategoriId ? [['sub_kategori_id','=', subKategoriId]] : [];
+        // state field berbeda: kriminal pakai status_perkara, lainnya pakai state
+        const stk = stateValue ? [['status_perkara', '=', stateValue]] : [];
+        const sts = stateValue ? [['state',          '=', stateValue]] : [];
+        // Drill-down context (set oleh layer saat user klik polygon)
+        const drillDomain = this.drillKecamatanId
+            ? [['kecamatan_id', '=', this.drillKecamatanId]]
+            : this.drillKabupatenId
+                ? [['kabupaten_id', '=', this.drillKabupatenId]]
+                : [];
 
         try {
             let cards = [];
 
             if (mode === 'kriminal') {
-                const d = [...tf, ...df, ...kf, ...sf];
+                const d = [...tf, ...df, ...kabf, ...kf, ...sf, ...stk, ...drillDomain];
                 const [total, proses, selesai] = await Promise.all([
                     this.orm.searchCount('petadigi.kriminalitas', d),
                     this.orm.searchCount('petadigi.kriminalitas', [...d, ['status_perkara','=','PROSES']]),
@@ -387,7 +581,7 @@ export class DashboardMap extends Component {
                     { icon: 'fa-shield',   color: '#c0392b', value: polres, label: 'Total Polres' },
                 ];
             } else if (mode === 'bencana') {
-                const d = [...tf, ...df, ...kf];
+                const d = [...tf, ...df, ...kabf, ...kf, ...sts, ...drillDomain];
                 const [total, aktif, nonAktif] = await Promise.all([
                     this.orm.searchCount('petadigi.bencana', d),
                     this.orm.searchCount('petadigi.bencana', [...d, ['state','=','AKTIF']]),
@@ -401,7 +595,7 @@ export class DashboardMap extends Component {
                     { icon: 'fa-percent',     color: '#8e44ad', value: persen + '%', label: 'Persentase Tertangani' },
                 ];
             } else if (mode === 'lalin') {
-                const d = [...tf, ...df, ...kf];
+                const d = [...tf, ...df, ...kabf, ...kf, ...sts, ...drillDomain];
                 const [total, proses, selesai] = await Promise.all([
                     this.orm.searchCount('petadigi.lalu_lintas', d),
                     this.orm.searchCount('petadigi.lalu_lintas', [...d, ['state','=','PROSES']]),
@@ -415,7 +609,7 @@ export class DashboardMap extends Component {
                     { icon: 'fa-percent',     color: '#1a6b9a', value: persen + '%', label: 'Persentase Selesai' },
                 ];
             } else if (mode === 'kam') {
-                const d = [...tf, ...df, ...kf];
+                const d = [...tf, ...df, ...kabf, ...kf, ...sts, ...drillDomain];
                 const [total, proses, selesai] = await Promise.all([
                     this.orm.searchCount('petadigi.kasus_menonjol', d),
                     this.orm.searchCount('petadigi.kasus_menonjol', [...d, ['state','=','PROSES']]),
@@ -431,8 +625,8 @@ export class DashboardMap extends Component {
             } else if (mode === 'lokasi') {
                 // lokasi_penting tidak punya sumber_dokumen_id & tanggal_kejadian
                 const [total, aktif] = await Promise.all([
-                    this.orm.searchCount('petadigi.lokasi_penting', [...kf]),
-                    this.orm.searchCount('petadigi.lokasi_penting', [...kf, ['state','=','AKTIF']]),
+                    this.orm.searchCount('petadigi.lokasi_penting', [...kf, ...sts]),
+                    this.orm.searchCount('petadigi.lokasi_penting', [...kf, ...sts, ['state','=','AKTIF']]),
                 ]);
                 cards = [
                     { icon: 'fa-database',    color: '#27ae60', value: total,       label: 'Total Lokasi' },
@@ -461,173 +655,23 @@ export class DashboardMap extends Component {
     }
 
     // ─────────────────────────────────────────────
-    // ECHARTS
+    // ECHARTS — lihat dashboard_charts_kriminal.js
     // ─────────────────────────────────────────────
     async _updateCharts(mode) {
-        const row = this.chartRowRef?.el;
-        if (!row) return;
-
-        if (mode !== 'kriminal') {
-            row.style.display = 'none';
-            this._disposeCharts();
-            return;
-        }
-        row.style.display = 'flex';
-
-        const tahun        = this.filterTahun?.el?.value        || '';
-        const dateFrom     = this.activeDateFrom                  || '';
-        const dateTo       = this.activeDateTo                    || '';
-        const kategoriId   = parseInt(this.filterKategori?.el?.value)    || null;
-        const subKategoriId= parseInt(this.filterSubKategori?.el?.value) || null;
-        const kabupatenId  = parseInt(this.filterKabupaten?.el?.value)   || null;
-
-        const baseDomain = [
-            ...(tahun        ? [['sumber_dokumen_id.tahun', '=',  tahun]]                          : []),
-            ...(dateFrom     ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
-            ...(dateTo       ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']]         : []),
-            ...(kategoriId   ? [['kategori_id',             '=',  kategoriId]]                     : []),
-            ...(subKategoriId? [['sub_kategori_id',         '=',  subKategoriId]]                  : []),
-        ];
-        const donutDomain = [
-            ...baseDomain,
-            ...(kabupatenId  ? [['kabupaten_id',            '=',  kabupatenId]]                    : []),
-        ];
-
-        try {
-            const [kabGroups, katGroups, allKabupaten] = await Promise.all([
-                this.orm.call('petadigi.kriminalitas', 'read_group',
-                    [baseDomain, ['kabupaten_id'], ['kabupaten_id']], { lazy: false }),
-                this.orm.call('petadigi.kriminalitas', 'read_group',
-                    [donutDomain, ['kategori_id'], ['kategori_id']], { lazy: false }),
-                this.orm.searchRead('petadigi.kabupaten', [], ['id', 'name'], { order: 'name asc' }),
-            ]);
-
-            // Bar chart — merge semua kabupaten (termasuk yg 0), sort by count desc
-            const kabCountMap = {};
-            kabGroups.forEach(g => {
-                if (Array.isArray(g.kabupaten_id)) kabCountMap[g.kabupaten_id[0]] = g.__count || 0;
-            });
-            const merged = allKabupaten
-                .map(k => ({ name: k.name, count: kabCountMap[k.id] || 0 }))
-                .sort((a, b) => b.count - a.count);
-            const barNames  = merged.map(k => k.name);
-            const barValues = merged.map(k => k.count);
-
-            // Donut chart
-            const donutData = katGroups.map(g => ({
-                name:  Array.isArray(g.kategori_id) ? g.kategori_id[1] : 'Lainnya',
-                value: g.__count || 0,
-            }));
-
-            // Update donut title with kabupaten context
-            const kabEl   = this.filterKabupaten?.el;
-            const wilayah = kabEl?.value ? (kabEl.options[kabEl.selectedIndex]?.text || 'Semua Wilayah') : 'Semua Wilayah';
-            const titleEl = this.chartDonutTitleRef?.el;
-            if (titleEl) {
-                titleEl.innerHTML = `<i class="fa fa-pie-chart"></i> Grafik Kriminalitas Berdasarkan Kategori (${wilayah})`;
-            }
-
-            this._renderBarChart(barNames, barValues);
-            this._renderDonutChart(donutData);
-        } catch (e) {
-            console.error('Chart load error:', e);
-        }
+        await Promise.all([
+            updateKriminalCharts(this, mode),
+            updateKamCharts(this, mode),
+            updateBencanaCharts(this, mode),
+            updateLalinCharts(this, mode),
+            updateLokasiCharts(this, mode),
+        ]);
     }
-
     _disposeCharts() {
-        if (this._echartsBar)   { this._echartsBar.dispose();   this._echartsBar = null; }
-        if (this._echartsDonut) { this._echartsDonut.dispose(); this._echartsDonut = null; }
-    }
-
-    _renderBarChart(names, values) {
-        const el = this.chartBarRef?.el;
-        if (!el || typeof echarts === 'undefined') return;
-        if (this._echartsBar) this._echartsBar.dispose();
-        this._echartsBar = echarts.init(el);
-        this._echartsBar.setOption({
-            tooltip: {
-                trigger: 'axis',
-                backgroundColor: '#fff',
-                borderColor: '#e5e7eb',
-                borderWidth: 1,
-                textStyle: { color: '#2c3e50', fontSize: 12 },
-                formatter: params => {
-                    const p = params[0];
-                    return `${p.name}<br/><b>Total Kriminalitas: ${p.value.toLocaleString('id-ID')}</b>`;
-                },
-            },
-            grid: { left: 10, right: 16, top: 10, bottom: 55, containLabel: true },
-            xAxis: {
-                type: 'category',
-                data: names,
-                axisLabel: { rotate: 40, fontSize: 10, color: '#666', interval: 0 },
-                axisLine: { lineStyle: { color: '#d0d7de' } },
-                axisTick: { show: false },
-            },
-            yAxis: {
-                type: 'value',
-                axisLabel: { fontSize: 10, color: '#888' },
-                splitLine: { lineStyle: { color: '#f3f0f5', type: 'dashed' } },
-            },
-            series: [{
-                type: 'bar',
-                data: values,
-                barMaxWidth: 36,
-                itemStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: '#9B59B6' },
-                        { offset: 1, color: '#6C3483' },
-                    ]),
-                    borderRadius: [4, 4, 0, 0],
-                },
-                emphasis: { itemStyle: { color: '#875A7B' } },
-            }],
-        });
-    }
-
-    _renderDonutChart(data) {
-        const el = this.chartDonutRef?.el;
-        if (!el || typeof echarts === 'undefined') return;
-        if (this._echartsDonut) this._echartsDonut.dispose();
-        this._echartsDonut = echarts.init(el);
-        const COLORS = ['#875A7B', '#9B59B6', '#6C3483', '#A569BD', '#C39BD3', '#7D3C98', '#D2B4DE', '#BDC3C7'];
-        this._echartsDonut.setOption({
-            tooltip: {
-                trigger: 'item',
-                backgroundColor: '#fff',
-                borderColor: '#e5e7eb',
-                borderWidth: 1,
-                textStyle: { color: '#2c3e50', fontSize: 12 },
-                formatter: '{b}: {c} ({d}%)',
-            },
-            legend: {
-                orient: 'vertical',
-                right: 8,
-                top: 'middle',
-                textStyle: { fontSize: 11, color: '#555' },
-                icon: 'circle',
-                itemWidth: 10,
-                itemHeight: 10,
-            },
-            color: COLORS,
-            series: [{
-                type: 'pie',
-                radius: ['42%', '68%'],
-                center: ['36%', '50%'],
-                data,
-                label: {
-                    show: true,
-                    formatter: '{b}\n{c}',
-                    fontSize: 10,
-                    color: '#555',
-                },
-                labelLine: { length: 8, length2: 10 },
-                itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
-                emphasis: {
-                    itemStyle: { shadowBlur: 8, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.2)' },
-                },
-            }],
-        });
+        disposeKriminalCharts(this);
+        disposeKamCharts(this);
+        disposeBencanaCharts(this);
+        disposeLalinCharts(this);
+        disposeLokasiCharts(this);
     }
 
     // ─────────────────────────────────────────────
@@ -648,7 +692,13 @@ export class DashboardMap extends Component {
         this.kecamatanLabelGroup = L.layerGroup().addTo(this.map);
         this.desaLayerGroup      = L.layerGroup().addTo(this.map);
         this.desaLabelGroup      = L.layerGroup().addTo(this.map);
-        this.markerLayerGroup    = L.layerGroup().addTo(this.map);
+        this.markerLayerGroup    = L.markerClusterGroup({
+            chunkedLoading:       true,
+            maxClusterRadius:     60,
+            showCoverageOnHover:  false,
+            spiderfyOnMaxZoom:    true,
+            disableClusteringAtZoom: 16,
+        }).addTo(this.map);
 
         await loadKabupatenLayer(this);
     }
@@ -663,6 +713,10 @@ export class DashboardMap extends Component {
         if (this.markerLayerGroup)    this.markerLayerGroup.clearLayers();
         if (this.comingSoonControl)   { this.comingSoonControl.remove(); this.comingSoonControl = null; }
         removeKriminalLegend(this);
+        removeKamLegend(this);
+        removeBencanaLegend(this);
+        removeLalinLegend(this);
+        removeLokasiLegend(this);
     }
 }
 

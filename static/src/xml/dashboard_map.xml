@@ -65,6 +65,9 @@
                         <select class="petadigi-select" t-ref="filterKabupaten" t-on-change="onFilterChange">
                             <option value="">Semua Kabupaten</option>
                         </select>
+                        <select class="petadigi-select" t-ref="filterState" t-on-change="onFilterChange">
+                            <option value="">Semua Status</option>
+                        </select>
                         <div class="petadigi-date-range" t-ref="filterDateRangeWrapper">
                             <i class="fa fa-calendar"/>
                             <input type="text" class="petadigi-flatpickr-input" t-ref="filterDateRange"
@@ -77,8 +80,11 @@
                     </div>
                 </div>
 
-                <!-- Filter aktif summary -->
-                <div class="petadigi-filter-summary" t-ref="filterSummary"/>
+                <!-- Filter aktif summary + sumber dokumen info -->
+                <div class="petadigi-summary-row">
+                    <div class="petadigi-filter-summary" t-ref="filterSummary"/>
+                    <div class="petadigi-sumber-info" t-ref="sumberInfo"/>
+                </div>
 
                 <!-- KPI ROW — diisi oleh JS sesuai mode aktif -->
                 <div class="petadigi-kpi-row" t-ref="kpiRow"/>
@@ -88,7 +94,113 @@
                     <div t-ref="mapContainer" class="petadigi-map-container" tabindex="-1"/>
                 </div>
 
-                <!-- CHART ROW — di bawah map, hanya untuk mode kriminal -->
+                <!-- CHART KAM ROW 1 — hanya untuk mode kam -->
+                <div class="petadigi-chart-row" t-ref="chartKamRow">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-bar-chart"/> Grafik Total Kasus Menonjol per Kabupaten
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartKamBar"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title" t-ref="chartKamDonutTitle">
+                            <i class="fa fa-pie-chart"/> Kasus Menonjol Berdasarkan Kategori (Semua Wilayah)
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartKamDonut"/>
+                    </div>
+                </div>
+
+                <!-- CHART KAM ROW 2 — modus operandi + jenis TKP -->
+                <div class="petadigi-chart-row" t-ref="chartKamRow2">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-random"/> Kasus Menonjol per Modus Operandi
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartKamModus"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-map-pin"/> Kasus Menonjol per Lokasi Kejadian
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartKamTkp"/>
+                    </div>
+                </div>
+
+                <!-- CHART KAM ROW 3 — data tahunan -->
+                <div class="petadigi-chart-row" t-ref="chartKamRow3">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-line-chart"/> Data Tahunan Kasus Menonjol
+                        </div>
+                        <div class="petadigi-chart-body petadigi-chart-body--tall" t-ref="chartKamTahunan"/>
+                    </div>
+                </div>
+
+                <!-- CHART BENCANA ROW — hanya untuk mode bencana -->
+                <div class="petadigi-chart-row" t-ref="chartBencanaRow">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-bar-chart"/> Grafik Total Bencana per Kabupaten
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartBencanaBar"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title" t-ref="chartBencanaDonutTitle">
+                            <i class="fa fa-pie-chart"/> Bencana Berdasarkan Kategori (Semua Wilayah)
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartBencanaDonut"/>
+                    </div>
+                </div>
+
+                <!-- CHART LALIN ROW — hanya untuk mode lalin -->
+                <div class="petadigi-chart-row" t-ref="chartLalinRow">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-bar-chart"/> Grafik Total Lalu Lintas per Kabupaten
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartLalinBar"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title" t-ref="chartLalinDonutTitle">
+                            <i class="fa fa-pie-chart"/> Lalu Lintas Berdasarkan Kategori (Semua Wilayah)
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartLalinDonut"/>
+                    </div>
+                </div>
+
+                <!-- CHART LALIN ROW 2 — jenis jalan + waktu kejadian -->
+                <div class="petadigi-chart-row" t-ref="chartLalinRow2">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-road"/> Lalu Lintas per Jenis Jalan
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartLalinJenisJalan"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-clock-o"/> Rentang Waktu Kejadian Lalu Lintas
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartLalinWaktu"/>
+                    </div>
+                </div>
+
+                <!-- CHART LOKASI ROW — hanya untuk mode lokasi -->
+                <div class="petadigi-chart-row" t-ref="chartLokasiRow">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-bar-chart"/> Grafik Total Lokasi Penting per Kabupaten
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartLokasiBar"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title" t-ref="chartLokasiDonutTitle">
+                            <i class="fa fa-pie-chart"/> Lokasi Penting Berdasarkan Kategori (Semua Wilayah)
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartLokasiDonut"/>
+                    </div>
+                </div>
+
+                <!-- CHART ROW 1 — di bawah map, hanya untuk mode kriminal -->
                 <div class="petadigi-chart-row" t-ref="chartRow">
                     <div class="petadigi-chart-card">
                         <div class="petadigi-chart-title">
@@ -101,6 +213,70 @@
                             <i class="fa fa-pie-chart"/> Grafik Kriminalitas Berdasarkan Kategori (Semua Wilayah)
                         </div>
                         <div class="petadigi-chart-body" t-ref="chartDonut"/>
+                    </div>
+                </div>
+
+                <!-- CHART ROW 2 — lokasi kejahatan + sub kategori -->
+                <div class="petadigi-chart-row" t-ref="chartRow2">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-map-pin"/> Lokasi Kejahatan Terbanyak
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartTkp"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-tags"/> Sub Kategori Kejahatan Terbanyak
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartSubKat"/>
+                    </div>
+                </div>
+
+                <!-- CHART ROW 3 — trend bulanan (2/3) + statistik waktu (1/3) -->
+                <div class="petadigi-chart-row" t-ref="chartRow3">
+                    <div class="petadigi-chart-card petadigi-chart-card--wide">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-line-chart"/> Trend Kriminalitas
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartTrend"/>
+                    </div>
+                    <div class="petadigi-chart-card petadigi-chart-card--narrow">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-clock-o"/> Statistik Waktu Kriminalitas
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartWaktu"/>
+                    </div>
+                </div>
+
+                <!-- CHART ROW 5 — data tahunan perbandingan dua tahun, full lebar -->
+                <div class="petadigi-chart-row" t-ref="chartRow5">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-line-chart"/> Data Tahunan
+                        </div>
+                        <div class="petadigi-chart-body petadigi-chart-body--tall" t-ref="chartTahunan"/>
+                    </div>
+                </div>
+
+                <!-- CHART ROW 4 — waktu kejadian per sub kategori (Curat, Curas, Curanmor) -->
+                <div class="petadigi-chart-row" t-ref="chartRow4">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-clock-o"/> Waktu Kejadian Curat
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartCurat"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-clock-o"/> Waktu Kejadian Curas
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartCuras"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-clock-o"/> Waktu Kejadian Curanmor
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartCuranmor"/>
                     </div>
                 </div>
 
