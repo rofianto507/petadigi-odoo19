@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="petadigi.MonitoringGiatDashboard">
+<div class="mg-root">
+
+    <!-- ══ TOP ROW: breadcrumb | filter ══ -->
+    <div class="mg-top-row">
+        <div class="mg-breadcrumb">
+            <i class="fa fa-bar-chart"/>
+            Cooling System
+            <span class="mg-bc-sep">›</span>
+            <span class="mg-bc-active">Monitoring Giat Lapangan</span>
+        </div>
+        <div class="mg-filter-box">
+            <i class="fa fa-filter"/>
+
+            <!-- Jenis Laporan -->
+            <select class="mg-select" t-on-change="onJenisChange">
+                <option value="">Semua Jenis Laporan</option>
+                <t t-foreach="state.jenisList" t-as="j" t-key="j.id">
+                    <option t-att-value="j.id"
+                            t-att-selected="state.jenisId == j.id"
+                            t-out="j.nama"/>
+                </t>
+            </select>
+
+            <!-- Polres -->
+            <select class="mg-select" t-on-change="onPolresChange">
+                <option value="">Semua Polres</option>
+                <t t-foreach="state.polresList" t-as="p" t-key="p.id">
+                    <option t-att-value="p.id"
+                            t-att-selected="state.polresId == p.id"
+                            t-out="p.name"/>
+                </t>
+            </select>
+
+            <!-- Date Range (single flatpickr range) -->
+            <div class="mg-date-range">
+                <i class="fa fa-calendar"/>
+                <input t-ref="dateRangeRef" class="mg-flatpickr-input" type="text"
+                       placeholder="Pilih Rentang Tanggal" readonly="readonly"/>
+                <button class="mg-date-clear" t-on-click="onClearDate" title="Reset Tanggal">
+                    <i class="fa fa-times"/>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ FILTER SUMMARY ══ -->
+    <div class="mg-summary-row">
+        <i class="fa fa-info-circle"/>
+        <span>Filter aktif:</span>
+        <t t-foreach="activeFilters" t-as="f" t-key="f_index">
+            <span class="mg-filter-chip">
+                <i t-att-class="'fa ' + f.icon"/>
+                <t t-out="f.label"/>
+            </span>
+        </t>
+    </div>
+
+    <!-- ══ LOADING ══ -->
+    <t t-if="state.loading">
+        <div class="mg-loading">
+            <div class="mg-spinner"/>
+            <span>Memuat data...</span>
+        </div>
+    </t>
+
+    <!-- ══ DASHBOARD BODY ══ -->
+    <t t-else="">
+        <div class="mg-body">
+
+            <!-- KPI Cards -->
+            <div class="mg-kpi-row">
+                <div class="mg-kpi-card">
+                    <div class="mg-kpi-icon mg-kpi-icon--blue">
+                        <i class="fa fa-list-alt"/>
+                    </div>
+                    <div class="mg-kpi-body">
+                        <div class="mg-kpi-value" t-out="state.kpi.total"/>
+                        <div class="mg-kpi-label">Total Laporan</div>
+                        <div class="mg-kpi-sub">dalam periode</div>
+                    </div>
+                </div>
+                <div class="mg-kpi-card">
+                    <div class="mg-kpi-icon mg-kpi-icon--green">
+                        <i class="fa fa-users"/>
+                    </div>
+                    <div class="mg-kpi-body">
+                        <div class="mg-kpi-value" t-out="state.kpi.petugas"/>
+                        <div class="mg-kpi-label">Petugas Aktif</div>
+                        <div class="mg-kpi-sub">petugas unik</div>
+                    </div>
+                </div>
+                <div class="mg-kpi-card">
+                    <div class="mg-kpi-icon mg-kpi-icon--orange">
+                        <i class="fa fa-building"/>
+                    </div>
+                    <div class="mg-kpi-body">
+                        <div class="mg-kpi-value" t-out="state.kpi.polresTeraktifCount"/>
+                        <div class="mg-kpi-label">Polres Teraktif</div>
+                        <div class="mg-kpi-sub" t-out="state.kpi.polresTeraktif"/>
+                    </div>
+                </div>
+                <div class="mg-kpi-card">
+                    <div class="mg-kpi-icon mg-kpi-icon--purple">
+                        <i class="fa fa-calendar-check-o"/>
+                    </div>
+                    <div class="mg-kpi-body">
+                        <div class="mg-kpi-value" t-out="state.kpi.hariTeraktifCount"/>
+                        <div class="mg-kpi-label">Hari Teraktif</div>
+                        <div class="mg-kpi-sub" t-out="state.kpi.hariTeraktif"/>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 1: Donut + Line -->
+            <div class="mg-charts-row mg-charts-row--two">
+                <div class="mg-chart-card">
+                    <div class="mg-chart-title">
+                        <i class="fa fa-pie-chart"/>
+                        Distribusi Jenis Laporan
+                    </div>
+                    <t t-if="state.donutData.length === 0">
+                        <div class="mg-empty">
+                            <i class="fa fa-inbox fa-2x"/>
+                            <span>Tidak ada data</span>
+                        </div>
+                    </t>
+                    <div t-else="" t-ref="donutRef" class="mg-chart-canvas"/>
+                </div>
+                <div class="mg-chart-card">
+                    <div class="mg-chart-title">
+                        <i class="fa fa-line-chart"/>
+                        Tren Giat Harian
+                    </div>
+                    <t t-if="state.lineData.dates.length === 0">
+                        <div class="mg-empty">
+                            <i class="fa fa-inbox fa-2x"/>
+                            <span>Tidak ada data</span>
+                        </div>
+                    </t>
+                    <div t-else="" t-ref="lineRef" class="mg-chart-canvas"/>
+                </div>
+            </div>
+
+            <!-- Row 2: Bar per Polres (2/3) + Bar per Polsek top 5 (1/3) -->
+            <div class="mg-charts-row mg-charts-row--polres">
+                <div class="mg-chart-card">
+                    <div class="mg-chart-title">
+                        <i class="fa fa-bar-chart"/>
+                        Laporan per Polres
+                    </div>
+                    <t t-if="state.barData.labels.length === 0">
+                        <div class="mg-empty">
+                            <i class="fa fa-inbox fa-2x"/>
+                            <span>Tidak ada data</span>
+                        </div>
+                    </t>
+                    <div t-else="" t-ref="barRef" class="mg-chart-canvas"/>
+                </div>
+                <div class="mg-chart-card">
+                    <div class="mg-chart-title">
+                        <i class="fa fa-bar-chart"/>
+                        Top 5 Polsek
+                    </div>
+                    <t t-if="state.barPolsekData.labels.length === 0">
+                        <div class="mg-empty">
+                            <i class="fa fa-inbox fa-2x"/>
+                            <span>Tidak ada data</span>
+                        </div>
+                    </t>
+                    <div t-else="" t-ref="barPolsekRef" class="mg-chart-canvas"/>
+                </div>
+            </div>
+
+            <!-- Row 3: Tables -->
+            <div class="mg-tables-row">
+
+                <!-- Table kiri: Ringkasan per Polres -->
+                <div class="mg-table-card">
+                    <div class="mg-table-title">
+                        <i class="fa fa-angle-right"/>
+                        Ringkasan per Polres
+                    </div>
+                    <div class="mg-table-toolbar">
+                        <div class="mg-table-perpage">
+                            <select class="mg-tbl-select" t-on-change="onPolresPerPage">
+                                <option value="10" t-att-selected="state.tblPolres.perPage == 10">10</option>
+                                <option value="25" t-att-selected="state.tblPolres.perPage == 25">25</option>
+                                <option value="50" t-att-selected="state.tblPolres.perPage == 50">50</option>
+                            </select>
+                            <span>entries per page</span>
+                        </div>
+                        <div class="mg-table-search-wrap">
+                            <span>Search:</span>
+                            <input type="text" class="mg-table-search-input"
+                                   t-att-value="state.tblPolres.search"
+                                   t-on-input="onPolresSearch"
+                                   placeholder="Cari polres..."/>
+                        </div>
+                    </div>
+                    <div class="mg-table-scroll">
+                        <table class="mg-table">
+                            <thead>
+                                <tr>
+                                    <th class="mg-th-sort" data-col="name" t-on-click="onPolresSort">
+                                        Polres <i t-att-class="_sortIcon(state.tblPolres, 'name')"/>
+                                    </th>
+                                    <th class="mg-th-sort mg-th-right" data-col="total" t-on-click="onPolresSort">
+                                        Total <i t-att-class="_sortIcon(state.tblPolres, 'total')"/>
+                                    </th>
+                                    <th>Polsek Belum Lapor</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="polresTable.rows.length === 0">
+                                    <tr><td colspan="3" class="mg-td-empty">Tidak ada data</td></tr>
+                                </t>
+                                <t t-foreach="polresTable.rows" t-as="row" t-key="row.id">
+                                    <tr>
+                                        <td t-out="row.name"/>
+                                        <td class="mg-td-right" t-out="row.total"/>
+                                        <td>
+                                            <span class="mg-badge mg-badge--red">Belum:<t t-out="row.polsekBelum"/></span>
+                                            <span class="mg-badge mg-badge--green">Lapor:<t t-out="row.polsekLapor"/></span>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mg-table-footer">
+                        <span class="mg-table-info">
+                            Showing <t t-out="polresTable.from"/> to <t t-out="polresTable.to"/>
+                            of <t t-out="polresTable.total"/> entries
+                        </span>
+                        <div class="mg-pagination">
+                            <button class="mg-page-btn" t-on-click="onPolresPrev"
+                                    t-att-disabled="!polresTable.hasPrev">Previous</button>
+                            <button class="mg-page-btn" t-on-click="onPolresNext"
+                                    t-att-disabled="!polresTable.hasNext">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table kanan: Polsek yang mengirim -->
+                <div class="mg-table-card">
+                    <div class="mg-table-title">
+                        <i class="fa fa-angle-right"/>
+                        Polsek yang Mengirim
+                    </div>
+                    <div class="mg-table-toolbar">
+                        <div class="mg-table-perpage">
+                            <select class="mg-tbl-select" t-on-change="onPolsekPerPage">
+                                <option value="10" t-att-selected="state.tblPolsek.perPage == 10">10</option>
+                                <option value="25" t-att-selected="state.tblPolsek.perPage == 25">25</option>
+                                <option value="50" t-att-selected="state.tblPolsek.perPage == 50">50</option>
+                            </select>
+                            <span>entries per page</span>
+                        </div>
+                        <div class="mg-table-search-wrap">
+                            <span>Search:</span>
+                            <input type="text" class="mg-table-search-input"
+                                   t-att-value="state.tblPolsek.search"
+                                   t-on-input="onPolsekSearch"
+                                   placeholder="Cari polsek..."/>
+                        </div>
+                    </div>
+                    <div class="mg-table-scroll">
+                        <table class="mg-table">
+                            <thead>
+                                <tr>
+                                    <th class="mg-th-sort" data-col="polresName" t-on-click="onPolsekSort">
+                                        Polres <i t-att-class="_sortIcon(state.tblPolsek, 'polresName')"/>
+                                    </th>
+                                    <th class="mg-th-sort" data-col="polsekName" t-on-click="onPolsekSort">
+                                        Polsek <i t-att-class="_sortIcon(state.tblPolsek, 'polsekName')"/>
+                                    </th>
+                                    <th class="mg-th-sort mg-th-right" data-col="count" t-on-click="onPolsekSort">
+                                        Jumlah Laporan <i t-att-class="_sortIcon(state.tblPolsek, 'count')"/>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="polsekTable.rows.length === 0">
+                                    <tr><td colspan="3" class="mg-td-empty">Tidak ada data</td></tr>
+                                </t>
+                                <t t-foreach="polsekTable.rows" t-as="row" t-key="row.id">
+                                    <tr>
+                                        <td t-out="row.polresName"/>
+                                        <td t-out="row.polsekName"/>
+                                        <td class="mg-td-right" t-out="row.count"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mg-table-footer">
+                        <span class="mg-table-info">
+                            Showing <t t-out="polsekTable.from"/> to <t t-out="polsekTable.to"/>
+                            of <t t-out="polsekTable.total"/> entries
+                        </span>
+                        <div class="mg-pagination">
+                            <button class="mg-page-btn" t-on-click="onPolsekPrev"
+                                    t-att-disabled="!polsekTable.hasPrev">Previous</button>
+                            <button class="mg-page-btn" t-on-click="onPolsekNext"
+                                    t-att-disabled="!polsekTable.hasNext">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- end mg-tables-row -->
+
+            <!-- Row 4: Map Sebaran Lokasi Giat -->
+            <div class="mg-map-card">
+                <div class="mg-chart-title">
+                    <i class="fa fa-map-marker"/>
+                    Sebaran Lokasi Giat
+                    <span class="mg-map-badge">
+                        <t t-out="state.mapPoints.length"/> titik
+                    </span>
+                </div>
+                <t t-if="state.mapPoints.length === 0">
+                    <div class="mg-map-nodata">
+                        <i class="fa fa-map-o fa-2x"/>
+                        <span>Tidak ada data koordinat pada periode ini</span>
+                    </div>
+                </t>
+                <div t-ref="mapRef" class="mg-map-canvas"/>
+            </div>
+
+        </div>
+    </t>
+
+</div>
+</t>
+</templates>

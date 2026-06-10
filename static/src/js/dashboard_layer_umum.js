@@ -207,7 +207,14 @@ export async function drillDownKecamatan(ctx, kabProps, kabLayer) {
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        addBackButton(ctx, 'kabupaten', null);
+        addBackButton(ctx, 'kabupaten', null, async () => {
+            ctx.kecamatanLayerGroup.clearLayers();
+            ctx.kecamatanLabelGroup.clearLayers();
+            ctx.desaLayerGroup.clearLayers();
+            ctx.desaLabelGroup.clearLayers();
+            ctx._updateBreadcrumb(`<i class="fa fa-map"></i> Peta Umum`);
+            await loadKabupatenLayer(ctx);
+        });
 
     } catch (error) {
         console.error("Gagal memuat data kecamatan:", error);
@@ -332,7 +339,16 @@ export async function drillDownDesa(ctx, kecProps, kecLayer, kabProps) {
         });
 
         ctx.desaLayerGroup.addLayer(geoLayer);
-        addBackButton(ctx, 'kecamatan', { kecProps, kecLayer, kabProps });
+        addBackButton(ctx, 'kecamatan', null, async () => {
+            ctx.desaLayerGroup.clearLayers();
+            ctx.desaLabelGroup.clearLayers();
+            const items = ctx.breadcrumbRef.el.querySelectorAll('.petadigi-breadcrumb-item');
+            if (items.length > 2) {
+                items[items.length - 1].previousSibling?.remove();
+                items[items.length - 1].remove();
+            }
+            await drillDownKecamatan(ctx, kabProps, kecLayer);
+        });
 
     } catch (error) {
         console.error("Gagal memuat data desa:", error);

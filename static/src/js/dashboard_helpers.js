@@ -1,6 +1,28 @@
 /** @odoo-module **/
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DATE FORMAT
+// ─────────────────────────────────────────────────────────────────────────────
+
+const _BULAN = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+
+/**
+ * Format tanggal dari database (UTC) → "30 Jun 2026" (local timezone).
+ * Menerima "YYYY-MM-DD" maupun "YYYY-MM-DD HH:MM:SS".
+ */
+export function fmtTanggal(s) {
+    if (!s) return '-';
+    // Tambahkan waktu + Z agar browser parsing sebagai UTC
+    const iso = s.trim().length <= 10
+        ? `${s}T00:00:00Z`
+        : `${s.replace(' ', 'T')}Z`;
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return s;
+    // getDate/getMonth/getFullYear menggunakan local timezone otomatis
+    return `${d.getDate()} ${_BULAN[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // FILTER INIT
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -63,7 +85,7 @@ export async function initFilters(ctx) {
  * @param {'kabupaten'|'kecamatan'} targetLevel
  * @param {object|null} backCtx - data konteks untuk kembali ke level sebelumnya
  */
-export function addBackButton(ctx, targetLevel, backCtx) {
+export function addBackButton(ctx, targetLevel, backCtx, onBack) {
     if (ctx.backButton) { ctx.backButton.remove(); ctx.backButton = null; }
 
     const labelMap = {
@@ -74,34 +96,12 @@ export function addBackButton(ctx, targetLevel, backCtx) {
     const BackControl = L.Control.extend({
         onAdd: () => {
             const btn = L.DomUtil.create('button', 'petadigi-btn-back');
-            btn.innerHTML = `<i class="fa fa-arrow-left"></i> ${labelMap[targetLevel]}`;
+            btn.innerHTML = `<i class="fa fa-arrow-left"></i> ${labelMap[targetLevel] || 'Kembali'}`;
             L.DomEvent.on(btn, 'click', async (ev) => {
                 L.DomEvent.stopPropagation(ev);
                 ctx.map.closePopup();
-
-                // Import dinamis agar tidak circular dependency
-                const { loadKabupatenLayer, drillDownKecamatan } = await import("./dashboard_layer_umum");
-
-                if (targetLevel === 'kabupaten') {
-                    ctx.kecamatanLayerGroup.clearLayers();
-                    ctx.kecamatanLabelGroup.clearLayers();
-                    ctx.desaLayerGroup.clearLayers();
-                    ctx.desaLabelGroup.clearLayers();
-                    ctx._updateBreadcrumb(`<i class="fa fa-map"></i> Peta Umum`);
-                    await loadKabupatenLayer(ctx);
-                } else if (targetLevel === 'kecamatan' && backCtx) {
-                    ctx.desaLayerGroup.clearLayers();
-                    ctx.desaLabelGroup.clearLayers();
-                    // Trim breadcrumb
-                    const items = ctx.breadcrumbRef.el.querySelectorAll('.petadigi-breadcrumb-item');
-                    if (items.length > 2) {
-                        items[items.length - 1].previousSibling?.remove();
-                        items[items.length - 1].remove();
-                    }
-                    await drillDownKecamatan(ctx, backCtx.kabProps, backCtx.kecLayer);
-                }
-
                 if (ctx.backButton) { ctx.backButton.remove(); ctx.backButton = null; }
+                if (typeof onBack === 'function') await onBack();
             });
             return btn;
         },

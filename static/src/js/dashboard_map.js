@@ -11,6 +11,7 @@ import { loadModeKam, removeKamLegend } from "./dashboard_layer_kam";
 import { loadModeLalin, removeLalinLegend } from "./dashboard_layer_lalin";
 import { loadModeBencana, removeBencanaLegend } from "./dashboard_layer_bencana";
 import { loadModeLokasi, removeLokasiLegend } from "./dashboard_layer_lokasi";
+import { removeLokasiOverlay } from "./dashboard_overlay_lokasi";
 import { updateKriminalCharts, disposeKriminalCharts } from "./dashboard_charts_kriminal";
 import { updateKamCharts, disposeKamCharts } from "./dashboard_charts_kam";
 import { updateBencanaCharts, disposeBencanaCharts } from "./dashboard_charts_bencana";
@@ -118,6 +119,10 @@ export class DashboardMap extends Component {
         this.drillKabupatenId = null;
         this.drillKecamatanId = null;
 
+        // Overlay lokasi penting (multi-mode)
+        this.lokasiOverlaySelected = new Set();
+        this.lokasiOverlayControl  = null;
+
         this._KATEGORI_MODEL = {
             kriminal: 'petadigi.kategori_kriminal',
             kam:      'petadigi.kategori_kamtibmas',
@@ -145,12 +150,14 @@ export class DashboardMap extends Component {
         const el = this.filterDateRange.el;
         if (!el || typeof flatpickr === 'undefined') return;
 
+        this._suppressDateChange = false;
         this._fp = flatpickr(el, {
             mode: 'range',
             dateFormat: 'Y-m-d',
             allowInput: false,
             disableMobile: true,
             onChange: (selectedDates) => {
+                if (this._suppressDateChange) return;
                 const fmt = d => d.toISOString().slice(0, 10);
                 this.activeDateFrom = selectedDates[0] ? fmt(selectedDates[0]) : '';
                 this.activeDateTo   = selectedDates[1] ? fmt(selectedDates[1]) : '';
@@ -162,7 +169,9 @@ export class DashboardMap extends Component {
     }
 
     onClearDate() {
+        this._suppressDateChange = true;
         if (this._fp) this._fp.clear();
+        this._suppressDateChange = false;
         this.activeDateFrom = '';
         this.activeDateTo   = '';
         this.onFilterChange();
@@ -700,6 +709,9 @@ export class DashboardMap extends Component {
             disableClusteringAtZoom: 16,
         }).addTo(this.map);
 
+        // Layer terpisah untuk overlay lokasi penting (tidak ikut cluster)
+        this.lokasiOverlayLayerGroup = L.layerGroup().addTo(this.map);
+
         await loadKabupatenLayer(this);
     }
 
@@ -717,6 +729,7 @@ export class DashboardMap extends Component {
         removeBencanaLegend(this);
         removeLalinLegend(this);
         removeLokasiLegend(this);
+        removeLokasiOverlay(this);
     }
 }
 

@@ -47,6 +47,31 @@
             parent="menu_petadigi_maps"
             action="action_petadigi_lokasi_penting"
             sequence="5"/>
+        <!-- COOLING SYSTEM -->
+        <menuitem
+            id="menu_petadigi_cooling_system"
+            name="Cooling System"
+            parent="menu_petadigi_root"
+            sequence="20"/>
+        <menuitem
+            id="menu_cs_monitoring_giat"
+            name="Monitoring Giat"
+            parent="menu_petadigi_cooling_system"
+            action="action_monitoring_giat"
+            sequence="0"/>
+        <menuitem
+            id="menu_cs_jenis_laporan"
+            name="Jenis Laporan"
+            parent="menu_petadigi_cooling_system"
+            action="action_petadigi_jenis_laporan"
+            sequence="1"/>
+        <menuitem
+            id="menu_cs_hasil_giat"
+            name="Hasil Giat"
+            parent="menu_petadigi_cooling_system"
+            action="action_petadigi_hasil_giat"
+            sequence="2"/>
+
         <menuitem
             id="menu_petadigi_configuration"
             name="Configuration"

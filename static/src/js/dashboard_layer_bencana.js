@@ -1,5 +1,8 @@
 /** @odoo-module **/
 
+import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
+import { fmtTanggal } from './dashboard_helpers';
+
 /**
  * Peta Bencana
  * Choropleth per kabupaten/kecamatan/desa — warna berdasarkan jumlah kejadian bencana.
@@ -116,10 +119,7 @@ async function _loadBencanaMarkers(ctx, domain) {
         const stateLabel  = r.state === 'AKTIF' ? 'Aktif' : 'Non Aktif';
         const kategori    = Array.isArray(r.kategori_id) ? r.kategori_id[1] : '-';
         const penyebab    = r.penyebab ? r.penyebab.slice(0, 60) + (r.penyebab.length > 60 ? '…' : '') : '-';
-        const tglStr      = r.tanggal_kejadian;
-        const tglKejadian = tglStr
-            ? new Date(tglStr.replace(' ', 'T') + 'Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-            : '-';
+        const tglKejadian = fmtTanggal(r.tanggal_kejadian);
 
         const katId  = Array.isArray(r.kategori_id) ? r.kategori_id[0] : null;
         const faIcon = (katId && categoryIconMap[katId]) ? categoryIconMap[katId] : 'fa-exclamation-triangle';
@@ -249,6 +249,7 @@ export async function loadModeBencana(ctx) {
     } catch (error) {
         console.error('Gagal memuat data bencana:', error);
     }
+    await initLokasiOverlay(ctx);
 }
 
 // ── Popup Kabupaten ──────────────────────────────────────────────────────────
@@ -383,6 +384,7 @@ export async function drillDownBencanaKecamatan(ctx, kabProps, kabLayer, filters
         ctx._updateFilterSummary(ctx.currentMode);
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
+        updateLokasiOverlayMarkers(ctx);
     } catch (error) {
         console.error('Gagal memuat data kecamatan bencana:', error);
     }
@@ -514,6 +516,7 @@ export async function drillDownBencanaKelurahan(ctx, kecProps, kecLayer, filters
         ctx.drillKecamatanId = kecProps.id;
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
+        updateLokasiOverlayMarkers(ctx);
     } catch (error) {
         console.error('Gagal memuat data desa bencana:', error);
     }

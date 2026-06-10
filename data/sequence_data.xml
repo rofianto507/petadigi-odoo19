@@ -41,5 +41,13 @@
             <field name="number_next">1</field>
             <field name="number_increment">1</field>
         </record>
+        <record id="seq_petadigi_hasil_giat" model="ir.sequence">
+            <field name="name">Kode Hasil Giat</field>
+            <field name="code">petadigi.hasil_giat.sequence</field>
+            <field name="prefix">CS</field>
+            <field name="padding">7</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
     </data>
 </odoo>

@@ -1,5 +1,8 @@
 /** @odoo-module **/
 
+import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
+import { fmtTanggal } from './dashboard_helpers';
+
 /**
  * Peta Kasus Menonjol (KAM)
  * Choropleth per kabupaten/kecamatan/desa — warna berdasarkan jumlah kasus.
@@ -139,10 +142,7 @@ async function _loadKamMarkers(ctx, domain) {
         const jenisTkp       = Array.isArray(r.jenis_tkp_id)       ? r.jenis_tkp_id[1]       : '-';
         const modusOperandi  = Array.isArray(r.modus_operandi_id)  ? r.modus_operandi_id[1]  : '-';
         const tersangka      = r.tersangka ? r.tersangka.slice(0, 60) + (r.tersangka.length > 60 ? '…' : '') : '-';
-        const tglStr         = r.tanggal_kejadian;
-        const tglKejadian    = tglStr
-            ? new Date(tglStr.replace(' ', 'T') + 'Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-            : '-';
+        const tglKejadian    = fmtTanggal(r.tanggal_kejadian);
 
         const katId  = Array.isArray(r.kategori_id) ? r.kategori_id[0] : null;
         const faIcon = (katId && categoryIconMap[katId]) ? categoryIconMap[katId] : 'fa-exclamation-circle';
@@ -273,6 +273,7 @@ export async function loadModeKam(ctx) {
     } catch (error) {
         console.error('Gagal memuat data kasus menonjol:', error);
     }
+    await initLokasiOverlay(ctx);
 }
 
 // ── Popup Kabupaten ──────────────────────────────────────────────────────────
@@ -408,6 +409,7 @@ export async function drillDownKamKecamatan(ctx, kabProps, kabLayer, filters) {
         ctx._updateFilterSummary(ctx.currentMode);
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
+        updateLokasiOverlayMarkers(ctx);
     } catch (error) {
         console.error('Gagal memuat data kecamatan KAM:', error);
     }
@@ -540,6 +542,7 @@ export async function drillDownKamDesa(ctx, kecProps, kecLayer, filters, kabProp
         ctx.drillKecamatanId = kecProps.id;
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
+        updateLokasiOverlayMarkers(ctx);
     } catch (error) {
         console.error('Gagal memuat data desa KAM:', error);
     }

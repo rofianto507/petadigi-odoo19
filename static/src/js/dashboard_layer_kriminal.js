@@ -1,5 +1,8 @@
 /** @odoo-module **/
 
+import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
+import { fmtTanggal } from './dashboard_helpers';
+
 /**
  * Peta Kriminal
  * Choropleth kriminalitas per kabupaten/kecamatan — warna berdasarkan jumlah kasus.
@@ -151,10 +154,7 @@ async function _loadKriminalMarkers(ctx, domain) {
         const kategori     = Array.isArray(r.kategori_id)     ? r.kategori_id[1]     : '-';
         const subKategori  = Array.isArray(r.sub_kategori_id) ? r.sub_kategori_id[1] : '-';
         const jenisTkp     = Array.isArray(r.jenis_tkp_id)    ? r.jenis_tkp_id[1]    : '-';
-        const tglStr       = r.tanggal_kejadian;
-        const tglKejadian  = tglStr
-            ? new Date(tglStr.replace(' ', 'T') + 'Z').toLocaleDateString('id-ID', { day:'2-digit', month:'short', year:'numeric' })
-            : '-';
+        const tglKejadian  = fmtTanggal(r.tanggal_kejadian);
 
         const katId  = Array.isArray(r.kategori_id) ? r.kategori_id[0] : null;
         const faIcon = (katId && categoryIconMap[katId]) ? categoryIconMap[katId] : 'fa-exclamation-triangle';
@@ -313,6 +313,7 @@ export async function loadModeKriminal(ctx) {
     } catch (error) {
         console.error("Gagal memuat data kriminalitas:", error);
     }
+    await initLokasiOverlay(ctx);
 }
 
 // ── Popup Kabupaten ──────────────────────────────────────────────────────────
@@ -460,6 +461,7 @@ export async function drillDownKriminalKecamatan(ctx, kabProps, kabLayer, filter
         ctx._updateFilterSummary(ctx.currentMode);
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
+        updateLokasiOverlayMarkers(ctx);
 
     } catch (error) {
         console.error("Gagal memuat data kecamatan kriminal:", error);
@@ -605,6 +607,7 @@ export async function drillDownKriminalDesa(ctx, kecProps, kecLayer, filters, ka
         ctx.drillKecamatanId = kecProps.id;
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
+        updateLokasiOverlayMarkers(ctx);
 
     } catch (error) {
         console.error("Gagal memuat data desa kriminal:", error);

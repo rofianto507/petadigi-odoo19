@@ -1,5 +1,7 @@
 /** @odoo-module **/
 
+import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
+
 /**
  * Peta Lalu Lintas
  * Choropleth per kabupaten/kecamatan/desa — warna berdasarkan jumlah kejadian lalin.
@@ -117,10 +119,7 @@ async function _loadLalinMarkers(ctx, domain) {
         const kategori    = Array.isArray(r.kategori_id) ? r.kategori_id[1] : '-';
         const jenisJalan  = Array.isArray(r.jenis_jalan_id) ? r.jenis_jalan_id[1] : '-';
         const penyebab    = r.penyebab ? r.penyebab.slice(0, 60) + (r.penyebab.length > 60 ? '…' : '') : '-';
-        const tglStr      = r.tanggal_kejadian;
-        const tglKejadian = tglStr
-            ? new Date(tglStr.replace(' ', 'T') + 'Z').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
-            : '-';
+        const tglKejadian = fmtTanggal(r.tanggal_kejadian);
 
         const katId  = Array.isArray(r.kategori_id) ? r.kategori_id[0] : null;
         const faIcon = (katId && categoryIconMap[katId]) ? categoryIconMap[katId] : 'fa-car';
@@ -251,6 +250,7 @@ export async function loadModeLalin(ctx) {
     } catch (error) {
         console.error('Gagal memuat data lalu lintas:', error);
     }
+    await initLokasiOverlay(ctx);
 }
 
 // ── Popup Kabupaten ──────────────────────────────────────────────────────────
@@ -385,6 +385,7 @@ export async function drillDownLalinKecamatan(ctx, kabProps, kabLayer, filters) 
         ctx._updateFilterSummary(ctx.currentMode);
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
+        updateLokasiOverlayMarkers(ctx);
     } catch (error) {
         console.error('Gagal memuat data kecamatan lalu lintas:', error);
     }
@@ -516,6 +517,7 @@ export async function drillDownLalinKelurahan(ctx, kecProps, kecLayer, filters, 
         ctx.drillKecamatanId = kecProps.id;
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
+        updateLokasiOverlayMarkers(ctx);
     } catch (error) {
         console.error('Gagal memuat data desa lalu lintas:', error);
     }

@@ -22,3 +22,5 @@ access_petadigi_kasus_menonjol,petadigi.kasus_menonjol,model_petadigi_kasus_meno
 access_petadigi_bencana,petadigi.bencana,model_petadigi_bencana,,1,1,1,1
 access_petadigi_lalu_lintas,petadigi.lalu_lintas,model_petadigi_lalu_lintas,,1,1,1,1
 access_petadigi_lokasi_penting,petadigi.lokasi_penting,model_petadigi_lokasi_penting,,1,1,1,1
+access_petadigi_jenis_laporan,petadigi.jenis_laporan,model_petadigi_jenis_laporan,,1,1,1,1
+access_petadigi_hasil_giat,petadigi.hasil_giat,model_petadigi_hasil_giat,,1,1,1,1

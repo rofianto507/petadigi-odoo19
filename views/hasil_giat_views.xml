@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- LIST VIEW -->
+        <record id="view_petadigi_hasil_giat_list" model="ir.ui.view">
+            <field name="name">hasil_giat.list.petadigi</field>
+            <field name="model">petadigi.hasil_giat</field>
+            <field name="arch" type="xml">
+                <list string="Hasil Giat">
+                    <field name="code"/>
+                    <field name="tanggal"/>
+                    <field name="jenis_laporan_id"/>
+                    <field name="nrp"/>
+                    <field name="nama_petugas"/>
+                    <field name="pangkat_petugas"/>
+                    <field name="polres_id"/>
+                    <field name="polsek_id"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- SEARCH VIEW -->
+        <record id="view_petadigi_hasil_giat_search" model="ir.ui.view">
+            <field name="name">hasil_giat.search.petadigi</field>
+            <field name="model">petadigi.hasil_giat</field>
+            <field name="arch" type="xml">
+                <search string="Cari Hasil Giat">
+                    <field name="code"/>
+                    <field name="nrp"/>
+                    <field name="nama_petugas"/>
+                    <field name="jenis_laporan_id"/>
+                    <field name="polres_id"/>
+                    <field name="polsek_id"/>
+                    <separator/>
+                    <filter string="Hari Ini" name="filter_today"
+                        domain="[('tanggal','&gt;=', (context_today()).strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal','&lt;=', (context_today()).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <group>
+                        <filter string="Jenis Laporan" name="groupby_jenis" context="{'group_by': 'jenis_laporan_id'}"/>
+                        <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>
+                        <filter string="Tanggal" name="groupby_tanggal" context="{'group_by': 'tanggal:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- FORM VIEW -->
+        <record id="view_petadigi_hasil_giat_form" model="ir.ui.view">
+            <field name="name">hasil_giat.form.petadigi</field>
+            <field name="model">petadigi.hasil_giat</field>
+            <field name="arch" type="xml">
+                <form string="Hasil Giat">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="code" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <group string="IDENTITAS PETUGAS">
+                                <field name="nrp"/>
+                                <field name="nama_petugas"/>
+                                <field name="pangkat_petugas"/>
+                            </group>
+                            <group string="FOTO">
+                                <field name="foto" widget="image" class="oe_avatar"
+                                    options="{'preview_image': 'foto'}" nolabel="1"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="LAPORAN">
+                                <field name="jenis_laporan_id"/>
+                                <field name="tanggal"/>
+                            </group>
+                            <group string="WILAYAH">
+                                <field name="polres_id"/>
+                                <field name="polsek_id" domain="[('polres_id', '=', polres_id)]"/>
+                            </group>
+                        </group>
+
+                        <div>
+                            <field name="latitude" widget="latlong_map_picker"
+                                class="latlong-mappicker-wrapper"
+                                nolabel="1"/>
+                        </div>
+
+                        <group>
+                            <field name="latitude" string="Latitude"/>
+                            <field name="longitude" string="Longitude"/>
+                        </group>
+
+                        <notebook>
+                            <page string="Uraian Kegiatan">
+                                <field name="kegiatan" placeholder="Tuliskan uraian kegiatan di sini..."/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- GRAPH VIEW -->
+        <record id="view_petadigi_hasil_giat_graph" model="ir.ui.view">
+            <field name="name">hasil_giat.graph.petadigi</field>
+            <field name="model">petadigi.hasil_giat</field>
+            <field name="arch" type="xml">
+                <graph string="Grafik Hasil Giat" type="bar">
+                    <field name="jenis_laporan_id"/>
+                    <field name="polres_id"/>
+                    <field name="id" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- ACTION -->
+        <record id="action_petadigi_hasil_giat" model="ir.actions.act_window">
+            <field name="name">Hasil Giat</field>
+            <field name="res_model">petadigi.hasil_giat</field>
+            <field name="view_mode">list,form,graph</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'list', 'view_id': ref('view_petadigi_hasil_giat_list')}),
+                (0, 0, {'view_mode': 'form', 'view_id': ref('view_petadigi_hasil_giat_form')}),
+                (0, 0, {'view_mode': 'graph', 'view_id': ref('view_petadigi_hasil_giat_graph')}),
+            ]"/>
+            <field name="search_view_id" ref="petadigi.view_petadigi_hasil_giat_search"/>
+        </record>
+    </data>
+</odoo>
