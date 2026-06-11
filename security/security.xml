@@ -1,4 +1,368 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
- 
+    <data noupdate="0">
+
+    <!-- ═══════════════════════════════════════════════════════
+         MODULE CATEGORY
+    ═══════════════════════════════════════════════════════ -->
+    <record id="module_category_petadigi" model="ir.module.category">
+        <field name="name">PetaDigi</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <!-- Odoo 19: privilege layer between category and groups -->
+    <record id="privilege_petadigi_access" model="res.groups.privilege">
+        <field name="name">PetaDigi</field>
+        <field name="category_id" ref="module_category_petadigi"/>
+        <field name="sequence">10</field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         GROUPS
+         Hierarki:
+           group_petadigi_user  ← base teknikal (implied oleh semua grup)
+           group_admin          → implies group_petadigi_user
+           group_subdit         → implies group_petadigi_user
+           group_polres         → implies group_petadigi_user
+           group_polsek         → implies group_petadigi_user
+         Satu user hanya boleh berada di SATU grup operasional.
+    ═══════════════════════════════════════════════════════ -->
+
+    <!-- Base group: teknikal, tidak muncul di form user -->
+    <record id="group_petadigi_user" model="res.groups">
+        <field name="name">Pengguna PetaDigi</field>
+    </record>
+
+    <record id="group_admin" model="res.groups">
+        <field name="name">Administrator</field>
+        <field name="privilege_id" ref="privilege_petadigi_access"/>
+        <field name="implied_ids" eval="[(4, ref('petadigi.group_petadigi_user'))]"/>
+    </record>
+
+    <record id="group_subdit" model="res.groups">
+        <field name="name">Subdit</field>
+        <field name="privilege_id" ref="privilege_petadigi_access"/>
+        <field name="implied_ids" eval="[(4, ref('petadigi.group_petadigi_user'))]"/>
+    </record>
+
+    <record id="group_polres" model="res.groups">
+        <field name="name">Polres</field>
+        <field name="privilege_id" ref="privilege_petadigi_access"/>
+        <field name="implied_ids" eval="[(4, ref('petadigi.group_petadigi_user'))]"/>
+    </record>
+
+    <record id="group_polsek" model="res.groups">
+        <field name="name">Polsek</field>
+        <field name="privilege_id" ref="privilege_petadigi_access"/>
+        <field name="implied_ids" eval="[(4, ref('petadigi.group_petadigi_user'))]"/>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════
+         RECORD RULES
+         Admin tidak butuh record rule (akses global via ir.model.access).
+         Polres/Polsek/Subdit difilter via domain user.xxx_id.id.
+         Jika field org belum diisi admin → domain '= False' → hanya
+         melihat record yang juga tidak punya field tersebut (minimal risk).
+    ═══════════════════════════════════════════════════════ -->
+
+    <!-- ─── Polres ─────────────────────────────────────────── -->
+    <record id="rule_polres_polres" model="ir.rule">
+        <field name="name">Polres: hanya polres sendiri</field>
+        <field name="model_id" ref="model_petadigi_polres"/>
+        <field name="domain_force">[('id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_polres_polsek" model="ir.rule">
+        <field name="name">Polres: polsek hanya lihat polres sendiri</field>
+        <field name="model_id" ref="model_petadigi_polres"/>
+        <field name="domain_force">[('id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ─── Polsek ──────────────────────────────────────────── -->
+    <record id="rule_polsek_polres" model="ir.rule">
+        <field name="name">Polsek: polres lihat polsek miliknya</field>
+        <field name="model_id" ref="model_petadigi_polsek"/>
+        <field name="domain_force">[('polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_polsek_polsek" model="ir.rule">
+        <field name="name">Polsek: hanya polsek sendiri</field>
+        <field name="model_id" ref="model_petadigi_polsek"/>
+        <field name="domain_force">[('id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ─── Kabupaten ──────────────────────────────────────── -->
+    <!-- Polres: hanya melihat kabupaten milik polres-nya -->
+    <record id="rule_kabupaten_polres" model="ir.rule">
+        <field name="name">Kabupaten: filter polres</field>
+        <field name="model_id" ref="model_petadigi_kabupaten"/>
+        <field name="domain_force">[('polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Polsek: sama, kabupaten sesuai polres_id yang diisi di user -->
+    <record id="rule_kabupaten_polsek" model="ir.rule">
+        <field name="name">Kabupaten: filter polsek</field>
+        <field name="model_id" ref="model_petadigi_kabupaten"/>
+        <field name="domain_force">[('polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ─── Kecamatan ──────────────────────────────────────── -->
+    <record id="rule_kecamatan_polres" model="ir.rule">
+        <field name="name">Kecamatan: filter polres</field>
+        <field name="model_id" ref="model_petadigi_kecamatan"/>
+        <field name="domain_force">[('kabupaten_id.polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <record id="rule_kecamatan_polsek" model="ir.rule">
+        <field name="name">Kecamatan: filter polsek</field>
+        <field name="model_id" ref="model_petadigi_kecamatan"/>
+        <field name="domain_force">[('polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ─── Kriminalitas ──────────────────────────────────── -->
+    <record id="rule_kriminalitas_polres" model="ir.rule">
+        <field name="name">Kriminalitas: akses polres</field>
+        <field name="model_id" ref="model_petadigi_kriminalitas"/>
+        <field name="domain_force">[('polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_kriminalitas_polsek" model="ir.rule">
+        <field name="name">Kriminalitas: akses polsek</field>
+        <field name="model_id" ref="model_petadigi_kriminalitas"/>
+        <field name="domain_force">[('polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_kriminalitas_subdit" model="ir.rule">
+        <field name="name">Kriminalitas: akses subdit</field>
+        <field name="model_id" ref="model_petadigi_kriminalitas"/>
+        <field name="domain_force">[('subdit_id', '=', user.subdit_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ─── Kasus Menonjol ────────────────────────────────── -->
+    <record id="rule_kasus_menonjol_polres" model="ir.rule">
+        <field name="name">Kasus Menonjol: akses polres</field>
+        <field name="model_id" ref="model_petadigi_kasus_menonjol"/>
+        <field name="domain_force">[('polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_kasus_menonjol_polsek" model="ir.rule">
+        <field name="name">Kasus Menonjol: akses polsek</field>
+        <field name="model_id" ref="model_petadigi_kasus_menonjol"/>
+        <field name="domain_force">[('polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_kasus_menonjol_subdit" model="ir.rule">
+        <field name="name">Kasus Menonjol: akses subdit</field>
+        <field name="model_id" ref="model_petadigi_kasus_menonjol"/>
+        <field name="domain_force">[('subdit_id', '=', user.subdit_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- ─── Bencana ───────────────────────────────────────── -->
+    <record id="rule_bencana_polres" model="ir.rule">
+        <field name="name">Bencana: akses polres</field>
+        <field name="model_id" ref="model_petadigi_bencana"/>
+        <field name="domain_force">[('kabupaten_id.polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_bencana_polsek" model="ir.rule">
+        <field name="name">Bencana: akses polsek</field>
+        <field name="model_id" ref="model_petadigi_bencana"/>
+        <field name="domain_force">[('kecamatan_id.polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Subdit: read-only dengan domain kosong agar dashboard tidak error -->
+    <record id="rule_bencana_subdit_block" model="ir.rule">
+        <field name="name">Bencana: subdit blokir (compat dashboard)</field>
+        <field name="model_id" ref="model_petadigi_bencana"/>
+        <field name="domain_force">[('id', '=', -1)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ─── Lalu Lintas ───────────────────────────────────── -->
+    <record id="rule_lalu_lintas_polres" model="ir.rule">
+        <field name="name">Lalu Lintas: akses polres</field>
+        <field name="model_id" ref="model_petadigi_lalu_lintas"/>
+        <field name="domain_force">[('kabupaten_id.polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_lalu_lintas_polsek" model="ir.rule">
+        <field name="name">Lalu Lintas: akses polsek</field>
+        <field name="model_id" ref="model_petadigi_lalu_lintas"/>
+        <field name="domain_force">[('kecamatan_id.polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_lalu_lintas_subdit_block" model="ir.rule">
+        <field name="name">Lalu Lintas: subdit blokir</field>
+        <field name="model_id" ref="model_petadigi_lalu_lintas"/>
+        <field name="domain_force">[('id', '=', -1)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ─── Lokasi Penting ────────────────────────────────── -->
+    <record id="rule_lokasi_penting_polres" model="ir.rule">
+        <field name="name">Lokasi Penting: akses polres</field>
+        <field name="model_id" ref="model_petadigi_lokasi_penting"/>
+        <field name="domain_force">[('kabupaten_id.polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_lokasi_penting_polsek" model="ir.rule">
+        <field name="name">Lokasi Penting: akses polsek</field>
+        <field name="model_id" ref="model_petadigi_lokasi_penting"/>
+        <field name="domain_force">[('kecamatan_id.polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_lokasi_penting_subdit_block" model="ir.rule">
+        <field name="name">Lokasi Penting: subdit blokir</field>
+        <field name="model_id" ref="model_petadigi_lokasi_penting"/>
+        <field name="domain_force">[('id', '=', -1)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- ─── Hasil Giat ────────────────────────────────────── -->
+    <record id="rule_hasil_giat_polres" model="ir.rule">
+        <field name="name">Hasil Giat: akses polres</field>
+        <field name="model_id" ref="model_petadigi_hasil_giat"/>
+        <field name="domain_force">[('polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_hasil_giat_polsek" model="ir.rule">
+        <field name="name">Hasil Giat: akses polsek</field>
+        <field name="model_id" ref="model_petadigi_hasil_giat"/>
+        <field name="domain_force">[('polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_hasil_giat_subdit_block" model="ir.rule">
+        <field name="name">Hasil Giat: subdit blokir</field>
+        <field name="model_id" ref="model_petadigi_hasil_giat"/>
+        <field name="domain_force">[('id', '=', -1)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    </data>
 </odoo>

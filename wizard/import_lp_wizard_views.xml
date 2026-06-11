@@ -59,8 +59,6 @@
                                 <field name="tanggal_laporan" string="Tanggal Laporan"/>
                                 <field name="pelapor" string="Pelapor"/>
                                 <field name="penanggung_jawab" string="Penanggung Jawab"/>
-                                <field name="latitude" string="Latitude"/>
-                                <field name="longitude" string="Longitude"/>
                             </group>
                             <group>
                                 <field name="tempat_kejadian" string="Tempat Kejadian"/>
@@ -69,6 +67,15 @@
                                 <field name="korban" string="Korban"/>
                             </group>
                         </group>
+
+                        <group string="KOORDINAT KEJADIAN">
+                            <field name="latitude" string="Latitude"/>
+                            <field name="longitude" string="Longitude"/>
+                        </group>
+                        <div>
+                            <field name="latitude" widget="latlong_map_picker"
+                                   class="latlong-mappicker-wrapper" nolabel="1"/>
+                        </div>
 
                         <group string="TINDAK PIDANA APA">
                             <field name="tindak_pidana" string="Tindak Pidana" nolabel="1"
@@ -89,10 +96,27 @@
                         <!-- ISI MANUAL -->
                         <group string="LENGKAPI DATA (wajib diisi)">
                             <group string="KESATUAN">
-                                <field name="polres_id"/>
+                                <!-- Admin / Subdit: bebas pilih -->
+                                <field name="polres_id"
+                                       groups="petadigi.group_admin,petadigi.group_subdit"/>
                                 <field name="polsek_id"
+                                       groups="petadigi.group_admin,petadigi.group_subdit"
                                        domain="[('polres_id', '=', polres_id)]"/>
-                                <field name="subdit_id" />
+                                <!-- Polres: polres terkunci, polsek bisa dipilih dari polres-nya -->
+                                <field name="polres_id"
+                                       groups="petadigi.group_polres"
+                                       readonly="1"/>
+                                <field name="polsek_id"
+                                       groups="petadigi.group_polres"
+                                       domain="[('polres_id', '=', polres_id)]"/>
+                                <!-- Polsek: keduanya terkunci -->
+                                <field name="polres_id"
+                                       groups="petadigi.group_polsek"
+                                       readonly="1"/>
+                                <field name="polsek_id"
+                                       groups="petadigi.group_polsek"
+                                       readonly="1"/>
+                                <field name="subdit_id"/>
                             </group>
                             <group string="KATEGORI">
                                 <field name="kategori_id"/>
@@ -104,10 +128,23 @@
 
                         <group>
                             <group string="WILAYAH">
-                                <field name="kabupaten_id"/>
+                                <!-- Admin / Subdit / Polres: kabupaten editable (record rule filter polres) -->
+                                <field name="kabupaten_id"
+                                       groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"/>
                                 <field name="kecamatan_id"
+                                       groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"
                                        domain="[('kabupaten_id', '=', kabupaten_id)]"/>
                                 <field name="desa_id"
+                                       groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"
+                                       domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                                <!-- Polsek: kabupaten readonly, kecamatan tanpa domain (record rule sudah filter) -->
+                                <field name="kabupaten_id"
+                                       groups="petadigi.group_polsek"
+                                       readonly="1"/>
+                                <field name="kecamatan_id"
+                                       groups="petadigi.group_polsek"/>
+                                <field name="desa_id"
+                                       groups="petadigi.group_polsek"
                                        domain="[('kecamatan_id', '=', kecamatan_id)]"/>
                             </group>
                             <group string="STATUS PERKARA">

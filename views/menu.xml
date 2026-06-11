@@ -1,183 +1,223 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <menuitem 
+        <menuitem
             id="menu_petadigi_root"
             name="PetaDigi"
             web_icon="petadigi,static/description/icon.png"
-            sequence="10"/>
+            sequence="1"/>
+
+        <!-- Dashboard: semua grup petadigi -->
         <menuitem
             id="menu_petadigi_dashboard"
             name="Dashboard"
             parent="menu_petadigi_root"
             action="action_petadigi_dashboard_client"
+            groups="petadigi.group_petadigi_user"
             sequence="1"/>
+
+        <!-- Maps: semua grup petadigi -->
         <menuitem
             id="menu_petadigi_maps"
             name="Maps"
             parent="menu_petadigi_root"
+            groups="petadigi.group_petadigi_user"
             sequence="10"/>
+
+        <!-- Kriminalitas + Kasus Menonjol: semua grup (termasuk subdit) -->
         <menuitem
             id="menu_kriminalitas"
             name="Kriminalitas"
             parent="menu_petadigi_maps"
             action="action_petadigi_kriminalitas"
+            groups="petadigi.group_petadigi_user"
             sequence="1"/>
         <menuitem
             id="menu_kasus_menonjol"
             name="Kasus Menonjol"
             parent="menu_petadigi_maps"
             action="action_petadigi_kasus_menonjol"
+            groups="petadigi.group_petadigi_user"
             sequence="2"/>
+
+        <!-- Bencana, Lalu Lintas, Lokasi Penting: tidak untuk subdit -->
         <menuitem
             id="menu_bencana"
             name="Bencana"
             parent="menu_petadigi_maps"
             action="action_petadigi_bencana"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="3"/>
         <menuitem
             id="menu_lalu_lintas"
             name="Lalu Lintas"
             parent="menu_petadigi_maps"
             action="action_petadigi_lalu_lintas"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="4"/>
         <menuitem
             id="menu_lokasi_penting"
             name="Lokasi Penting"
             parent="menu_petadigi_maps"
             action="action_petadigi_lokasi_penting"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="5"/>
-        <!-- COOLING SYSTEM -->
+
+        <!-- Cooling System: tidak untuk subdit -->
         <menuitem
             id="menu_petadigi_cooling_system"
             name="Cooling System"
             parent="menu_petadigi_root"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="20"/>
         <menuitem
             id="menu_cs_monitoring_giat"
             name="Monitoring Giat"
             parent="menu_petadigi_cooling_system"
             action="action_monitoring_giat"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="0"/>
+        <!-- Jenis Laporan: admin saja -->
         <menuitem
             id="menu_cs_jenis_laporan"
             name="Jenis Laporan"
             parent="menu_petadigi_cooling_system"
             action="action_petadigi_jenis_laporan"
+            groups="petadigi.group_admin"
             sequence="1"/>
         <menuitem
             id="menu_cs_hasil_giat"
             name="Hasil Giat"
             parent="menu_petadigi_cooling_system"
             action="action_petadigi_hasil_giat"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="2"/>
 
+        <!-- Configuration: admin saja -->
         <menuitem
             id="menu_petadigi_configuration"
             name="Configuration"
             parent="menu_petadigi_root"
+            groups="petadigi.group_admin"
             sequence="99"/>
         <menuitem
             id="menu_config_polres"
             name="Polres"
             parent="menu_petadigi_configuration"
             action="action_petadigi_polres"
-            sequence="10"/>   
+            groups="petadigi.group_admin"
+            sequence="10"/>
         <menuitem
             id="menu_config_polsek"
             name="Polsek"
             parent="menu_petadigi_configuration"
             action="action_petadigi_polsek"
-            sequence="20"/>     
+            groups="petadigi.group_admin"
+            sequence="20"/>
         <menuitem
             id="menu_config_kabupaten"
             name="Kabupaten"
             parent="menu_petadigi_configuration"
             action="action_petadigi_kabupaten"
-            sequence="30"/>   
+            groups="petadigi.group_admin"
+            sequence="30"/>
         <menuitem
             id="menu_config_kecamatan"
             name="Kecamatan"
             parent="menu_petadigi_configuration"
             action="action_petadigi_kecamatan"
+            groups="petadigi.group_admin"
             sequence="40"/>
         <menuitem
             id="menu_config_desa"
             name="Desa"
             parent="menu_petadigi_configuration"
             action="action_petadigi_desa"
+            groups="petadigi.group_admin"
             sequence="50"/>
         <menuitem
             id="menu_config_sumber_dokumen"
             name="Sumber Dokumen"
             parent="menu_petadigi_configuration"
             action="action_petadigi_sumber_dokumen"
+            groups="petadigi.group_admin"
             sequence="60"/>
         <menuitem
             id="menu_config_kategori_kriminal"
             name="Kategori Kriminal"
             parent="menu_petadigi_configuration"
             action="action_petadigi_kategori_kriminal"
+            groups="petadigi.group_admin"
             sequence="70"/>
         <menuitem
             id="menu_config_sub_kategori_kriminal"
             name="Sub Kategori Kriminal"
             parent="menu_petadigi_configuration"
             action="action_petadigi_sub_kategori_kriminal"
+            groups="petadigi.group_admin"
             sequence="80"/>
         <menuitem
             id="menu_config_kategori_bencana"
             name="Kategori Bencana"
             parent="menu_petadigi_configuration"
             action="action_petadigi_kategori_bencana"
+            groups="petadigi.group_admin"
             sequence="90"/>
         <menuitem
             id="menu_config_kategori_kamtibmas"
             name="Kategori Kamtibmas"
             parent="menu_petadigi_configuration"
             action="action_petadigi_kategori_kamtibmas"
+            groups="petadigi.group_admin"
             sequence="100"/>
         <menuitem
             id="menu_config_kategori_lalu_lintas"
             name="Kategori Lalu Lintas"
             parent="menu_petadigi_configuration"
             action="action_petadigi_kategori_lalu_lintas"
+            groups="petadigi.group_admin"
             sequence="110"/>
         <menuitem
             id="menu_config_kategori_lokasi"
             name="Kategori Lokasi"
             parent="menu_petadigi_configuration"
             action="action_petadigi_kategori_lokasi"
+            groups="petadigi.group_admin"
             sequence="120"/>
         <menuitem
             id="menu_config_jenis_jalan"
             name="Jenis Jalan"
             parent="menu_petadigi_configuration"
             action="action_petadigi_jenis_jalan"
+            groups="petadigi.group_admin"
             sequence="130"/>
         <menuitem
             id="menu_config_modus_operandi"
             name="Modus Operandi"
             parent="menu_petadigi_configuration"
             action="action_petadigi_modus_operandi"
+            groups="petadigi.group_admin"
             sequence="140"/>
         <menuitem
             id="menu_config_jenis_tkp"
             name="Jenis TKP"
             parent="menu_petadigi_configuration"
             action="action_petadigi_jenis_tkp"
+            groups="petadigi.group_admin"
             sequence="150"/>
         <menuitem
             id="menu_config_subdit"
             name="Subdit"
             parent="menu_petadigi_configuration"
             action="action_petadigi_subdit"
+            groups="petadigi.group_admin"
             sequence="160"/>
         <menuitem
             id="menu_config_sub_status_perkara"
             name="Sub Status Perkara"
             parent="menu_petadigi_configuration"
             action="action_petadigi_sub_status_perkara"
+            groups="petadigi.group_admin"
             sequence="170"/>
     </data>
 </odoo>

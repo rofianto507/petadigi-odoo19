@@ -71,8 +71,26 @@
                                 <field name="tanggal"/>
                             </group>
                             <group string="WILAYAH">
-                                <field name="polres_id"/>
-                                <field name="polsek_id" domain="[('polres_id', '=', polres_id)]"/>
+                                <!-- Admin: bebas pilih -->
+                                <field name="polres_id"
+                                    groups="petadigi.group_admin"/>
+                                <field name="polsek_id"
+                                    groups="petadigi.group_admin"
+                                    domain="[('polres_id', '=', polres_id)]"/>
+                                <!-- Polres: polres terkunci, polsek bisa dipilih dari polres-nya -->
+                                <field name="polres_id"
+                                    groups="petadigi.group_polres"
+                                    readonly="1"/>
+                                <field name="polsek_id"
+                                    groups="petadigi.group_polres"
+                                    domain="[('polres_id', '=', polres_id)]"/>
+                                <!-- Polsek: keduanya terkunci -->
+                                <field name="polres_id"
+                                    groups="petadigi.group_polsek"
+                                    readonly="1"/>
+                                <field name="polsek_id"
+                                    groups="petadigi.group_polsek"
+                                    readonly="1"/>
                             </group>
                         </group>
 

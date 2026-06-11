@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Tambahkan tab PetaDigi di form pengguna (Settings > Users) -->
+        <record id="view_users_form_petadigi" model="ir.ui.view">
+            <field name="name">res.users.form.petadigi</field>
+            <field name="model">res.users</field>
+            <field name="inherit_id" ref="base.view_users_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//notebook/page[@name='preferences']" position="after">
+                    <page string="PetaDigi" name="petadigi_config">
+                        <group>
+                            <group string="Unit Organisasi">
+                                <field name="polres_id"/>
+                                <field name="polsek_id"/>
+                                <field name="subdit_id"/>
+                            </group>
+                            <group string="Panduan">
+                                <div colspan="2" style="color:#555; font-size:13px; line-height:1.7;">
+                                    <p>
+                                        <strong>Isi salah satu field sesuai grup akses pengguna:</strong>
+                                    </p>
+                                    <ul>
+                                        <li><strong>Administrator</strong> — tidak perlu diisi, akses penuh.</li>
+                                        <li><strong>Polres</strong> — isi <em>Polres</em>, kosongkan yang lain.</li>
+                                        <li><strong>Polsek</strong> — isi <em>Polres</em> + <em>Polsek</em>, kosongkan Subdit.</li>
+                                        <li><strong>Subdit</strong> — isi <em>Subdit</em>, kosongkan Polres dan Polsek.</li>
+                                    </ul>
+                                    <p style="color:#c0392b;">
+                                        Satu pengguna hanya boleh berada di <strong>satu</strong> grup PetaDigi.
+                                    </p>
+                                </div>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

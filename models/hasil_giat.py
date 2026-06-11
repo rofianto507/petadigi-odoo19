@@ -30,6 +30,16 @@ class HasilGiat(models.Model):
     latitude = fields.Float('Latitude', digits=(10, 6), tracking=True)
     longitude = fields.Float('Longitude', digits=(10, 6), tracking=True)
 
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super().default_get(fields_list)
+        user = self.env.user
+        if user.polres_id and 'polres_id' in fields_list:
+            defaults.setdefault('polres_id', user.polres_id.id)
+        if user.polsek_id and 'polsek_id' in fields_list:
+            defaults.setdefault('polsek_id', user.polsek_id.id)
+        return defaults
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -40,4 +50,5 @@ class HasilGiat(models.Model):
 
     @api.onchange('polres_id')
     def _onchange_polres_id(self):
-        self.polsek_id = False
+        if self.polsek_id and self.polsek_id.polres_id != self.polres_id:
+            self.polsek_id = False

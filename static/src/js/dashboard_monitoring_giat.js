@@ -46,6 +46,10 @@ class MonitoringGiatDashboard extends Component {
                 sortCol: "count", sortDir: "desc",
                 page: 1, perPage: 10,
             },
+            kanban: {
+                data: [], page: 1, perPage: 12, total: 0, loading: false,
+            },
+            confirmDelete: { visible: false, id: null, label: '' },
         });
 
         this.dateRangeRef  = useRef("dateRangeRef");
@@ -151,6 +155,21 @@ class MonitoringGiatDashboard extends Component {
         };
     }
 
+    // ── Computed: Kanban pagination info ─────────────────────────────────────
+    get kanbanPages() {
+        const { total, perPage, page } = this.state.kanban;
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+        const safePage = Math.min(page, totalPages);
+        return {
+            total,
+            totalPages,
+            hasPrev: safePage > 1,
+            hasNext: safePage < totalPages,
+            from: total === 0 ? 0 : (safePage - 1) * perPage + 1,
+            to: Math.min(safePage * perPage, total),
+        };
+    }
+
     _sortIcon(tblState, col) {
         if (tblState.sortCol !== col) return "fa fa-sort";
         return tblState.sortDir === "asc" ? "fa fa-sort-asc" : "fa fa-sort-desc";
@@ -187,6 +206,15 @@ class MonitoringGiatDashboard extends Component {
     }
 
     // ── Filters & data loading ───────────────────────────────────────────────
+    _buildDomain() {
+        const d = [];
+        if (this.state.dateFrom)  d.push(["tanggal", ">=", `${this.state.dateFrom} 00:00:00`]);
+        if (this.state.dateTo)    d.push(["tanggal", "<=", `${this.state.dateTo} 23:59:59`]);
+        if (this.state.jenisId)   d.push(["jenis_laporan_id", "=", parseInt(this.state.jenisId)]);
+        if (this.state.polresId)  d.push(["polres_id",        "=", parseInt(this.state.polresId)]);
+        return d;
+    }
+
     async _loadFilters() {
         const [jenisList, polresList, polsekAll] = await Promise.all([
             this.orm.searchRead(
@@ -231,13 +259,10 @@ class MonitoringGiatDashboard extends Component {
     async _loadData() {
         const seq = ++this._loadSeq;
         this.state.loading = true;
+        this.state.kanban.page = 1;
         this._destroyCharts();
 
-        const domain = [];
-        if (this.state.dateFrom)  domain.push(["tanggal", ">=", `${this.state.dateFrom} 00:00:00`]);
-        if (this.state.dateTo)    domain.push(["tanggal", "<=", `${this.state.dateTo} 23:59:59`]);
-        if (this.state.jenisId)   domain.push(["jenis_laporan_id", "=", parseInt(this.state.jenisId)]);
-        if (this.state.polresId)  domain.push(["polres_id",        "=", parseInt(this.state.polresId)]);
+        const domain = this._buildDomain();
 
         const records = await this.orm.searchRead(
             "petadigi.hasil_giat",
@@ -250,8 +275,29 @@ class MonitoringGiatDashboard extends Component {
         if (seq !== this._loadSeq) return;
 
         this._aggregate(records);
+        await this._loadKanban();
         this.state.loading = false;
         setTimeout(() => { if (seq === this._loadSeq) this._initCharts(); }, 50);
+    }
+
+    async _loadKanban() {
+        this.state.kanban.loading = true;
+        const domain = this._buildDomain();
+        const { page, perPage } = this.state.kanban;
+        const offset = (page - 1) * perPage;
+        const [records, total] = await Promise.all([
+            this.orm.searchRead(
+                "petadigi.hasil_giat",
+                domain,
+                ["id", "code", "nama_petugas", "pangkat_petugas", "nrp",
+                 "jenis_laporan_id", "tanggal", "kegiatan", "polres_id", "polsek_id"],
+                { limit: perPage, offset, order: "tanggal desc, id desc" }
+            ),
+            this.orm.searchCount("petadigi.hasil_giat", domain),
+        ]);
+        this.state.kanban.data    = records;
+        this.state.kanban.total   = total;
+        this.state.kanban.loading = false;
     }
 
     // ── Aggregation ──────────────────────────────────────────────────────────
@@ -749,6 +795,51 @@ class MonitoringGiatDashboard extends Component {
     onPolsekNext() {
         const { page, perPage, data } = this.state.tblPolsek;
         if (page < Math.ceil(data.length / perPage)) this.state.tblPolsek.page++;
+    }
+
+    // ── Kanban: card click ───────────────────────────────────────────────────
+    onKanbanCardClick(id) {
+        this.action.doAction({
+            type:      'ir.actions.act_window',
+            res_model: 'petadigi.hasil_giat',
+            res_id:    id,
+            views:     [[false, 'form']],
+            target:    'current',
+        });
+    }
+
+    // ── Kanban: pagination ───────────────────────────────────────────────────
+    onKanbanPerPage(ev) {
+        this.state.kanban.perPage = parseInt(ev.target.value);
+        this.state.kanban.page   = 1;
+        this._loadKanban();
+    }
+    onKanbanPrev() {
+        if (this.state.kanban.page > 1) {
+            this.state.kanban.page--;
+            this._loadKanban();
+        }
+    }
+    onKanbanNext() {
+        const { page, perPage, total } = this.state.kanban;
+        if (page < Math.ceil(total / perPage)) {
+            this.state.kanban.page++;
+            this._loadKanban();
+        }
+    }
+
+    // ── Kanban: delete ───────────────────────────────────────────────────────
+    onDeleteClick(id, label) {
+        this.state.confirmDelete = { visible: true, id, label: label || 'data ini' };
+    }
+    async onDeleteConfirm() {
+        const id = this.state.confirmDelete.id;
+        this.state.confirmDelete = { visible: false, id: null, label: '' };
+        await this.orm.unlink("petadigi.hasil_giat", [id]);
+        await this._loadData();
+    }
+    onDeleteCancel() {
+        this.state.confirmDelete = { visible: false, id: null, label: '' };
     }
 }
 

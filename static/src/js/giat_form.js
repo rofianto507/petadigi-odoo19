@@ -7,193 +7,245 @@
         static template = xml/* xml */`
             <div class="gf-root">
 
-                <!-- ===== SUCCESS SCREEN (CSS hidden, not removed from DOM) ===== -->
+                <!-- ===== SUCCESS SCREEN ===== -->
                 <div t-att-class="'gf-success' + (state.submitted ? '' : ' gf-hidden')">
-                    <div class="gf-success-circle">✅</div>
-                    <h2 class="gf-success-title">Laporan Terkirim!</h2>
-                    <div class="gf-success-code" t-out="state.submitCode"/>
-                    <p class="gf-success-msg">
-                        Terima kasih, <strong t-out="state.nama_petugas"/>.<br/>
-                        Laporan kegiatan Anda telah berhasil dikirim.
-                    </p>
-                    <button class="gf-btn gf-btn-outline" t-on-click="resetForm">
-                        📋 Kirim Laporan Baru
-                    </button>
+                    <div class="gf-success-card">
+                        <div class="gf-success-icon">✓</div>
+                        <h2 class="gf-success-title">Laporan Terkirim</h2>
+                        <div class="gf-success-code" t-out="state.submitCode"/>
+                        <p class="gf-success-msg">
+                            Terima kasih, <strong t-out="state.nama_petugas"/>.<br/>
+                            Laporan kegiatan Anda telah berhasil dikirim.
+                        </p>
+                        <div class="gf-success-actions">
+                            <button class="gf-btn gf-btn-tonal gf-btn-block" t-on-click="resetForm">
+                                Kirim Laporan Baru
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- ===== FORM (CSS hidden when success, so map div stays in DOM) ===== -->
+                <!-- ===== FORM ===== -->
                 <div t-att-class="state.submitted ? 'gf-hidden' : ''">
-                    <div class="gf-header">
-                        <div class="gf-header-badge">🛡️</div>
-                        <div>
-                            <div class="gf-header-name" t-out="initData.jenis_laporan.nama"/>
-                            <div class="gf-header-sub">Input Laporan Kegiatan</div>
+
+                    <!-- Top App Bar -->
+                    <div class="gf-appbar">
+                        <div class="gf-appbar-icon">⚔</div>
+                        <div class="gf-appbar-content">
+                            <div class="gf-appbar-title" t-out="initData.jenis_laporan.nama"/>
+                            <div class="gf-appbar-sub">Input Laporan Kegiatan</div>
                         </div>
                     </div>
 
                     <div class="gf-body">
 
                         <!-- Identitas Petugas -->
-                        <div class="gf-card">
-                            <div class="gf-card-hd">👤 Identitas Petugas</div>
-                            <div class="gf-card-bd">
+                        <div class="gf-section">
+                            <div class="gf-section-label">Identitas Petugas</div>
+                            <div class="gf-card">
+                                <div class="gf-card-body">
 
-                                <div class="gf-field">
-                                    <label class="gf-label">NRP</label>
-                                    <input class="gf-input" type="text" inputmode="numeric"
-                                           t-att-value="state.nrp"
-                                           t-on-input="onNrpInput"
-                                           placeholder="Nomor Registrasi Pokok"/>
+                                    <div class="gf-field">
+                                        <label class="gf-label">NRP</label>
+                                        <input class="gf-input" type="text" inputmode="numeric"
+                                               t-att-value="state.nrp"
+                                               t-on-input="onNrpInput"
+                                               placeholder="Nomor Registrasi Pokok"/>
+                                    </div>
+
+                                    <div t-att-class="'gf-field' + (state.errors.nama_petugas ? ' has-error' : '')">
+                                        <label class="gf-label">
+                                            Nama Petugas
+                                            <span class="gf-req">*</span>
+                                        </label>
+                                        <input class="gf-input" type="text"
+                                               t-att-value="state.nama_petugas"
+                                               t-on-input="onNamaPetugasInput"
+                                               placeholder="Nama lengkap petugas"/>
+                                        <div t-if="state.errors.nama_petugas" class="gf-errmsg"
+                                             t-out="state.errors.nama_petugas"/>
+                                    </div>
+
+                                    <div class="gf-field">
+                                        <label class="gf-label">Pangkat</label>
+                                        <input class="gf-input" type="text"
+                                               t-att-value="state.pangkat_petugas"
+                                               t-on-input="onPangkatInput"
+                                               placeholder="Pangkat petugas"/>
+                                    </div>
+
                                 </div>
-
-                                <div t-att-class="'gf-field' + (state.errors.nama_petugas ? ' has-error' : '')">
-                                    <label class="gf-label">
-                                        Nama Petugas <span class="gf-req">*</span>
-                                    </label>
-                                    <input class="gf-input" type="text"
-                                           t-att-value="state.nama_petugas"
-                                           t-on-input="onNamaPetugasInput"
-                                           placeholder="Nama lengkap petugas"/>
-                                    <div t-if="state.errors.nama_petugas" class="gf-errmsg"
-                                         t-out="state.errors.nama_petugas"/>
-                                </div>
-
-                                <div class="gf-field">
-                                    <label class="gf-label">Pangkat</label>
-                                    <input class="gf-input" type="text"
-                                           t-att-value="state.pangkat_petugas"
-                                           t-on-input="onPangkatInput"
-                                           placeholder="Pangkat petugas"/>
-                                </div>
-
                             </div>
                         </div>
 
                         <!-- Satuan Wilayah -->
-                        <div class="gf-card">
-                            <div class="gf-card-hd">🏛️ Satuan Wilayah</div>
-                            <div class="gf-card-bd">
+                        <div class="gf-section">
+                            <div class="gf-section-label">Satuan Wilayah</div>
+                            <div class="gf-card">
+                                <div class="gf-card-body">
 
-                                <div t-att-class="'gf-field' + (state.errors.polres_id ? ' has-error' : '')">
-                                    <label class="gf-label">
-                                        Polres <span class="gf-req">*</span>
-                                    </label>
-                                    <select class="gf-input gf-select" t-on-change="onPolresChange">
-                                        <option value="">-- Pilih Polres --</option>
-                                        <t t-foreach="initData.polres_list" t-as="pr" t-key="pr.id">
-                                            <option t-att-value="pr.id"
-                                                    t-att-selected="state.polres_id === pr.id"
-                                                    t-out="pr.name"/>
-                                        </t>
-                                    </select>
-                                    <div t-if="state.errors.polres_id" class="gf-errmsg"
-                                         t-out="state.errors.polres_id"/>
+                                    <div t-att-class="'gf-field' + (state.errors.polres_id ? ' has-error' : '')">
+                                        <label class="gf-label">
+                                            Polres
+                                            <span class="gf-req">*</span>
+                                        </label>
+                                        <select class="gf-input gf-select" t-on-change="onPolresChange">
+                                            <option value="">Pilih Polres</option>
+                                            <t t-foreach="initData.polres_list" t-as="pr" t-key="pr.id">
+                                                <option t-att-value="pr.id"
+                                                        t-att-selected="state.polres_id === pr.id"
+                                                        t-out="pr.name"/>
+                                            </t>
+                                        </select>
+                                        <div t-if="state.errors.polres_id" class="gf-errmsg"
+                                             t-out="state.errors.polres_id"/>
+                                    </div>
+
+                                    <div class="gf-field">
+                                        <label class="gf-label">
+                                            Polsek
+                                            <span class="gf-opt">Opsional</span>
+                                        </label>
+                                        <select class="gf-input gf-select"
+                                                t-att-disabled="!state.polres_id || state.loadingPolsek"
+                                                t-on-change="onPolsekChange">
+                                            <option value="">
+                                                <t t-if="state.loadingPolsek">Memuat...</t>
+                                                <t t-else="">Pilih Polsek</t>
+                                            </option>
+                                            <t t-foreach="state.polsek_list" t-as="ps" t-key="ps.id">
+                                                <option t-att-value="ps.id"
+                                                        t-att-selected="state.polsek_id === ps.id"
+                                                        t-out="ps.name"/>
+                                            </t>
+                                        </select>
+                                    </div>
+
                                 </div>
-
-                                <div class="gf-field">
-                                    <label class="gf-label">
-                                        Polsek <span class="gf-opt">(opsional)</span>
-                                    </label>
-                                    <select class="gf-input gf-select"
-                                            t-att-disabled="!state.polres_id || state.loadingPolsek"
-                                            t-on-change="onPolsekChange">
-                                        <option value="">
-                                            <t t-if="state.loadingPolsek">Memuat data...</t>
-                                            <t t-else="">-- Pilih Polsek --</t>
-                                        </option>
-                                        <t t-foreach="state.polsek_list" t-as="ps" t-key="ps.id">
-                                            <option t-att-value="ps.id"
-                                                    t-att-selected="state.polsek_id === ps.id"
-                                                    t-out="ps.name"/>
-                                        </t>
-                                    </select>
-                                </div>
-
                             </div>
                         </div>
 
                         <!-- Uraian Kegiatan -->
-                        <div class="gf-card">
-                            <div class="gf-card-hd">📝 Uraian Kegiatan</div>
-                            <div class="gf-card-bd">
-                                <div t-att-class="'gf-field' + (state.errors.kegiatan ? ' has-error' : '')">
-                                    <label class="gf-label">
-                                        Deskripsi Kegiatan <span class="gf-req">*</span>
-                                    </label>
-                                    <textarea class="gf-input gf-textarea" rows="5"
-                                              t-att-value="state.kegiatan"
-                                              t-on-input="onKegiatanInput"
-                                              placeholder="Tuliskan uraian kegiatan yang dilakukan..."/>
-                                    <div t-if="state.errors.kegiatan" class="gf-errmsg"
-                                         t-out="state.errors.kegiatan"/>
+                        <div class="gf-section">
+                            <div class="gf-section-label">Uraian Kegiatan</div>
+                            <div class="gf-card">
+                                <div class="gf-card-body">
+
+                                    <div t-att-class="'gf-field' + (state.errors.tanggal ? ' has-error' : '')">
+                                        <label class="gf-label">
+                                            Tanggal Kegiatan
+                                            <span class="gf-req">*</span>
+                                        </label>
+                                        <input class="gf-input gf-input-datetime" type="datetime-local"
+                                               t-att-value="state.tanggal"
+                                               t-on-input="onTanggalInput"/>
+                                        <div t-if="state.errors.tanggal" class="gf-errmsg"
+                                             t-out="state.errors.tanggal"/>
+                                    </div>
+
+                                    <div t-att-class="'gf-field' + (state.errors.kegiatan ? ' has-error' : '')">
+                                        <label class="gf-label">
+                                            Deskripsi Kegiatan
+                                            <span class="gf-req">*</span>
+                                        </label>
+                                        <textarea class="gf-input gf-textarea" rows="5"
+                                                  t-att-value="state.kegiatan"
+                                                  t-on-input="onKegiatanInput"
+                                                  placeholder="Tuliskan uraian kegiatan yang dilakukan..."/>
+                                        <div t-if="state.errors.kegiatan" class="gf-errmsg"
+                                             t-out="state.errors.kegiatan"/>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
 
                         <!-- Lokasi GPS + Map -->
-                        <div class="gf-card">
-                            <div class="gf-card-hd">📍 Lokasi Kegiatan</div>
-                            <div class="gf-card-bd">
-                                <button class="gf-btn gf-btn-outline gf-btn-block"
-                                        t-on-click="getGPS"
-                                        t-att-disabled="state.gpsLoading">
-                                    <span t-if="state.gpsLoading">⏳ Mengambil lokasi GPS...</span>
-                                    <span t-else="">🔄 Perbarui Lokasi GPS</span>
-                                </button>
+                        <div class="gf-section">
+                            <div class="gf-section-label">Lokasi Kegiatan</div>
+                            <div class="gf-card">
+                                <div class="gf-card-body">
 
-                                <div t-if="state.gpsError" class="gf-errmsg" t-out="state.gpsError"/>
+                                    <button class="gf-btn gf-btn-tonal gf-btn-block"
+                                            t-on-click="getGPS"
+                                            t-att-disabled="state.gpsLoading">
+                                        <t t-if="state.gpsLoading">Mengambil lokasi GPS...</t>
+                                        <t t-else="">Perbarui Lokasi GPS</t>
+                                    </button>
 
-                                <div t-if="state.latitude" class="gf-gps-result">
-                                    🟢 <span t-out="state.latitude"/>, <span t-out="state.longitude"/>
+                                    <!-- Status GPS -->
+                                    <div t-if="state.gpsError"
+                                         class="gf-location-status gf-location-status--err">
+                                        <div class="gf-location-dot"/>
+                                        <span t-out="state.gpsError"/>
+                                    </div>
+                                    <div t-elif="state.latitude"
+                                         class="gf-location-status gf-location-status--ok">
+                                        <div class="gf-location-dot"/>
+                                        <span t-out="state.latitude"/>, <span t-out="state.longitude"/>
+                                    </div>
+                                    <div t-elif="state.gpsLoading"
+                                         class="gf-location-status gf-location-status--idle">
+                                        <div class="gf-location-dot"/>
+                                        <span>Mengambil koordinat GPS...</span>
+                                    </div>
+                                    <div t-else=""
+                                         class="gf-location-status gf-location-status--idle">
+                                        <div class="gf-location-dot"/>
+                                        <span>Menunggu izin akses GPS</span>
+                                    </div>
+
+                                    <!-- Map always stays in DOM to avoid Leaflet reinit -->
+                                    <div id="gf-map" class="gf-map"/>
+
                                 </div>
-                                <div t-if="!state.latitude and !state.gpsLoading and !state.gpsError"
-                                     class="gf-gps-pending">
-                                    ⏳ Menunggu izin akses GPS...
-                                </div>
-
-                                <!-- Map always stays in DOM to avoid Leaflet reinit -->
-                                <div id="gf-map" class="gf-map"/>
                             </div>
                         </div>
 
                         <!-- Foto Dokumentasi -->
-                        <div class="gf-card">
-                            <div class="gf-card-hd">📷 Foto Dokumentasi</div>
-                            <div class="gf-card-bd">
-                                <div class="gf-foto-btns">
-                                    <label class="gf-btn gf-btn-outline">
-                                        📷 Kamera
-                                        <input type="file" accept="image/*" capture="environment"
-                                               class="gf-file-hidden" t-on-change="handleFoto"/>
-                                    </label>
-                                    <label class="gf-btn gf-btn-outline">
-                                        🖼️ Galeri
-                                        <input type="file" accept="image/*"
-                                               class="gf-file-hidden" t-on-change="handleFoto"/>
-                                    </label>
-                                </div>
-                                <div t-if="state.fotoPreview" class="gf-foto-preview">
-                                    <img t-att-src="state.fotoPreview" class="gf-preview-img"
-                                         alt="Foto dokumentasi"/>
-                                    <button class="gf-btn-remove" t-on-click="removeFoto">
-                                        ✕ Hapus Foto
-                                    </button>
+                        <div class="gf-section">
+                            <div class="gf-section-label">Foto Dokumentasi</div>
+                            <div class="gf-card">
+                                <div class="gf-card-body">
+                                    <div class="gf-foto-btns">
+                                        <label class="gf-btn gf-btn-outlined">
+                                            Kamera
+                                            <input type="file" accept="image/*" capture="environment"
+                                                   class="gf-file-hidden" t-on-change="handleFoto"/>
+                                        </label>
+                                        <label class="gf-btn gf-btn-outlined">
+                                            Galeri
+                                            <input type="file" accept="image/*"
+                                                   class="gf-file-hidden" t-on-change="handleFoto"/>
+                                        </label>
+                                    </div>
+                                    <div t-if="state.fotoPreview" class="gf-foto-preview">
+                                        <img t-att-src="state.fotoPreview" class="gf-preview-img"
+                                             alt="Foto dokumentasi"/>
+                                        <div class="gf-foto-remove-row">
+                                            <button class="gf-btn gf-btn-text" t-on-click="removeFoto">
+                                                Hapus Foto
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Error global -->
-                        <div t-if="state.submitError" class="gf-submit-error" t-out="state.submitError"/>
-
-                        <!-- Submit -->
-                        <button class="gf-btn gf-btn-primary gf-btn-submit"
-                                t-on-click="submit"
-                                t-att-disabled="state.submitting">
-                            <span t-if="state.submitting">⏳ Mengirim laporan...</span>
-                            <span t-else="">Kirim Laporan →</span>
-                        </button>
-
-                        <div class="gf-footer">PetaDigi · Cooling System</div>
+                        <!-- Submit area -->
+                        <div class="gf-submit-area">
+                            <div t-if="state.submitError" class="gf-error-banner">
+                                <div class="gf-error-banner-icon"/>
+                                <span t-out="state.submitError"/>
+                            </div>
+                            <button class="gf-btn gf-btn-filled gf-btn-submit"
+                                    t-on-click="submit"
+                                    t-att-disabled="state.submitting">
+                                <t t-if="state.submitting">Mengirim laporan...</t>
+                                <t t-else="">Kirim Laporan</t>
+                            </button>
+                            <div class="gf-footer">PetaDigi · Cooling System</div>
+                        </div>
 
                     </div>
                 </div>
@@ -217,6 +269,12 @@
             } catch (_) {}
         }
 
+        _nowLocal() {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        }
+
         setup() {
             this.initData = window.GIAT_INIT_DATA;
             const cache = this._loadCache();
@@ -228,6 +286,7 @@
                 polsek_id: null,
                 polsek_list: [],
                 loadingPolsek: false,
+                tanggal: this._nowLocal(),
                 kegiatan: '',
                 latitude: null,
                 longitude: null,
@@ -308,6 +367,7 @@
         onNrpInput(ev) { this.state.nrp = ev.target.value; }
         onNamaPetugasInput(ev) { this.state.nama_petugas = ev.target.value; }
         onPangkatInput(ev) { this.state.pangkat_petugas = ev.target.value; }
+        onTanggalInput(ev) { this.state.tanggal = ev.target.value; }
         onKegiatanInput(ev) { this.state.kegiatan = ev.target.value; }
 
         async onPolresChange(ev) {
@@ -400,6 +460,7 @@
             const errors = {};
             if (!this.state.nama_petugas.trim()) errors.nama_petugas = 'Nama petugas wajib diisi';
             if (!this.state.polres_id) errors.polres_id = 'Pilih Polres terlebih dahulu';
+            if (!this.state.tanggal) errors.tanggal = 'Tanggal kegiatan wajib diisi';
             if (!this.state.kegiatan.trim()) errors.kegiatan = 'Uraian kegiatan wajib diisi';
             this.state.errors = errors;
             return Object.keys(errors).length === 0;
@@ -425,6 +486,7 @@
                         pangkat_petugas: this.state.pangkat_petugas,
                         polres_id: this.state.polres_id,
                         polsek_id: this.state.polsek_id,
+                        tanggal: this.state.tanggal,
                         kegiatan: this.state.kegiatan,
                         latitude: this.state.latitude,
                         longitude: this.state.longitude,
@@ -455,6 +517,7 @@
             Object.assign(this.state, {
                 nrp: cache.nrp || '', nama_petugas: cache.nama_petugas || '', pangkat_petugas: cache.pangkat_petugas || '',
                 polres_id: null, polsek_id: null, polsek_list: [],
+                tanggal: this._nowLocal(),
                 kegiatan: '', latitude: null, longitude: null,
                 gpsError: null, foto: null, fotoPreview: null,
                 submitted: false, submitCode: null, submitError: null, errors: {},

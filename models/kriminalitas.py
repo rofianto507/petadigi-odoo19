@@ -67,7 +67,7 @@ class Kriminalitas(models.Model):
     status_perkara = fields.Selection([
         ('PROSES', 'PROSES'),
         ('SELESAI', 'SELESAI'),
-    ], string='Status Perkara', tracking=True, required=True)
+    ], string='Status Perkara', tracking=True, required=True, default='PROSES')
     
     sub_status_perkara_id = fields.Many2one(
         'petadigi.sub_status_perkara',
@@ -92,6 +92,28 @@ class Kriminalitas(models.Model):
     def action_set_selesai(self):
         self.write({'status_perkara': 'SELESAI', 'sub_status_perkara_id': False})
 
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super().default_get(fields_list)
+        user = self.env.user
+        if user.polres_id and 'polres_id' in fields_list:
+            defaults.setdefault('polres_id', user.polres_id.id)
+        if user.polsek_id and 'polsek_id' in fields_list:
+            defaults.setdefault('polsek_id', user.polsek_id.id)
+        if 'kabupaten_id' in fields_list:
+            if user.polsek_id:
+                kecs = self.env['petadigi.kecamatan'].search(
+                    [('polsek_id', '=', user.polsek_id.id)], limit=2)
+                kab_ids = kecs.mapped('kabupaten_id')
+                if len(kab_ids) == 1:
+                    defaults.setdefault('kabupaten_id', kab_ids.id)
+            elif user.polres_id:
+                kabs = self.env['petadigi.kabupaten'].search(
+                    [('polres_id', '=', user.polres_id.id)], limit=2)
+                if len(kabs) == 1:
+                    defaults.setdefault('kabupaten_id', kabs.id)
+        return defaults
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -112,7 +134,8 @@ class Kriminalitas(models.Model):
     
     @api.onchange('polres_id')
     def _onchange_polres_id(self):
-        self.polsek_id = False  # reset polsek saat polres diganti
+        if self.polsek_id and self.polsek_id.polres_id != self.polres_id:
+            self.polsek_id = False
     @api.onchange('kategori_id')
     def _onchange_kategori_id(self):
         self.sub_kategori_id = False  # reset sub kategori saat kategori diganti
@@ -123,7 +146,9 @@ class Kriminalitas(models.Model):
 
     @api.onchange('kecamatan_id')
     def _onchange_kecamatan_id(self):
-        self.desa_id = False  # reset desa saat kecamatan diganti
+        self.desa_id = False
+        if self.kecamatan_id and not self.kabupaten_id:
+            self.kabupaten_id = self.kecamatan_id.kabupaten_id
 
     @api.onchange('status_perkara')
     def _onchange_status_perkara(self):

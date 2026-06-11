@@ -22,3 +22,4 @@ from . import lalu_lintas
 from . import lokasi_penting
 from . import jenis_laporan
 from . import hasil_giat
+from . import res_users

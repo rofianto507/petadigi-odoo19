@@ -1,26 +1,65 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_petadigi_polres,petadigi.polres,model_petadigi_polres,,1,1,1,1
-access_petadigi_polsek,petadigi.polsek,model_petadigi_polsek,,1,1,1,1
-access_petadigi_kabupaten,petadigi.kabupaten,model_petadigi_kabupaten,,1,1,1,1
-access_petadigi_kecamatan,petadigi.kecamatan,model_petadigi_kecamatan,,1,1,1,1
-access_petadigi_desa,petadigi.desa,model_petadigi_desa,,1,1,1,1
-access_petadigi_sumber_dokumen,petadigi.sumber_dokumen,model_petadigi_sumber_dokumen,,1,1,1,1
-access_petadigi_kategori_kriminal,petadigi.kategori_kriminal,model_petadigi_kategori_kriminal,,1,1,1,1
-access_petadigi_sub_kategori_kriminal,petadigi.sub_kategori_kriminal,model_petadigi_sub_kategori_kriminal,,1,1,1,1
-access_petadigi_kategori_bencana,petadigi.kategori_bencana,model_petadigi_kategori_bencana,,1,1,1,1
-access_petadigi_kategori_kamtibmas,petadigi.kategori_kamtibmas,model_petadigi_kategori_kamtibmas,,1,1,1,1
-access_petadigi_kategori_lalu_lintas,petadigi.kategori_lalu_lintas,model_petadigi_kategori_lalu_lintas,,1,1,1,1
-access_petadigi_kategori_lokasi,petadigi.kategori_lokasi,model_petadigi_kategori_lokasi,,1,1,1,1
-access_petadigi_jenis_jalan,petadigi.jenis_jalan,model_petadigi_jenis_jalan,,1,1,1,1
-access_petadigi_modus_operandi,petadigi.modus_operandi,model_petadigi_modus_operandi,,1,1,1,1
-access_petadigi_jenis_tkp,petadigi.jenis_tkp,model_petadigi_jenis_tkp,,1,1,1,1
-access_petadigi_subdit,petadigi.subdit,model_petadigi_subdit,,1,1,1,1
-access_petadigi_kriminalitas,petadigi.kriminalitas,model_petadigi_kriminalitas,,1,1,1,1
-access_petadigi_sub_status_perkara,petadigi.sub_status_perkara,model_petadigi_sub_status_perkara,,1,1,1,1
-access_petadigi_import_lp_wizard,petadigi.import.lp.wizard,model_petadigi_import_lp_wizard,,1,1,1,1
-access_petadigi_kasus_menonjol,petadigi.kasus_menonjol,model_petadigi_kasus_menonjol,,1,1,1,1
-access_petadigi_bencana,petadigi.bencana,model_petadigi_bencana,,1,1,1,1
-access_petadigi_lalu_lintas,petadigi.lalu_lintas,model_petadigi_lalu_lintas,,1,1,1,1
-access_petadigi_lokasi_penting,petadigi.lokasi_penting,model_petadigi_lokasi_penting,,1,1,1,1
-access_petadigi_jenis_laporan,petadigi.jenis_laporan,model_petadigi_jenis_laporan,,1,1,1,1
-access_petadigi_hasil_giat,petadigi.hasil_giat,model_petadigi_hasil_giat,,1,1,1,1
+access_polres_admin,polres admin,model_petadigi_polres,petadigi.group_admin,1,1,1,1
+access_polsek_admin,polsek admin,model_petadigi_polsek,petadigi.group_admin,1,1,1,1
+access_kabupaten_admin,kabupaten admin,model_petadigi_kabupaten,petadigi.group_admin,1,1,1,1
+access_kecamatan_admin,kecamatan admin,model_petadigi_kecamatan,petadigi.group_admin,1,1,1,1
+access_desa_admin,desa admin,model_petadigi_desa,petadigi.group_admin,1,1,1,1
+access_sumber_dokumen_admin,sumber_dokumen admin,model_petadigi_sumber_dokumen,petadigi.group_admin,1,1,1,1
+access_kategori_kriminal_admin,kategori_kriminal admin,model_petadigi_kategori_kriminal,petadigi.group_admin,1,1,1,1
+access_sub_kategori_kriminal_admin,sub_kategori_kriminal admin,model_petadigi_sub_kategori_kriminal,petadigi.group_admin,1,1,1,1
+access_kategori_bencana_admin,kategori_bencana admin,model_petadigi_kategori_bencana,petadigi.group_admin,1,1,1,1
+access_kategori_kamtibmas_admin,kategori_kamtibmas admin,model_petadigi_kategori_kamtibmas,petadigi.group_admin,1,1,1,1
+access_kategori_lalu_lintas_admin,kategori_lalu_lintas admin,model_petadigi_kategori_lalu_lintas,petadigi.group_admin,1,1,1,1
+access_kategori_lokasi_admin,kategori_lokasi admin,model_petadigi_kategori_lokasi,petadigi.group_admin,1,1,1,1
+access_jenis_jalan_admin,jenis_jalan admin,model_petadigi_jenis_jalan,petadigi.group_admin,1,1,1,1
+access_modus_operandi_admin,modus_operandi admin,model_petadigi_modus_operandi,petadigi.group_admin,1,1,1,1
+access_jenis_tkp_admin,jenis_tkp admin,model_petadigi_jenis_tkp,petadigi.group_admin,1,1,1,1
+access_subdit_admin,subdit admin,model_petadigi_subdit,petadigi.group_admin,1,1,1,1
+access_sub_status_perkara_admin,sub_status_perkara admin,model_petadigi_sub_status_perkara,petadigi.group_admin,1,1,1,1
+access_polres_user,polres user,model_petadigi_polres,petadigi.group_petadigi_user,1,0,0,0
+access_polsek_user,polsek user,model_petadigi_polsek,petadigi.group_petadigi_user,1,0,0,0
+access_kabupaten_user,kabupaten user,model_petadigi_kabupaten,petadigi.group_petadigi_user,1,0,0,0
+access_kecamatan_user,kecamatan user,model_petadigi_kecamatan,petadigi.group_petadigi_user,1,0,0,0
+access_desa_user,desa user,model_petadigi_desa,petadigi.group_petadigi_user,1,0,0,0
+access_sumber_dokumen_user,sumber_dokumen user,model_petadigi_sumber_dokumen,petadigi.group_petadigi_user,1,0,0,0
+access_kategori_kriminal_user,kategori_kriminal user,model_petadigi_kategori_kriminal,petadigi.group_petadigi_user,1,0,0,0
+access_sub_kategori_kriminal_user,sub_kategori_kriminal user,model_petadigi_sub_kategori_kriminal,petadigi.group_petadigi_user,1,0,0,0
+access_kategori_bencana_user,kategori_bencana user,model_petadigi_kategori_bencana,petadigi.group_petadigi_user,1,0,0,0
+access_kategori_kamtibmas_user,kategori_kamtibmas user,model_petadigi_kategori_kamtibmas,petadigi.group_petadigi_user,1,0,0,0
+access_kategori_lalu_lintas_user,kategori_lalu_lintas user,model_petadigi_kategori_lalu_lintas,petadigi.group_petadigi_user,1,0,0,0
+access_kategori_lokasi_user,kategori_lokasi user,model_petadigi_kategori_lokasi,petadigi.group_petadigi_user,1,0,0,0
+access_jenis_jalan_user,jenis_jalan user,model_petadigi_jenis_jalan,petadigi.group_petadigi_user,1,0,0,0
+access_modus_operandi_user,modus_operandi user,model_petadigi_modus_operandi,petadigi.group_petadigi_user,1,0,0,0
+access_jenis_tkp_user,jenis_tkp user,model_petadigi_jenis_tkp,petadigi.group_petadigi_user,1,0,0,0
+access_subdit_user,subdit user,model_petadigi_subdit,petadigi.group_petadigi_user,1,0,0,0
+access_sub_status_perkara_user,sub_status_perkara user,model_petadigi_sub_status_perkara,petadigi.group_petadigi_user,1,0,0,0
+access_jenis_laporan_admin,jenis_laporan admin,model_petadigi_jenis_laporan,petadigi.group_admin,1,1,1,1
+access_jenis_laporan_polres,jenis_laporan polres read,model_petadigi_jenis_laporan,petadigi.group_polres,1,0,0,0
+access_jenis_laporan_polsek,jenis_laporan polsek read,model_petadigi_jenis_laporan,petadigi.group_polsek,1,0,0,0
+access_kriminalitas_admin,kriminalitas admin,model_petadigi_kriminalitas,petadigi.group_admin,1,1,1,1
+access_kriminalitas_subdit,kriminalitas subdit,model_petadigi_kriminalitas,petadigi.group_subdit,1,1,1,1
+access_kriminalitas_polres,kriminalitas polres,model_petadigi_kriminalitas,petadigi.group_polres,1,1,1,1
+access_kriminalitas_polsek,kriminalitas polsek,model_petadigi_kriminalitas,petadigi.group_polsek,1,1,1,1
+access_kasus_menonjol_admin,kasus_menonjol admin,model_petadigi_kasus_menonjol,petadigi.group_admin,1,1,1,1
+access_kasus_menonjol_subdit,kasus_menonjol subdit,model_petadigi_kasus_menonjol,petadigi.group_subdit,1,1,1,1
+access_kasus_menonjol_polres,kasus_menonjol polres,model_petadigi_kasus_menonjol,petadigi.group_polres,1,1,1,1
+access_kasus_menonjol_polsek,kasus_menonjol polsek,model_petadigi_kasus_menonjol,petadigi.group_polsek,1,1,1,1
+access_bencana_admin,bencana admin,model_petadigi_bencana,petadigi.group_admin,1,1,1,1
+access_bencana_subdit,bencana subdit read,model_petadigi_bencana,petadigi.group_subdit,1,0,0,0
+access_bencana_polres,bencana polres,model_petadigi_bencana,petadigi.group_polres,1,1,1,1
+access_bencana_polsek,bencana polsek,model_petadigi_bencana,petadigi.group_polsek,1,1,1,1
+access_lalu_lintas_admin,lalu_lintas admin,model_petadigi_lalu_lintas,petadigi.group_admin,1,1,1,1
+access_lalu_lintas_subdit,lalu_lintas subdit read,model_petadigi_lalu_lintas,petadigi.group_subdit,1,0,0,0
+access_lalu_lintas_polres,lalu_lintas polres,model_petadigi_lalu_lintas,petadigi.group_polres,1,1,1,1
+access_lalu_lintas_polsek,lalu_lintas polsek,model_petadigi_lalu_lintas,petadigi.group_polsek,1,1,1,1
+access_lokasi_penting_admin,lokasi_penting admin,model_petadigi_lokasi_penting,petadigi.group_admin,1,1,1,1
+access_lokasi_penting_subdit,lokasi_penting subdit read,model_petadigi_lokasi_penting,petadigi.group_subdit,1,0,0,0
+access_lokasi_penting_polres,lokasi_penting polres,model_petadigi_lokasi_penting,petadigi.group_polres,1,1,1,1
+access_lokasi_penting_polsek,lokasi_penting polsek,model_petadigi_lokasi_penting,petadigi.group_polsek,1,1,1,1
+access_hasil_giat_admin,hasil_giat admin,model_petadigi_hasil_giat,petadigi.group_admin,1,1,1,1
+access_hasil_giat_subdit,hasil_giat subdit read,model_petadigi_hasil_giat,petadigi.group_subdit,1,0,0,0
+access_hasil_giat_polres,hasil_giat polres,model_petadigi_hasil_giat,petadigi.group_polres,1,1,1,1
+access_hasil_giat_polsek,hasil_giat polsek,model_petadigi_hasil_giat,petadigi.group_polsek,1,1,1,1
+access_import_lp_wizard_admin,import_lp_wizard admin,model_petadigi_import_lp_wizard,petadigi.group_admin,1,1,1,1
+access_import_lp_wizard_polres,import_lp_wizard polres,model_petadigi_import_lp_wizard,petadigi.group_polres,1,1,1,1
+access_import_lp_wizard_polsek,import_lp_wizard polsek,model_petadigi_import_lp_wizard,petadigi.group_polsek,1,1,1,1

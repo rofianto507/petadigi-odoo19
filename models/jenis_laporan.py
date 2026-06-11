@@ -50,6 +50,11 @@ class JenisLaporan(models.Model):
             else:
                 rec.qr_code_image = False
 
+    hasil_giat_ids = fields.One2many(
+        'petadigi.hasil_giat', 'jenis_laporan_id',
+        string='Data Giat',
+    )
+
     jumlah_giat = fields.Integer(
         string='Total Giat',
         compute='_compute_jumlah_giat',

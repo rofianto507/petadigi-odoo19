@@ -1,6 +1,7 @@
 from odoo import http, fields
 from odoo.http import request
 from markupsafe import Markup
+from datetime import datetime
 import json
 
 
@@ -38,6 +39,16 @@ class GiatPublicController(http.Controller):
             'init_data': safe_init_data,
         })
 
+    def _parse_tanggal(self, tanggal_str):
+        """Parse datetime-local string (YYYY-MM-DDTHH:MM) → Odoo Datetime (naive UTC-stored)."""
+        if tanggal_str:
+            for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+                try:
+                    return datetime.strptime(tanggal_str.strip(), fmt)
+                except ValueError:
+                    continue
+        return fields.Datetime.now()
+
     @http.route('/giat/api/polsek', type='json', auth='public', csrf=False)
     def get_polsek(self, polres_id, **kwargs):
         polsek_list = request.env['petadigi.polsek'].sudo().search_read(
@@ -65,7 +76,7 @@ class GiatPublicController(http.Controller):
                 'pangkat_petugas': (data.get('pangkat_petugas') or '').strip(),
                 'polres_id': int(data.get('polres_id') or 0) or False,
                 'polsek_id': int(data.get('polsek_id') or 0) or False,
-                'tanggal': fields.Datetime.now(),
+                'tanggal': self._parse_tanggal(data.get('tanggal')),
                 'kegiatan': (data.get('kegiatan') or '').strip(),
                 'latitude': float(data.get('latitude') or 0),
                 'longitude': float(data.get('longitude') or 0),

@@ -20,6 +20,7 @@ import { updateLokasiCharts, disposeLokasiCharts } from "./dashboard_charts_loka
 
 export class DashboardMap extends Component {
     static template = "petadigi.DashboardMap";
+    static props = ["*"];
 
     setup() {
         this.mapRef          = useRef("mapContainer");

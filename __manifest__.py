@@ -8,6 +8,7 @@
     'website': 'https://selstudio.id',
     'depends': ['base', 'web','mail'],
     'data': [
+        'security/security.xml',
         'security/ir.model.access.csv',
         'data/sequence_data.xml',
         'views/polres_views.xml',
@@ -38,8 +39,8 @@
         'views/hasil_giat_views.xml',
         'views/giat_form_template.xml',
         'views/monitoring_giat_views.xml',
+        'views/res_users_views.xml',
         'views/menu.xml',
-        
     ],
     'assets': {
          'web.assets_backend': [

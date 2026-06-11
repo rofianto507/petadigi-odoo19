@@ -3,6 +3,27 @@
 <t t-name="petadigi.MonitoringGiatDashboard">
 <div class="mg-root">
 
+    <!-- ══ DELETE CONFIRM MODAL ══ -->
+    <t t-if="state.confirmDelete.visible">
+        <div class="mg-modal-overlay" t-on-click="onDeleteCancel">
+            <div class="mg-modal" t-on-click.stop="">
+                <div class="mg-modal-icon">
+                    <i class="fa fa-trash fa-2x"/>
+                </div>
+                <div class="mg-modal-title">Hapus Data Giat?</div>
+                <div class="mg-modal-msg">
+                    Data <strong t-out="state.confirmDelete.label"/> akan dihapus permanen dan tidak bisa dipulihkan.
+                </div>
+                <div class="mg-modal-actions">
+                    <button class="mg-modal-btn mg-modal-btn--cancel" t-on-click="onDeleteCancel">Batal</button>
+                    <button class="mg-modal-btn mg-modal-btn--danger" t-on-click="onDeleteConfirm">
+                        <i class="fa fa-trash"/> Hapus
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
     <!-- ══ TOP ROW: breadcrumb | filter ══ -->
     <div class="mg-top-row">
         <div class="mg-breadcrumb">
@@ -328,6 +349,106 @@
                     </div>
                 </t>
                 <div t-ref="mapRef" class="mg-map-canvas"/>
+            </div>
+
+            <!-- Row 5: Kanban Giat Terbaru -->
+            <div class="mg-kanban-section">
+                <div class="mg-kanban-header">
+                    <div class="mg-chart-title" style="margin:0">
+                        <i class="fa fa-th-large"/>
+                        Giat Terbaru
+                        <span class="mg-map-badge">
+                            <t t-out="state.kanban.total"/> data
+                        </span>
+                    </div>
+                    <div class="mg-kanban-toolbar">
+                        <select class="mg-tbl-select" t-on-change="onKanbanPerPage">
+                            <option value="12" t-att-selected="state.kanban.perPage == 12">12 / halaman</option>
+                            <option value="24" t-att-selected="state.kanban.perPage == 24">24 / halaman</option>
+                            <option value="48" t-att-selected="state.kanban.perPage == 48">48 / halaman</option>
+                        </select>
+                        <span class="mg-kanban-info">
+                            <t t-out="kanbanPages.from"/>–<t t-out="kanbanPages.to"/> dari <t t-out="kanbanPages.total"/>
+                        </span>
+                        <div class="mg-pagination">
+                            <button class="mg-page-btn" t-on-click="onKanbanPrev"
+                                    t-att-disabled="!kanbanPages.hasPrev">
+                                <i class="fa fa-chevron-left"/>
+                            </button>
+                            <button class="mg-page-btn" t-on-click="onKanbanNext"
+                                    t-att-disabled="!kanbanPages.hasNext">
+                                <i class="fa fa-chevron-right"/>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <t t-if="state.kanban.loading">
+                    <div class="mg-loading" style="min-height:120px">
+                        <div class="mg-spinner"/>
+                        <span>Memuat giat...</span>
+                    </div>
+                </t>
+                <t t-elif="state.kanban.data.length === 0">
+                    <div class="mg-empty mg-empty--lg">
+                        <i class="fa fa-inbox fa-3x"/>
+                        <span>Tidak ada data giat pada periode ini</span>
+                    </div>
+                </t>
+                <t t-else="">
+                    <div class="mg-kanban-grid">
+                        <t t-foreach="state.kanban.data" t-as="item" t-key="item.id">
+                            <div class="mg-kanban-card"
+                                 t-on-click="() => this.onKanbanCardClick(item.id)">
+                                <!-- Foto thumbnail -->
+                                <div class="mg-kanban-photo">
+                                    <div class="mg-kanban-photo-placeholder">
+                                        <i class="fa fa-camera fa-2x"/>
+                                    </div>
+                                    <img t-attf-src="/web/image/petadigi.hasil_giat/#{item.id}/foto"
+                                         class="mg-kanban-img" alt=""
+                                         t-on-error="(ev) => ev.target.style.display='none'"/>
+                                    <div class="mg-kanban-jenis">
+                                        <t t-out="item.jenis_laporan_id ? item.jenis_laporan_id[1] : '-'"/>
+                                    </div>
+                                </div>
+                                <!-- Info -->
+                                <div class="mg-kanban-body">
+                                    <div class="mg-kanban-petugas">
+                                        <i class="fa fa-user-circle-o"/>
+                                        <span><t t-out="item.pangkat_petugas"/> <t t-out="item.nama_petugas"/></span>
+                                    </div>
+                                    <div class="mg-kanban-nrp"><t t-out="item.nrp || '-'"/></div>
+                                    <div class="mg-kanban-tanggal">
+                                        <i class="fa fa-clock-o"/>
+                                        <t t-out="_fmtDateTimeDisplay(item.tanggal)"/>
+                                    </div>
+                                    <div class="mg-kanban-kegiatan"
+                                         t-att-title="item.kegiatan || ''">
+                                        <t t-out="item.kegiatan ? (item.kegiatan.length > 20 ? item.kegiatan.substring(0,20) + '…' : item.kegiatan) : '-'"/>
+                                    </div>
+                                    <div class="mg-kanban-lokasi">
+                                        <i class="fa fa-building"/>
+                                        <t t-out="item.polres_id ? item.polres_id[1] : '-'"/>
+                                        <t t-if="item.polsek_id">
+                                            <span class="mg-kanban-sep">·</span>
+                                            <t t-out="item.polsek_id[1]"/>
+                                        </t>
+                                    </div>
+                                </div>
+                                <!-- Footer: code + hapus -->
+                                <div class="mg-kanban-footer">
+                                    <span class="mg-kanban-code" t-out="item.code || ''"/>
+                                    <button class="mg-kanban-delete"
+                                            title="Hapus"
+                                            t-on-click.stop="() => this.onDeleteClick(item.id, item.code || item.nama_petugas)">
+                                        <i class="fa fa-trash"/>
+                                    </button>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </t>
             </div>
 
         </div>

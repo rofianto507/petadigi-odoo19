@@ -109,6 +109,24 @@
                         <group>
                             <field name="keterangan"/>
                         </group>
+
+                        <notebook>
+                            <page string="Data Giat" name="data_giat">
+                                <field name="hasil_giat_ids" nolabel="1">
+                                    <list create="0" edit="0"
+                                          default_order="tanggal desc">
+                                        <field name="tanggal" string="Tanggal"/>
+                                        <field name="code" string="Kode"/>
+                                        <field name="pangkat_petugas" string="Pangkat"/>
+                                        <field name="nama_petugas" string="Nama Petugas"/>
+                                        <field name="nrp" string="NRP"/>
+                                        <field name="polres_id" string="Polres"/>
+                                        <field name="polsek_id" string="Polsek"/>
+                                        <field name="kegiatan" string="Kegiatan"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
                     </sheet>
                 </form>
             </field>
