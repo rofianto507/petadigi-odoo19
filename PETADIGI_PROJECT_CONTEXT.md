@@ -515,11 +515,146 @@ onClearDate() {
 
 ---
 
-## 14. Status Fitur
+## 14. Import LP Wizard — Detail Implementasi
+
+### Model: `petadigi.import.lp.wizard` (`wizard/import_lp_wizard.py`)
+
+**Import penting**: `from markupsafe import Markup` (wajib — dipakai di `action_simpan` untuk `message_post`)
+
+**Flow 2-step**:
+1. **Upload** (`stage='upload'`): pilih jenis LP, upload file `.docx`
+2. **Preview** (`stage='preview'`): lihat hasil parsing, koreksi/lengkapi data, klik Simpan
+
+**`default_get` override** — pre-fill field berdasarkan user login:
+```python
+@api.model
+def default_get(self, fields_list):
+    defaults = super().default_get(fields_list)
+    user = self.env.user
+    if user.polres_id and 'polres_id' in fields_list:
+        defaults.setdefault('polres_id', user.polres_id.id)
+    if user.polsek_id and 'polsek_id' in fields_list:
+        defaults.setdefault('polsek_id', user.polsek_id.id)
+    if 'kabupaten_id' in fields_list:
+        if user.polsek_id:
+            kecs = self.env['petadigi.kecamatan'].search(
+                [('polsek_id', '=', user.polsek_id.id)], limit=2)
+            kab_ids = kecs.mapped('kabupaten_id')
+            if len(kab_ids) == 1:
+                defaults.setdefault('kabupaten_id', kab_ids.id)
+        elif user.polres_id:
+            kabs = self.env['petadigi.kabupaten'].search(
+                [('polres_id', '=', user.polres_id.id)], limit=2)
+            if len(kabs) == 1:
+                defaults.setdefault('kabupaten_id', kabs.id)
+    return defaults
+```
+
+**`_onchange_polres_id`** — reset polsek hanya jika tidak cocok (conditional, bukan selalu reset):
+```python
+@api.onchange('polres_id')
+def _onchange_polres_id(self):
+    if self.polsek_id and self.polsek_id.polres_id != self.polres_id:
+        self.polsek_id = False
+```
+
+### View Wizard (`wizard/import_lp_wizard_views.xml`) — Step 2
+
+**KESATUAN group** — field berbeda per group:
+```xml
+<!-- Admin/Subdit: bebas pilih -->
+<field name="polres_id" groups="petadigi.group_admin,petadigi.group_subdit"/>
+<field name="polsek_id" groups="petadigi.group_admin,petadigi.group_subdit"
+       domain="[('polres_id', '=', polres_id)]"/>
+<!-- Polres: polres readonly, polsek bisa pilih dari polresnya -->
+<field name="polres_id" groups="petadigi.group_polres" readonly="1"/>
+<field name="polsek_id" groups="petadigi.group_polres"
+       domain="[('polres_id', '=', polres_id)]"/>
+<!-- Polsek: keduanya readonly -->
+<field name="polres_id" groups="petadigi.group_polsek" readonly="1"/>
+<field name="polsek_id" groups="petadigi.group_polsek" readonly="1"/>
+```
+
+**WILAYAH group** — polsek: kabupaten readonly, kecamatan tanpa domain (record rule sudah filter):
+```xml
+<!-- Admin/Subdit/Polres -->
+<field name="kabupaten_id" groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"/>
+<field name="kecamatan_id" groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"
+       domain="[('kabupaten_id', '=', kabupaten_id)]"/>
+<field name="desa_id" groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"
+       domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+<!-- Polsek: kabupaten readonly -->
+<field name="kabupaten_id" groups="petadigi.group_polsek" readonly="1"/>
+<field name="kecamatan_id" groups="petadigi.group_polsek"/>
+<field name="desa_id" groups="petadigi.group_polsek"
+       domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+```
+
+**Map Koordinat** — widget `latlong_map_picker` di Step 2:
+```xml
+<group string="KOORDINAT KEJADIAN">
+    <field name="latitude" string="Latitude"/>
+    <field name="longitude" string="Longitude"/>
+</group>
+<div>
+    <field name="latitude" widget="latlong_map_picker"
+           class="latlong-mappicker-wrapper" nolabel="1"/>
+</div>
+```
+> Widget `latlong_map_picker` membaca `record.data.latitude/longitude`, update keduanya on click/drag. Harus di dalam `div` terpisah dengan class `latlong-mappicker-wrapper`.
+
+### Akses (`security/ir.model.access.csv`)
+```csv
+access_import_lp_wizard_admin,import_lp_wizard admin,model_petadigi_import_lp_wizard,petadigi.group_admin,1,1,1,1
+access_import_lp_wizard_polres,import_lp_wizard polres,model_petadigi_import_lp_wizard,petadigi.group_polres,1,1,1,1
+access_import_lp_wizard_polsek,import_lp_wizard polsek,model_petadigi_import_lp_wizard,petadigi.group_polsek,1,1,1,1
+```
+> Wizard perlu full CRUD (bukan hanya read) karena `action_parse_dokumen` memanggil `self.write(vals)`.
+
+---
+
+## 15. Catatan VPS & Kompatibilitas Odoo
+
+### Versi
+- **Lokal**: Odoo 19.0.20251203 — manifest `version: '19.0.2.0.0'`
+- **VPS target**: harus Odoo 19.0 (sama dengan lokal)
+
+### Aturan Versi Manifest
+Prefix versi manifest harus cocok dengan seri Odoo yang dijalankan:
+- Odoo 19.0 → `'19.0.x.x.x'`
+- Odoo 19.4 → `'19.4.x.x.x'` (tidak kompatibel dengan lokal)
+
+Jika prefix tidak cocok → module tampil "Status: Uninstallable" tanpa tombol Install.
+
+### Odoo 19.4 ALPHA — Tidak Direkomendasikan
+`version_info = (19, 4, 0, ALPHA, 1, '')` — pre-release, OWL API berubah:
+- `useRef` + `t-ref` rusak untuk client action component tanpa `static props`
+- Bahkan dengan `static props = ["*"]`, `useRef` masih gagal (`Ref is undefined or null`)
+- `this.el` undefined di OWL 19.4 untuk client action component
+
+**Keputusan**: downgrade VPS ke Odoo 19.0, tidak migrasi JS code.
+
+### `static props = ["*"]` di `dashboard_map.js`
+Ditambahkan sebagai best practice (harmless di 19.0, diperlukan di 19.4+):
+```js
+export class DashboardMap extends Component {
+    static template = "petadigi.DashboardMap";
+    static props = ["*"];
+    setup() { ... }
+}
+```
+
+---
+
+## 16. Status Fitur
 
 ### Selesai ✅
 - Model data dan views semua entitas (kriminalitas, KAM, bencana, lalin, lokasi penting)
 - Import wizard LP A dan B
+  - Akses untuk group polres dan polsek (full CRUD)
+  - Pre-fill otomatis polres/polsek/kabupaten berdasarkan login user (`default_get`)
+  - Field polres/polsek/kabupaten readonly untuk polsek, polres readonly untuk polres
+  - Map Leaflet di Step 2 untuk update koordinat (`latlong_map_picker` widget)
 - Dashboard Maps 5 mode peta dengan choropleth penuh
 - Drill-down 3 level (kabupaten → kecamatan → desa) di semua mode
 - Drill-down sync: KPI cards + grafik ikut terfilter saat drill
@@ -543,14 +678,13 @@ onClearDate() {
 
 ### Potensial Pengembangan Berikutnya
 - Export/report Monitoring Giat ke PDF atau Excel
-- Role-based access control
 - Notifikasi real-time kasus baru
 - Grafik tambahan untuk mode bencana (trend tahunan)
 - Filter tanggal di dashboard Monitoring Giat (saat ini hanya filter polres/polsek/jenis)
 
 ---
 
-## 15. Development Environment
+## 17. Development Environment
 
 - **OS**: Windows 11
 - **Odoo path**: `C:\Program Files\Odoo 19.0.20251203\server\`
@@ -560,4 +694,4 @@ onClearDate() {
 
 ---
 
-*Dokumen diperbarui: 2026-06-10*
+*Dokumen diperbarui: 2026-06-11*

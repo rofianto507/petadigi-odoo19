@@ -1,8 +1,55 @@
 {
     'name': 'PetaDigi',
     'version': '19.0.2.0.0',
-    'summary': 'Module for Digital Map.',
-    'description': 'Digital map module for Odoo, providing interactive mapping features and geolocation services.',
+    'summary': 'Sistem Informasi Peta Digital Kepolisian — Dashboard Peta, Import LP, dan Monitoring Kegiatan Lapangan.',
+    'description': """
+PetaDigi adalah modul Odoo untuk manajemen data dan visualisasi peta interaktif kepolisian.
+
+FITUR UTAMA:
+
+1. Dashboard Peta Interaktif (Leaflet.js + GeoJSON)
+   - 5 mode peta: Umum, Kriminalitas, Kasus Menonjol (KAM), Bencana, Lalu Lintas, dan Lokasi Penting
+   - Choropleth wilayah (kabupaten → kecamatan → desa) dengan drill-down 3 level
+   - KPI cards dan grafik ECharts otomatis update mengikuti drill-down dan filter aktif
+   - Filter: tahun, kabupaten, status, kategori, sub kategori, rentang tanggal (flatpickr)
+   - Overlay lokasi penting (panel checkbox floating) tampil di semua mode peta
+   - Marker clustering (Leaflet.markercluster) untuk titik kejadian
+
+2. Manajemen Data Kepolisian
+   - Kriminalitas (LP A / LP B): no LP, tanggal, koordinat, kategori, sub kategori, status perkara
+   - Kasus Menonjol (KAM): kategori, modus operandi, jenis TKP
+   - Bencana: kategori, penyebab, tindak lanjut
+   - Lalu Lintas: jenis jalan, kategori, rentang waktu
+   - Lokasi Penting: koordinat, kontak, kategori
+   - Hierarki wilayah: Polres → Polsek → Kabupaten → Kecamatan → Desa (dengan GeoJSON geometry)
+
+3. Import Otomatis Dokumen LP
+   - Parse file .docx LP A dan LP B secara otomatis
+   - Wizard 2 langkah: upload → preview + koreksi → simpan
+   - Pre-fill otomatis polres/polsek/kabupaten berdasarkan akun login
+   - Peta interaktif di step preview untuk menentukan koordinat kejadian
+   - Akses bertingkat: admin bebas pilih, polres terkunci ke polresnya, polsek terkunci penuh
+   - Dokumen asli tersimpan sebagai attachment di chatter record kriminalitas
+
+4. Cooling System — Monitoring Kegiatan Lapangan
+   - Jenis Laporan dengan QR code + public URL unik per jenis laporan
+   - Form publik mobile-friendly di /giat/<token> (tanpa login Odoo)
+   - Petugas isi form: NRP, nama, polres/polsek, kegiatan, foto, koordinat GPS
+   - Upload foto dengan resize otomatis (max 1280px, JPEG 82%)
+   - Dashboard Monitoring Giat: KPI, grafik tren, tabel ringkasan polres/polsek, peta cluster
+
+AKSES BERBASIS PERAN:
+   - Admin: akses penuh semua data
+   - Subdit: baca + tulis kriminalitas dan KAM, baca data lainnya
+   - Polres: data wilayah polresnya, dapat akses wizard import LP
+   - Polsek: data wilayah polseknya, dapat akses wizard import LP
+
+TEKNOLOGI:
+   - Frontend: OWL (Odoo Web Library), Leaflet.js, ECharts, Flatpickr
+   - Marker cluster: Leaflet.markercluster v1.5.3
+   - Parser dokumen: python-docx
+   - Platform: Odoo 19.0
+""",
     'category': 'Tools',
     'author': 'Cv Sel Studio',
     'website': 'https://selstudio.id',
