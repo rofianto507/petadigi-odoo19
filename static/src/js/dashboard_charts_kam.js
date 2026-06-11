@@ -1,5 +1,7 @@
 /** @odoo-module **/
 
+import { fmtTanggal } from "./dashboard_helpers";
+
 // ─── Bar chart: total per kabupaten ──────────────────────────────────────────
 function _renderKamBarChart(ctx, names, values) {
     const el = ctx.chartKamBarRef?.el;
@@ -422,5 +424,124 @@ export async function updateKamCharts(ctx, mode) {
         _renderKamTahunanChart(ctx, MONTHS_ID, currentYrData, prevYrData, selectedYear, prevYear);
     } catch (e) {
         console.error('KAM chart load error:', e);
+    }
+}
+
+// ─── Data Table ───────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 20;
+
+export async function updateKamTable(ctx, mode, page) {
+    const rowEl  = ctx.tableKamRowRef?.el;
+    const bodyEl = ctx.tableKamBodyRef?.el;
+    if (!rowEl) return;
+
+    if (mode !== 'kam') { rowEl.style.display = 'none'; return; }
+    rowEl.style.display = 'flex';
+
+    ctx._kamTablePage = (page !== undefined) ? page : 1;
+    const offset = (ctx._kamTablePage - 1) * PAGE_SIZE;
+
+    const tahun       = ctx.filterTahun?.el?.value       || '';
+    const dateFrom    = ctx.activeDateFrom                || '';
+    const dateTo      = ctx.activeDateTo                  || '';
+    const kategoriId  = parseInt(ctx.filterKategori?.el?.value)   || null;
+    const kabupatenId = parseInt(ctx.filterKabupaten?.el?.value)  || null;
+    const stateValue  = ctx.filterState?.el?.value        || '';
+
+    const drillDomain = ctx.drillKecamatanId
+        ? [['kecamatan_id', '=', ctx.drillKecamatanId]]
+        : ctx.drillKabupatenId ? [['kabupaten_id', '=', ctx.drillKabupatenId]] : [];
+
+    const domain = [
+        ...drillDomain,
+        ...(kabupatenId ? [['kabupaten_id',            '=',  kabupatenId]]            : []),
+        ...(stateValue  ? [['state',                   '=',  stateValue]]             : []),
+        ...(tahun       ? [['sumber_dokumen_id.tahun', '=',  tahun]]                  : []),
+        ...(dateFrom    ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']] : []),
+        ...(dateTo      ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']] : []),
+        ...(kategoriId  ? [['kategori_id',             '=',  kategoriId]]             : []),
+    ];
+
+    bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Memuat data...</div>`;
+
+    try {
+        const [records, total] = await Promise.all([
+            ctx.orm.searchRead('petadigi.kasus_menonjol', domain,
+                ['id', 'no_lp', 'tanggal_kejadian', 'kabupaten_id', 'kecamatan_id',
+                 'kategori_id', 'modus_operandi_id', 'state'],
+                { order: 'tanggal_kejadian desc', limit: PAGE_SIZE, offset }),
+            ctx.orm.searchCount('petadigi.kasus_menonjol', domain),
+        ]);
+
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        const curPage    = ctx._kamTablePage;
+        const fromRow    = total > 0 ? offset + 1 : 0;
+        const toRow      = Math.min(offset + PAGE_SIZE, total);
+
+        const rows = records.map((r, i) => {
+            const kab   = Array.isArray(r.kabupaten_id)      ? r.kabupaten_id[1]      : '-';
+            const kec   = Array.isArray(r.kecamatan_id)      ? r.kecamatan_id[1]      : '-';
+            const kat   = Array.isArray(r.kategori_id)       ? r.kategori_id[1]       : '-';
+            const modus = Array.isArray(r.modus_operandi_id) ? r.modus_operandi_id[1] : '-';
+            const cls   = r.state === 'SELESAI' ? '--green' : '--red';
+            return `
+                <tr class="petadigi-table-row" data-id="${r.id}" style="cursor:pointer;">
+                    <td class="petadigi-td">${offset + i + 1}</td>
+                    <td class="petadigi-td petadigi-td--mono">${r.no_lp || '-'}</td>
+                    <td class="petadigi-td" style="white-space:nowrap;">${fmtTanggal(r.tanggal_kejadian)}</td>
+                    <td class="petadigi-td">${kab}</td>
+                    <td class="petadigi-td">${kec}</td>
+                    <td class="petadigi-td">${kat}</td>
+                    <td class="petadigi-td">${modus}</td>
+                    <td class="petadigi-td"><span class="petadigi-badge petadigi-badge${cls}">${r.state || '-'}</span></td>
+                </tr>`;
+        }).join('');
+
+        bodyEl.innerHTML = `
+            <div class="petadigi-table-toolbar">
+                <span class="petadigi-table-info">
+                    ${total > 0
+                        ? `Menampilkan&nbsp;<b>${fromRow}–${toRow}</b>&nbsp;dari&nbsp;<b>${total.toLocaleString('id-ID')}</b>&nbsp;data`
+                        : 'Tidak ada data'}
+                </span>
+                <div class="petadigi-table-pagination">
+                    <button class="petadigi-page-btn" data-action="prev" ${curPage <= 1 ? 'disabled' : ''}><i class="fa fa-chevron-left"></i></button>
+                    <span class="petadigi-page-info">Hal. ${curPage} / ${totalPages}</span>
+                    <button class="petadigi-page-btn" data-action="next" ${curPage >= totalPages ? 'disabled' : ''}><i class="fa fa-chevron-right"></i></button>
+                </div>
+            </div>
+            <div class="petadigi-table-wrapper">
+                <table class="petadigi-table">
+                    <thead><tr>
+                        <th class="petadigi-th">#</th>
+                        <th class="petadigi-th">No. LP</th>
+                        <th class="petadigi-th">Tgl Kejadian</th>
+                        <th class="petadigi-th">Kabupaten</th>
+                        <th class="petadigi-th">Kecamatan</th>
+                        <th class="petadigi-th">Kategori</th>
+                        <th class="petadigi-th">Modus Operandi</th>
+                        <th class="petadigi-th">Status</th>
+                    </tr></thead>
+                    <tbody>
+                        ${rows || `<tr><td colspan="8" style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Tidak ada data</td></tr>`}
+                    </tbody>
+                </table>
+            </div>`;
+
+        bodyEl.querySelectorAll('.petadigi-table-row').forEach(tr => {
+            tr.addEventListener('click', () => {
+                const id = parseInt(tr.dataset.id);
+                if (!id) return;
+                ctx.action.doAction({ type: 'ir.actions.act_window', res_model: 'petadigi.kasus_menonjol',
+                    res_id: id, views: [[false, 'form']], target: 'current' });
+            });
+        });
+        bodyEl.querySelector('[data-action="prev"]')?.addEventListener('click', () => updateKamTable(ctx, mode, curPage - 1));
+        bodyEl.querySelector('[data-action="next"]')?.addEventListener('click', () => updateKamTable(ctx, mode, curPage + 1));
+
+    } catch (e) {
+        console.error('KAM table load error:', e);
+        bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:#e74c3c;font-size:13px;">Gagal memuat data</div>`;
     }
 }

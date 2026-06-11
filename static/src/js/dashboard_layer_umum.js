@@ -7,6 +7,7 @@ import { addBackButton } from "./dashboard_helpers";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function loadKabupatenLayer(ctx) {
+    const ver = ctx._modeVersion;
     ctx.currentLevel = 'kabupaten';
     ctx.kabupatenLayerGroup.clearLayers();
     ctx.kabupatenLabelGroup.clearLayers();
@@ -51,8 +52,8 @@ export async function loadKabupatenLayer(ctx) {
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const center = layer.getBounds().getCenter();
-                    const label = L.marker(center, {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({
                             className: 'kabupaten-label',
                             html: `<span>${props.name}</span>`,
@@ -61,6 +62,7 @@ export async function loadKabupatenLayer(ctx) {
                         interactive: false,
                         zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(label);
                 });
 
@@ -70,6 +72,7 @@ export async function loadKabupatenLayer(ctx) {
             }
         });
 
+        if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
 
@@ -187,8 +190,8 @@ export async function drillDownKecamatan(ctx, kabProps, kabLayer) {
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const center = layer.getBounds().getCenter();
-                    const label = L.marker(center, {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({
                             className: 'kabupaten-label',
                             html: `<span>${props.name}</span>`,
@@ -197,6 +200,7 @@ export async function drillDownKecamatan(ctx, kabProps, kabLayer) {
                         interactive: false,
                         zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.kecamatanLabelGroup.addLayer(label);
                 });
 
@@ -319,8 +323,8 @@ export async function drillDownDesa(ctx, kecProps, kecLayer, kabProps) {
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const center = layer.getBounds().getCenter();
-                    const label = L.marker(center, {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({
                             className: 'kabupaten-label',
                             html: `<span>${props.name}</span>`,
@@ -329,6 +333,7 @@ export async function drillDownDesa(ctx, kecProps, kecLayer, kabProps) {
                         interactive: false,
                         zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.desaLabelGroup.addLayer(label);
                 });
 

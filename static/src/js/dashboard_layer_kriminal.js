@@ -233,6 +233,7 @@ async function _loadKriminalMarkers(ctx, domain) {
 // LEVEL 1 — KABUPATEN
 // ════════════════════════════════════════════════════════════════════════════
 export async function loadModeKriminal(ctx) {
+    const ver = ctx._modeVersion;
     addKriminalLegend(ctx);
     ctx.currentLevel = 'kabupaten';
 
@@ -288,8 +289,8 @@ export async function loadModeKriminal(ctx) {
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const center = layer.getBounds().getCenter();
-                    const label = L.marker(center, {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({
                             className: 'kabupaten-label',
                             html: `<span>${props.name}</span>`,
@@ -298,6 +299,7 @@ export async function loadModeKriminal(ctx) {
                         interactive: false,
                         zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(label);
                 });
 
@@ -307,12 +309,14 @@ export async function loadModeKriminal(ctx) {
             }
         });
 
+        if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
         await _loadKriminalMarkers(ctx, _buildDomain(filters, baseDomain));
     } catch (error) {
         console.error("Gagal memuat data kriminalitas:", error);
     }
+    if (ctx._modeVersion !== ver) return;
     await initLokasiOverlay(ctx);
 }
 
@@ -431,8 +435,8 @@ export async function drillDownKriminalKecamatan(ctx, kabProps, kabLayer, filter
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const center = layer.getBounds().getCenter();
-                    const label = L.marker(center, {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({
                             className: 'kabupaten-label',
                             html: `<span>${props.name}</span>`,
@@ -441,6 +445,7 @@ export async function drillDownKriminalKecamatan(ctx, kabProps, kabLayer, filter
                         interactive: false,
                         zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.kecamatanLabelGroup.addLayer(label);
                 });
 
@@ -580,8 +585,8 @@ export async function drillDownKriminalDesa(ctx, kecProps, kecLayer, filters, ka
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const center = layer.getBounds().getCenter();
-                    const label = L.marker(center, {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({
                             className: 'kabupaten-label',
                             html: `<span>${props.name}</span>`,
@@ -590,6 +595,7 @@ export async function drillDownKriminalDesa(ctx, kecProps, kecLayer, filters, ka
                         interactive: false,
                         zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.desaLabelGroup.addLayer(label);
                 });
 

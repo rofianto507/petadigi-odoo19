@@ -9,6 +9,9 @@ const OVERLAY_COLOR = '#6c3483';
 
 // ── Init Panel ────────────────────────────────────────────────────────────────
 export async function initLokasiOverlay(ctx) {
+    // Snapshot versi saat ini — dipakai untuk mendeteksi mode switch di tengah fetch
+    const ver = ctx._modeVersion;
+
     if (ctx.lokasiOverlayControl) {
         ctx.lokasiOverlayControl.remove();
         ctx.lokasiOverlayControl = null;
@@ -25,6 +28,10 @@ export async function initLokasiOverlay(ctx) {
         console.error('Gagal load kategori lokasi overlay:', e);
         return;
     }
+
+    // Jika mode sudah berganti selama fetch, batalkan — jangan buat panel duplikat
+    if (ctx._modeVersion !== ver) return;
+
     if (!categories.length) return;
 
     const OverlayControl = L.Control.extend({

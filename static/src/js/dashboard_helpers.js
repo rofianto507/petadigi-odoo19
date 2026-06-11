@@ -144,8 +144,8 @@ export async function loadModeComingSoon(ctx, label, color) {
             }),
             onEachFeature: (feature, layer) => {
                 layer.on('add', () => {
-                    const center = layer.getBounds().getCenter();
-                    const lbl = L.marker(center, {
+                    const bounds = layer.getBounds();
+                    const lbl = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({
                             className: 'kabupaten-label',
                             html: `<span>${feature.properties.name}</span>`,
@@ -154,6 +154,7 @@ export async function loadModeComingSoon(ctx, label, color) {
                         interactive: false,
                         zIndexOffset: 100,
                     });
+                    lbl._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(lbl);
                 });
             }

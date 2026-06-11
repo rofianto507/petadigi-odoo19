@@ -202,6 +202,7 @@ async function _loadKamMarkers(ctx, domain) {
 // LEVEL 1 — KABUPATEN
 // ════════════════════════════════════════════════════════════════════════════
 export async function loadModeKam(ctx) {
+    const ver = ctx._modeVersion;
     addKamLegend(ctx);
     ctx.currentLevel = 'kabupaten';
 
@@ -254,10 +255,12 @@ export async function loadModeKam(ctx) {
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const label = L.marker(layer.getBounds().getCenter(), {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
                         interactive: false, zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(label);
                 });
 
@@ -267,12 +270,14 @@ export async function loadModeKam(ctx) {
             }
         });
 
+        if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
         await _loadKamMarkers(ctx, _buildDomain(filters, baseDomain));
     } catch (error) {
         console.error('Gagal memuat data kasus menonjol:', error);
     }
+    if (ctx._modeVersion !== ver) return;
     await initLokasiOverlay(ctx);
 }
 
@@ -385,10 +390,12 @@ export async function drillDownKamKecamatan(ctx, kabProps, kabLayer, filters) {
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const label = L.marker(layer.getBounds().getCenter(), {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
                         interactive: false, zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.kecamatanLabelGroup.addLayer(label);
                 });
 
@@ -521,10 +528,12 @@ export async function drillDownKamDesa(ctx, kecProps, kecLayer, filters, kabProp
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const label = L.marker(layer.getBounds().getCenter(), {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
                         interactive: false, zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.desaLabelGroup.addLayer(label);
                 });
 

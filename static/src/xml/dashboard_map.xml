@@ -280,6 +280,46 @@
                     </div>
                 </div>
 
+                <!-- DATA TABLE KRIMINALITAS -->
+                <div class="petadigi-chart-row" t-ref="tableKriminalRow">
+                    <div class="petadigi-data-table-card">
+                        <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Kriminalitas</div>
+                        <div t-ref="tableKriminalBody"/>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE KASUS MENONJOL -->
+                <div class="petadigi-chart-row" t-ref="tableKamRow">
+                    <div class="petadigi-data-table-card">
+                        <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Kasus Menonjol</div>
+                        <div t-ref="tableKamBody"/>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE BENCANA -->
+                <div class="petadigi-chart-row" t-ref="tableBencanaRow">
+                    <div class="petadigi-data-table-card">
+                        <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Bencana</div>
+                        <div t-ref="tableBencanaBody"/>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE LALU LINTAS -->
+                <div class="petadigi-chart-row" t-ref="tableLalinRow">
+                    <div class="petadigi-data-table-card">
+                        <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Lalu Lintas</div>
+                        <div t-ref="tableLalinBody"/>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE LOKASI PENTING -->
+                <div class="petadigi-chart-row" t-ref="tableLokasiRow">
+                    <div class="petadigi-data-table-card">
+                        <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Lokasi Penting</div>
+                        <div t-ref="tableLokasiBody"/>
+                    </div>
+                </div>
+
             </div>
         </div>
     </t>

@@ -12,11 +12,11 @@ import { loadModeLalin, removeLalinLegend } from "./dashboard_layer_lalin";
 import { loadModeBencana, removeBencanaLegend } from "./dashboard_layer_bencana";
 import { loadModeLokasi, removeLokasiLegend } from "./dashboard_layer_lokasi";
 import { removeLokasiOverlay } from "./dashboard_overlay_lokasi";
-import { updateKriminalCharts, disposeKriminalCharts } from "./dashboard_charts_kriminal";
-import { updateKamCharts, disposeKamCharts } from "./dashboard_charts_kam";
-import { updateBencanaCharts, disposeBencanaCharts } from "./dashboard_charts_bencana";
-import { updateLalinCharts, disposeLalinCharts } from "./dashboard_charts_lalin";
-import { updateLokasiCharts, disposeLokasiCharts } from "./dashboard_charts_lokasi";
+import { updateKriminalCharts, disposeKriminalCharts, updateKriminalTable } from "./dashboard_charts_kriminal";
+import { updateKamCharts, disposeKamCharts, updateKamTable } from "./dashboard_charts_kam";
+import { updateBencanaCharts, disposeBencanaCharts, updateBencanaTable } from "./dashboard_charts_bencana";
+import { updateLalinCharts, disposeLalinCharts, updateLalinTable } from "./dashboard_charts_lalin";
+import { updateLokasiCharts, disposeLokasiCharts, updateLokasiTable } from "./dashboard_charts_lokasi";
 
 export class DashboardMap extends Component {
     static template = "petadigi.DashboardMap";
@@ -80,6 +80,16 @@ export class DashboardMap extends Component {
         this.chartLokasiBarRef         = useRef("chartLokasiBar");
         this.chartLokasiDonutRef       = useRef("chartLokasiDonut");
         this.chartLokasiDonutTitleRef  = useRef("chartLokasiDonutTitle");
+        this.tableKriminalRowRef       = useRef("tableKriminalRow");
+        this.tableKriminalBodyRef      = useRef("tableKriminalBody");
+        this.tableKamRowRef            = useRef("tableKamRow");
+        this.tableKamBodyRef           = useRef("tableKamBody");
+        this.tableBencanaRowRef        = useRef("tableBencanaRow");
+        this.tableBencanaBodyRef       = useRef("tableBencanaBody");
+        this.tableLalinRowRef          = useRef("tableLalinRow");
+        this.tableLalinBodyRef         = useRef("tableLalinBody");
+        this.tableLokasiRowRef         = useRef("tableLokasiRow");
+        this.tableLokasiBodyRef        = useRef("tableLokasiBody");
 
         this.orm    = useService("orm");
         this.action = useService("action");
@@ -119,6 +129,11 @@ export class DashboardMap extends Component {
         // Drill-down context — set oleh layer file saat user klik polygon
         this.drillKabupatenId = null;
         this.drillKecamatanId = null;
+        this._kriminalTablePage = 1;
+        this._kamTablePage      = 1;
+        this._bencanaTablePage  = 1;
+        this._lalinTablePage    = 1;
+        this._lokasiTablePage   = 1;
 
         // Overlay lokasi penting (multi-mode)
         this.lokasiOverlaySelected = new Set();
@@ -228,6 +243,10 @@ export class DashboardMap extends Component {
     // MODE ROUTER
     // ─────────────────────────────────────────────
     _switchMode(mode) {
+        // Setiap mode switch increment versi — async loads yang sedang berjalan cek ini
+        // sebelum commit hasil ke DOM/map agar tidak terjadi race condition.
+        this._modeVersion = (this._modeVersion || 0) + 1;
+
         this._clearAllLayers();
         if (this.backButton) { this.backButton.remove(); this.backButton = null; }
         this.currentLevel = 'kabupaten';
@@ -674,6 +693,11 @@ export class DashboardMap extends Component {
             updateBencanaCharts(this, mode),
             updateLalinCharts(this, mode),
             updateLokasiCharts(this, mode),
+            updateKriminalTable(this, mode),
+            updateKamTable(this, mode),
+            updateBencanaTable(this, mode),
+            updateLalinTable(this, mode),
+            updateLokasiTable(this, mode),
         ]);
     }
     _disposeCharts() {
@@ -713,6 +737,13 @@ export class DashboardMap extends Component {
         // Layer terpisah untuk overlay lokasi penting (tidak ikut cluster)
         this.lokasiOverlayLayerGroup = L.layerGroup().addTo(this.map);
 
+        // Label visibility: update setiap zoom berubah atau label baru ditambahkan
+        this.map.on('zoomend', () => this._updateLabelVisibility());
+        this.kabupatenLabelGroup.on('layeradd', () => {
+            clearTimeout(this._labelVisTimer);
+            this._labelVisTimer = setTimeout(() => this._updateLabelVisibility(), 60);
+        });
+
         await loadKabupatenLayer(this);
     }
 
@@ -731,6 +762,35 @@ export class DashboardMap extends Component {
         removeLalinLegend(this);
         removeLokasiLegend(this);
         removeLokasiOverlay(this);
+    }
+
+    // ─────────────────────────────────────────────
+    // LABEL VISIBILITY (zoom-adaptive)
+    // ─────────────────────────────────────────────
+    _updateLabelVisibility() {
+        const map = this.map;
+        if (!map) return;
+
+        const applyGroup = (group, minPx) => {
+            if (!group) return;
+            group.getLayers().forEach(marker => {
+                const el = marker.getElement();
+                if (!el) return;
+                const bounds = marker._polygonBounds;
+                if (!bounds) { el.style.visibility = 'visible'; return; }
+                const sw = map.latLngToContainerPoint(bounds.getSouthWest());
+                const ne = map.latLngToContainerPoint(bounds.getNorthEast());
+                const w  = Math.abs(ne.x - sw.x);
+                const h  = Math.abs(ne.y - sw.y);
+                el.style.visibility = (w >= minPx || h >= minPx) ? 'visible' : 'hidden';
+            });
+        };
+
+        // Kabupaten: tampilkan hanya jika polygon ≥ 55px di salah satu dimensi
+        applyGroup(this.kabupatenLabelGroup, 55);
+        // Kecamatan & desa: sudah drill-down, threshold lebih kecil
+        applyGroup(this.kecamatanLabelGroup, 30);
+        applyGroup(this.desaLabelGroup, 20);
     }
 }
 

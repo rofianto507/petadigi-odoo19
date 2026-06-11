@@ -163,6 +163,7 @@ async function _loadLokasiMarkers(ctx, domain) {
 // LEVEL 1 — KABUPATEN
 // ════════════════════════════════════════════════════════════════════════════
 export async function loadModeLokasi(ctx) {
+    const ver = ctx._modeVersion;
     addLokasiLegend(ctx);
     ctx.currentLevel = 'kabupaten';
 
@@ -215,10 +216,12 @@ export async function loadModeLokasi(ctx) {
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const label = L.marker(layer.getBounds().getCenter(), {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
                         interactive: false, zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(label);
                 });
 
@@ -228,6 +231,7 @@ export async function loadModeLokasi(ctx) {
             }
         });
 
+        if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
         await _loadLokasiMarkers(ctx, _buildDomain(filters, baseDomain));
@@ -344,10 +348,12 @@ export async function drillDownLokasiKecamatan(ctx, kabProps, kabLayer, filters)
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const label = L.marker(layer.getBounds().getCenter(), {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
                         interactive: false, zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.kecamatanLabelGroup.addLayer(label);
                 });
 
@@ -477,10 +483,12 @@ export async function drillDownLokasiKelurahan(ctx, kecProps, kecLayer, filters,
                 const props = feature.properties;
 
                 layer.on('add', () => {
-                    const label = L.marker(layer.getBounds().getCenter(), {
+                    const bounds = layer.getBounds();
+                    const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
                         interactive: false, zIndexOffset: 100,
                     });
+                    label._polygonBounds = bounds;
                     ctx.desaLabelGroup.addLayer(label);
                 });
 

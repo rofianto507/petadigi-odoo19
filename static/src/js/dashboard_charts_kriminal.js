@@ -1,5 +1,7 @@
 /** @odoo-module **/
 
+import { fmtTanggal } from "./dashboard_helpers";
+
 // ─── Internal render functions ────────────────────────────────────────────────
 
 function _renderBarChart(ctx, names, values) {
@@ -691,5 +693,162 @@ export async function updateKriminalCharts(ctx, mode) {
         _renderTahunanChart(ctx, MONTHS_ID, currentYrData, prevYrData, selectedYear, prevYear);
     } catch (e) {
         console.error('Chart load error:', e);
+    }
+}
+
+// ─── Data Table ───────────────────────────────────────────────────────────────
+
+const PAGE_SIZE = 20;
+
+export async function updateKriminalTable(ctx, mode, page) {
+    const rowEl  = ctx.tableKriminalRowRef?.el;
+    const bodyEl = ctx.tableKriminalBodyRef?.el;
+    if (!rowEl) return;
+
+    if (mode !== 'kriminal') {
+        rowEl.style.display = 'none';
+        return;
+    }
+    rowEl.style.display = 'flex';
+
+    // Reset ke halaman 1 jika dipanggil tanpa argumen page (filter berubah)
+    ctx._kriminalTablePage = (page !== undefined) ? page : 1;
+    const offset = (ctx._kriminalTablePage - 1) * PAGE_SIZE;
+
+    // Bangun domain — sama persis dengan chart kriminal
+    const tahun         = ctx.filterTahun?.el?.value         || '';
+    const dateFrom      = ctx.activeDateFrom                  || '';
+    const dateTo        = ctx.activeDateTo                    || '';
+    const kategoriId    = parseInt(ctx.filterKategori?.el?.value)    || null;
+    const subKategoriId = parseInt(ctx.filterSubKategori?.el?.value) || null;
+    const kabupatenId   = parseInt(ctx.filterKabupaten?.el?.value)   || null;
+    const stateValue    = ctx.filterState?.el?.value          || '';
+
+    const drillDomain = ctx.drillKecamatanId
+        ? [['kecamatan_id', '=', ctx.drillKecamatanId]]
+        : ctx.drillKabupatenId
+            ? [['kabupaten_id', '=', ctx.drillKabupatenId]]
+            : [];
+
+    const domain = [
+        ...drillDomain,
+        ...(kabupatenId   ? [['kabupaten_id',            '=',  kabupatenId]]                    : []),
+        ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
+        ...(tahun         ? [['sumber_dokumen_id.tahun', '=',  tahun]]                          : []),
+        ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
+        ...(dateTo        ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']]         : []),
+        ...(kategoriId    ? [['kategori_id',             '=',  kategoriId]]                     : []),
+        ...(subKategoriId ? [['sub_kategori_id',         '=',  subKategoriId]]                  : []),
+    ];
+
+    bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Memuat data...</div>`;
+
+    try {
+        const [records, total] = await Promise.all([
+            ctx.orm.searchRead(
+                'petadigi.kriminalitas',
+                domain,
+                ['id', 'no_lp', 'jenis_lp', 'tanggal_kejadian', 'tempat_kejadian',
+                 'kabupaten_id', 'kecamatan_id', 'kategori_id', 'sub_kategori_id', 'status_perkara'],
+                { order: 'tanggal_kejadian desc', limit: PAGE_SIZE, offset }
+            ),
+            ctx.orm.searchCount('petadigi.kriminalitas', domain),
+        ]);
+
+        const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        const curPage    = ctx._kriminalTablePage;
+        const fromRow    = total > 0 ? offset + 1 : 0;
+        const toRow      = Math.min(offset + PAGE_SIZE, total);
+
+        const rows = records.map((r, i) => {
+            const kab  = Array.isArray(r.kabupaten_id)    ? r.kabupaten_id[1]    : '-';
+            const kec  = Array.isArray(r.kecamatan_id)    ? r.kecamatan_id[1]    : '-';
+            const kat  = Array.isArray(r.kategori_id)     ? r.kategori_id[1]     : '-';
+            const subk = Array.isArray(r.sub_kategori_id) ? r.sub_kategori_id[1] : '-';
+            const tkp  = r.tempat_kejadian
+                ? (r.tempat_kejadian.length > 55 ? r.tempat_kejadian.slice(0, 55) + '…' : r.tempat_kejadian)
+                : '-';
+            const statusClass = r.status_perkara === 'SELESAI'
+                ? 'petadigi-badge petadigi-badge--green'
+                : 'petadigi-badge petadigi-badge--red';
+
+            return `
+                <tr class="petadigi-table-row" data-id="${r.id}" style="cursor:pointer;">
+                    <td class="petadigi-td">${offset + i + 1}</td>
+                    <td class="petadigi-td petadigi-td--mono">${r.no_lp || '-'}</td>
+                    <td class="petadigi-td">${r.jenis_lp || '-'}</td>
+                    <td class="petadigi-td" style="white-space:nowrap;">${fmtTanggal(r.tanggal_kejadian)}</td>
+                    <td class="petadigi-td petadigi-td--wrap" title="${(r.tempat_kejadian || '').replace(/"/g, '&quot;')}">${tkp}</td>
+                    <td class="petadigi-td">${kab}</td>
+                    <td class="petadigi-td">${kec}</td>
+                    <td class="petadigi-td">${kat}</td>
+                    <td class="petadigi-td">${subk}</td>
+                    <td class="petadigi-td"><span class="${statusClass}">${r.status_perkara || '-'}</span></td>
+                </tr>`;
+        }).join('');
+
+        bodyEl.innerHTML = `
+            <div class="petadigi-table-toolbar">
+                <span class="petadigi-table-info">
+                    ${total > 0
+                        ? `Menampilkan&nbsp;<b>${fromRow}–${toRow}</b>&nbsp;dari&nbsp;<b>${total.toLocaleString('id-ID')}</b>&nbsp;data`
+                        : 'Tidak ada data'}
+                </span>
+                <div class="petadigi-table-pagination">
+                    <button class="petadigi-page-btn" data-action="prev" ${curPage <= 1 ? 'disabled' : ''}>
+                        <i class="fa fa-chevron-left"></i>
+                    </button>
+                    <span class="petadigi-page-info">Hal. ${curPage} / ${totalPages}</span>
+                    <button class="petadigi-page-btn" data-action="next" ${curPage >= totalPages ? 'disabled' : ''}>
+                        <i class="fa fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="petadigi-table-wrapper">
+                <table class="petadigi-table">
+                    <thead>
+                        <tr>
+                            <th class="petadigi-th">#</th>
+                            <th class="petadigi-th">No. LP</th>
+                            <th class="petadigi-th">Jenis</th>
+                            <th class="petadigi-th">Tgl Kejadian</th>
+                            <th class="petadigi-th">Tempat Kejadian</th>
+                            <th class="petadigi-th">Kabupaten</th>
+                            <th class="petadigi-th">Kecamatan</th>
+                            <th class="petadigi-th">Kategori</th>
+                            <th class="petadigi-th">Sub Kategori</th>
+                            <th class="petadigi-th">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows || `<tr><td colspan="10" style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Tidak ada data</td></tr>`}
+                    </tbody>
+                </table>
+            </div>`;
+
+        // Click row → buka form view
+        bodyEl.querySelectorAll('.petadigi-table-row').forEach(tr => {
+            tr.addEventListener('click', () => {
+                const id = parseInt(tr.dataset.id);
+                if (!id) return;
+                ctx.action.doAction({
+                    type: 'ir.actions.act_window',
+                    res_model: 'petadigi.kriminalitas',
+                    res_id: id,
+                    views: [[false, 'form']],
+                    target: 'current',
+                });
+            });
+        });
+
+        // Paginasi
+        bodyEl.querySelector('[data-action="prev"]')
+            ?.addEventListener('click', () => updateKriminalTable(ctx, mode, curPage - 1));
+        bodyEl.querySelector('[data-action="next"]')
+            ?.addEventListener('click', () => updateKriminalTable(ctx, mode, curPage + 1));
+
+    } catch (e) {
+        console.error('Table load error:', e);
+        bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:#e74c3c;font-size:13px;">Gagal memuat data</div>`;
     }
 }
