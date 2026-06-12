@@ -20,6 +20,24 @@ class TindakLanjut(models.Model):
     attachment = fields.Binary('Lampiran', attachment=True)
     attachment_filename = fields.Char('Nama Lampiran')
 
+    def unlink(self):
+        # Kumpulkan data sebelum dihapus
+        logs = []
+        for rec in self:
+            if rec.kasus_menonjol_id:
+                tanggal_str = format_datetime(self.env, rec.tanggal, dt_format='dd/MM/yyyy HH:mm') if rec.tanggal else '-'
+                logs.append((rec.kasus_menonjol_id, tanggal_str, rec.tindakan))
+        res = super().unlink()
+        for kam, tanggal_str, tindakan in logs:
+            kam.message_post(
+                body=Markup('<b>Tindak Lanjut Dihapus</b><br/>'
+                            '<b>Tanggal:</b> %s<br/>'
+                            '<b>Tindakan:</b> %s') % (tanggal_str, tindakan),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+        return res
+
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)

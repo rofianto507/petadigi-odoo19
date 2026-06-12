@@ -166,8 +166,8 @@
                                         string="Tambah Tindak Lanjut" type="object"
                                         class="btn-primary" icon="fa-plus"/>
                                 </div>
-                                <field name="tindak_lanjut_ids" readonly="1" nolabel="1">
-                                    <list default_order="tanggal desc">
+                                <field name="tindak_lanjut_ids" nolabel="1">
+                                    <list default_order="tanggal desc" no_open="1">
                                         <field name="tanggal"/>
                                         <field name="tindakan"/>
                                         <field name="attachment" widget="binary"
