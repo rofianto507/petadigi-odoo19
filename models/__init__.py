@@ -17,6 +17,7 @@ from . import subdit
 from . import kriminalitas
 from . import sub_status_perkara
 from . import kasus_menonjol
+from . import tindak_lanjut
 from . import bencana
 from . import lalu_lintas
 from . import lokasi_penting

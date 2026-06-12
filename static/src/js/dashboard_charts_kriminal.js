@@ -93,7 +93,9 @@ function _renderTkpChart(ctx, data) {
     if (!el || typeof echarts === 'undefined') return;
     if (ctx._echartsTkp) ctx._echartsTkp.dispose();
     ctx._echartsTkp = echarts.init(el);
-    const COLORS = ['#875A7B', '#9B59B6', '#6C3483', '#A569BD', '#C39BD3', '#7D3C98', '#D2B4DE', '#BDC3C7', '#E8DAEF', '#D7BDE2'];
+    const COLORS = ['#875A7B', '#9B59B6', '#6C3483', '#A509BD', '#C39BD3',
+                    '#7D3C98', '#D2B4DE', '#BDC3C7', '#E8DAEF', '#D7BDE2'];
+
     ctx._echartsTkp.setOption({
         tooltip: {
             trigger: 'item',
@@ -107,20 +109,30 @@ function _renderTkpChart(ctx, data) {
             orient: 'vertical',
             right: 8,
             top: 'middle',
-            textStyle: { fontSize: 11, color: '#555' },
+            textStyle: { fontSize: 10, color: '#555' },
             icon: 'circle',
-            itemWidth: 10,
-            itemHeight: 10,
+            itemWidth: 8,
+            itemHeight: 8,
+            itemGap: 8,
+            formatter: name => name.length > 16 ? name.slice(0, 16) + '…' : name,
         },
         color: COLORS,
         series: [{
             type: 'pie',
-            radius: '68%',
-            center: ['36%', '50%'],
+            // startAngle 180 → 0: setengah lingkaran bagian atas (half doughnut)
+            radius: ['38%', '70%'],
+            center: ['38%', '62%'],
+            startAngle: 180,
+            endAngle: 0,
             data,
-            label: { show: true, formatter: '{b}\n{c}', fontSize: 10, color: '#555' },
-            labelLine: { length: 8, length2: 10 },
-            itemStyle: { borderColor: '#fff', borderWidth: 2 },
+            label: {
+                show: true,
+                formatter: '{b}\n{c}',
+                fontSize: 10,
+                color: '#555',
+            },
+            labelLine: { length: 6, length2: 8 },
+            itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 3 },
             emphasis: { itemStyle: { shadowBlur: 8, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.3)' } },
         }],
     });
@@ -257,54 +269,64 @@ function _renderWaktuChart(ctx, labels, values) {
     if (!el || typeof echarts === 'undefined') return;
     if (ctx._echartsWaktu) ctx._echartsWaktu.dispose();
     ctx._echartsWaktu = echarts.init(el);
+
+    const maxVal = Math.max(...values, 1);
+    const radarMax = Math.ceil(maxVal * 1.25);
+
+    // Format label dengan spasi agar lebih mudah dibaca di sudut-sudut radar
+    const radarLabels = labels.map(l => l.replace('-', ' - '));
+
     ctx._echartsWaktu.setOption({
         tooltip: {
-            trigger: 'axis',
+            trigger: 'item',
             backgroundColor: '#fff',
             borderColor: '#e5e7eb',
             borderWidth: 1,
             textStyle: { color: '#2c3e50', fontSize: 12 },
             formatter: params => {
-                const p = params[0];
-                return `${p.name}<br/><b>Total: ${p.value.toLocaleString('id-ID')}</b>`;
+                if (!params.data?.value) return '';
+                const lines = radarLabels.map((lbl, i) =>
+                    `${lbl}: <b>${(params.data.value[i] || 0).toLocaleString('id-ID')}</b>`
+                ).join('<br/>');
+                return `Kejadian per Waktu<br/>${lines}`;
             },
         },
-        grid: { left: 10, right: 16, top: 20, bottom: 55, containLabel: true },
-        xAxis: {
-            type: 'category',
-            data: labels,
-            boundaryGap: false,
-            axisLabel: { rotate: 35, fontSize: 9, color: '#666', interval: 0 },
-            axisLine: { lineStyle: { color: '#d0d7de' } },
-            axisTick: { show: false },
-        },
-        yAxis: {
-            type: 'value',
-            axisLabel: { fontSize: 10, color: '#888' },
-            splitLine: { lineStyle: { color: '#f3f0f5', type: 'dashed' } },
+        radar: {
+            indicator: radarLabels.map(name => ({ name, max: radarMax })),
+            shape: 'polygon',
+            radius: '62%',
+            center: ['50%', '54%'],
+            splitNumber: 4,
+            name: { textStyle: { color: '#555', fontSize: 10 } },
+            splitLine: {
+                lineStyle: { color: ['#e8ecf3', '#dde2ec', '#d0d7e6', '#c3cad8'], type: 'solid' },
+            },
+            splitArea: {
+                areaStyle: {
+                    color: ['rgba(235,240,255,0.5)', 'rgba(235,240,255,0.3)',
+                            'rgba(235,240,255,0.15)', 'rgba(235,240,255,0.05)'],
+                },
+            },
+            axisLine: { lineStyle: { color: '#ccd3e0' } },
         },
         series: [{
-            type: 'line',
-            data: values,
-            smooth: true,
-            symbol: 'circle',
-            symbolSize: 6,
-            lineStyle: { color: '#71639e', width: 2 },
-            itemStyle: { color: '#6C3483' },
-            areaStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: 'rgba(163,60,231,0.34)' },
-                    { offset: 1, color: 'rgba(108,52,131,0.03)' },
-                ]),
-            },
-            label: {
-                show: true,
-                position: 'top',
-                fontSize: 10,
-                color: '#71639e',
-                fontWeight: '600',
-                formatter: params => params.value > 0 ? params.value.toLocaleString('id-ID') : '',
-            },
+            type: 'radar',
+            data: [{
+                value: values,
+                name: 'Kejadian',
+                areaStyle: { color: 'rgba(59,107,219,0.18)' },
+                lineStyle: { color: '#3B6BDB', width: 2 },
+                itemStyle: { color: '#3B6BDB' },
+                symbol: 'circle',
+                symbolSize: 5,
+                label: {
+                    show: true,
+                    fontSize: 10,
+                    color: '#3B6BDB',
+                    fontWeight: '600',
+                    formatter: p => p.value > 0 ? p.value.toLocaleString('id-ID') : '',
+                },
+            }],
         }],
     });
 }

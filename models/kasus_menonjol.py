@@ -50,6 +50,27 @@ class KasusMenunjol(models.Model):
     )
     latitude = fields.Float('Latitude', digits=(10, 6), tracking=True)
     longitude = fields.Float('Longitude', digits=(10, 6), tracking=True)
+    tindak_lanjut_ids = fields.One2many(
+        'petadigi.tindak_lanjut', 'kasus_menonjol_id', string='Tindak Lanjut'
+    )
+    has_tindak_lanjut = fields.Boolean(
+        'Ada Tindak Lanjut', compute='_compute_has_tindak_lanjut', store=True
+    )
+
+    @api.depends('tindak_lanjut_ids')
+    def _compute_has_tindak_lanjut(self):
+        for rec in self:
+            rec.has_tindak_lanjut = bool(rec.tindak_lanjut_ids)
+
+    def action_open_tindak_lanjut_wizard(self):
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Tambah Tindak Lanjut',
+            'res_model': 'petadigi.tindak_lanjut.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {'default_kasus_menonjol_id': self.id},
+        }
 
     def action_set_proses(self):
         self.state = 'PROSES'

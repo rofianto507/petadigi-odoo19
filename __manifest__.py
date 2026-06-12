@@ -76,6 +76,7 @@ TEKNOLOGI:
         'views/dashboard_views.xml',
         'views/subdit_views.xml',
         'wizard/import_lp_wizard_views.xml',
+        'wizard/tindak_lanjut_wizard_views.xml',
         'views/kriminalitas_views.xml',
         'views/kasus_menonjol_views.xml',
         'views/bencana_views.xml',

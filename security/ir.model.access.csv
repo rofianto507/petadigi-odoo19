@@ -44,6 +44,14 @@ access_kasus_menonjol_admin,kasus_menonjol admin,model_petadigi_kasus_menonjol,p
 access_kasus_menonjol_subdit,kasus_menonjol subdit,model_petadigi_kasus_menonjol,petadigi.group_subdit,1,1,1,1
 access_kasus_menonjol_polres,kasus_menonjol polres,model_petadigi_kasus_menonjol,petadigi.group_polres,1,1,1,1
 access_kasus_menonjol_polsek,kasus_menonjol polsek,model_petadigi_kasus_menonjol,petadigi.group_polsek,1,1,1,1
+access_tindak_lanjut_wizard_admin,tindak_lanjut_wizard admin,model_petadigi_tindak_lanjut_wizard,petadigi.group_admin,1,1,1,1
+access_tindak_lanjut_wizard_subdit,tindak_lanjut_wizard subdit,model_petadigi_tindak_lanjut_wizard,petadigi.group_subdit,1,1,1,1
+access_tindak_lanjut_wizard_polres,tindak_lanjut_wizard polres,model_petadigi_tindak_lanjut_wizard,petadigi.group_polres,1,1,1,1
+access_tindak_lanjut_wizard_polsek,tindak_lanjut_wizard polsek,model_petadigi_tindak_lanjut_wizard,petadigi.group_polsek,1,1,1,1
+access_tindak_lanjut_admin,tindak_lanjut admin,model_petadigi_tindak_lanjut,petadigi.group_admin,1,1,1,1
+access_tindak_lanjut_subdit,tindak_lanjut subdit,model_petadigi_tindak_lanjut,petadigi.group_subdit,1,1,1,1
+access_tindak_lanjut_polres,tindak_lanjut polres,model_petadigi_tindak_lanjut,petadigi.group_polres,1,1,1,1
+access_tindak_lanjut_polsek,tindak_lanjut polsek,model_petadigi_tindak_lanjut,petadigi.group_polsek,1,1,1,1
 access_bencana_admin,bencana admin,model_petadigi_bencana,petadigi.group_admin,1,1,1,1
 access_bencana_subdit,bencana subdit read,model_petadigi_bencana,petadigi.group_subdit,1,0,0,0
 access_bencana_polres,bencana polres,model_petadigi_bencana,petadigi.group_polres,1,1,1,1

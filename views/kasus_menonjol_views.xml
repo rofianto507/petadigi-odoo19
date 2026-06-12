@@ -7,6 +7,7 @@
             <field name="model">petadigi.kasus_menonjol</field>
             <field name="arch" type="xml">
                 <list string="Kasus Menonjol">
+                    <field name="has_tindak_lanjut" column_invisible="1"/>
                     <field name="code"/>
                     <field name="no_lp"/>
                     <field name="kategori_id"/>
@@ -15,8 +16,9 @@
                     <field name="kabupaten_id"/>
                     <field name="subdit_id"/>
                     <field name="state" widget="badge"
-                        decoration-success="state == 'SELESAI'"
-                        decoration-warning="state == 'PROSES'"/>
+                        decoration-info="has_tindak_lanjut"
+                        decoration-success="state == 'SELESAI' and not has_tindak_lanjut"
+                        decoration-warning="state == 'PROSES' and not has_tindak_lanjut"/>
                 </list>
             </field>
         </record>
@@ -33,6 +35,7 @@
                     <separator/>
                     <filter string="Status PROSES" name="filter_status_proses" domain="[('state','=','PROSES')]"/>
                     <filter string="Status SELESAI" name="filter_status_selesai" domain="[('state','=','SELESAI')]"/>
+                    <filter string="Ada Tindak Lanjut" name="filter_ada_tindak_lanjut" domain="[('has_tindak_lanjut','=',True)]"/>
                     <separator/>
                     <filter string="Tanggal Kejadian" name="filter_tanggal_kejadian" date="tanggal_kejadian"/>
                     <group>
@@ -150,12 +153,29 @@
 
                         <notebook>
                             <page string="Detail Kasus">
-                                <group >
-                                    <field name="tersangka" />
-                                    <field name="permasalahan" />
-                                    <field name="penanganan" />
-                                    <field name="tindak_lanjut" />
-                                </group>                              
+                                <group>
+                                    <field name="tersangka"/>
+                                    <field name="permasalahan"/>
+                                    <field name="penanganan"/>
+                                    <field name="tindak_lanjut"/>
+                                </group>
+                            </page>
+                            <page string="Tindak Lanjut" name="tindak_lanjut_tab">
+                                <div class="mb-2">
+                                    <button name="action_open_tindak_lanjut_wizard"
+                                        string="Tambah Tindak Lanjut" type="object"
+                                        class="btn-primary" icon="fa-plus"/>
+                                </div>
+                                <field name="tindak_lanjut_ids" readonly="1" nolabel="1">
+                                    <list default_order="tanggal desc">
+                                        <field name="tanggal"/>
+                                        <field name="tindakan"/>
+                                        <field name="attachment" widget="binary"
+                                            filename="attachment_filename"
+                                            string="Lampiran" readonly="1"/>
+                                        <field name="attachment_filename" column_invisible="1"/>
+                                    </list>
+                                </field>
                             </page>
                         </notebook>
                     </sheet>

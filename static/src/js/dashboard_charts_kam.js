@@ -142,14 +142,14 @@ function _renderKamModusChart(ctx, names, values) {
     });
 }
 
-// ─── Pie chart: per jenis TKP ────────────────────────────────────────────────
+// ─── Half doughnut: per jenis TKP ───────────────────────────────────────────
 function _renderKamTkpChart(ctx, data) {
     const el = ctx.chartKamTkpRef?.el;
     if (!el || typeof echarts === 'undefined') return;
     if (ctx._echartsKamTkp) ctx._echartsKamTkp.dispose();
     ctx._echartsKamTkp = echarts.init(el);
-    const COLORS = ['#5DADE2', '#2471A3', '#1ABC9C', '#117A65', '#F39C12',
-                    '#E74C3C', '#8E44AD', '#2ECC71', '#E67E22', '#BDC3C7'];
+    const COLORS = ['#5DADE2', '#27AE60', '#E74C3C', '#F39C12', '#8E44AD',
+                    '#16A085', '#2471A3', '#D35400', '#2ECC71', '#BDC3C7'];
     ctx._echartsKamTkp.setOption({
         tooltip: {
             trigger: 'item',
@@ -163,20 +163,24 @@ function _renderKamTkpChart(ctx, data) {
             orient: 'vertical',
             right: 8,
             top: 'middle',
-            textStyle: { fontSize: 11, color: '#555' },
+            textStyle: { fontSize: 10, color: '#555' },
             icon: 'circle',
-            itemWidth: 10,
-            itemHeight: 10,
+            itemWidth: 8,
+            itemHeight: 8,
+            itemGap: 8,
+            formatter: name => name.length > 16 ? name.slice(0, 16) + '…' : name,
         },
         color: COLORS,
         series: [{
             type: 'pie',
-            radius: '68%',
-            center: ['36%', '50%'],
+            radius: ['38%', '70%'],
+            center: ['38%', '62%'],
+            startAngle: 180,
+            endAngle: 0,
             data,
             label: { show: true, formatter: '{b}\n{c}', fontSize: 10, color: '#555' },
-            labelLine: { length: 8, length2: 10 },
-            itemStyle: { borderColor: '#fff', borderWidth: 2 },
+            labelLine: { length: 6, length2: 8 },
+            itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 3 },
             emphasis: { itemStyle: { shadowBlur: 8, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.3)' } },
         }],
     });
@@ -469,7 +473,7 @@ export async function updateKamTable(ctx, mode, page) {
         const [records, total] = await Promise.all([
             ctx.orm.searchRead('petadigi.kasus_menonjol', domain,
                 ['id', 'no_lp', 'tanggal_kejadian', 'kabupaten_id', 'kecamatan_id',
-                 'kategori_id', 'modus_operandi_id', 'state'],
+                 'kategori_id', 'modus_operandi_id', 'state', 'has_tindak_lanjut'],
                 { order: 'tanggal_kejadian desc', limit: PAGE_SIZE, offset }),
             ctx.orm.searchCount('petadigi.kasus_menonjol', domain),
         ]);
@@ -484,7 +488,7 @@ export async function updateKamTable(ctx, mode, page) {
             const kec   = Array.isArray(r.kecamatan_id)      ? r.kecamatan_id[1]      : '-';
             const kat   = Array.isArray(r.kategori_id)       ? r.kategori_id[1]       : '-';
             const modus = Array.isArray(r.modus_operandi_id) ? r.modus_operandi_id[1] : '-';
-            const cls   = r.state === 'SELESAI' ? '--green' : '--red';
+            const cls   = r.state === 'SELESAI' ? '--green' : (r.has_tindak_lanjut ? '--blue' : '--red');
             return `
                 <tr class="petadigi-table-row" data-id="${r.id}" style="cursor:pointer;">
                     <td class="petadigi-td">${offset + i + 1}</td>

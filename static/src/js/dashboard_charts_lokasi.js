@@ -173,7 +173,7 @@ const PAGE_SIZE = 20;
 export async function updateLokasiTable(ctx, mode, page) {
     const rowEl  = ctx.tableLokasiRowRef?.el;
     const bodyEl = ctx.tableLokasiBodyRef?.el;
-    if (!rowEl) return;
+    if (!rowEl || !bodyEl) return;
 
     if (mode !== 'lokasi') { rowEl.style.display = 'none'; return; }
     rowEl.style.display = 'flex';
@@ -204,7 +204,7 @@ export async function updateLokasiTable(ctx, mode, page) {
             ctx.orm.searchRead('petadigi.lokasi_penting', domain,
                 ['id', 'code', 'nama_lokasi', 'alamat_lengkap',
                  'kabupaten_id', 'kecamatan_id', 'kategori_id', 'state'],
-                { order: 'name asc', limit: PAGE_SIZE, offset }),
+                { order: 'nama_lokasi asc', limit: PAGE_SIZE, offset }),
             ctx.orm.searchCount('petadigi.lokasi_penting', domain),
         ]);
 
