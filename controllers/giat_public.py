@@ -3,6 +3,10 @@ from odoo.http import request
 from markupsafe import Markup
 from datetime import datetime
 import json
+import requests as http_requests
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class GiatPublicController(http.Controller):
@@ -21,6 +25,8 @@ class GiatPublicController(http.Controller):
             [], ['id', 'name'], order='name asc'
         )
 
+        recaptcha_site_key = request.env['ir.config_parameter'].sudo().get_param('recaptcha_public_key', '')
+
         raw_json = json.dumps({
             'token': token,
             'jenis_laporan': {
@@ -29,6 +35,7 @@ class GiatPublicController(http.Controller):
                 'keterangan': jenis.keterangan or '',
             },
             'polres_list': polres_list,
+            'recaptcha_site_key': recaptcha_site_key,
         })
         # Markup prevents t-out from HTML-escaping; replace </script> to avoid
         # premature script tag closure (extremely unlikely but safe practice)
@@ -37,6 +44,7 @@ class GiatPublicController(http.Controller):
         return request.render('petadigi.template_giat_form', {
             'jenis_laporan': jenis,
             'init_data': safe_init_data,
+            'recaptcha_site_key': recaptcha_site_key,
         })
 
     def _parse_tanggal(self, tanggal_str):
@@ -58,6 +66,33 @@ class GiatPublicController(http.Controller):
         )
         return polsek_list
 
+    def _verify_recaptcha(self, recaptcha_token):
+        secret_key = request.env['ir.config_parameter'].sudo().get_param('recaptcha_private_key', '')
+        if not secret_key:
+            return True  # reCAPTCHA tidak dikonfigurasi, lewati
+        if not recaptcha_token:
+            # Script gagal load (jaringan lambat/mobile) — izinkan dengan warning
+            _logger.warning('reCAPTCHA giat: token kosong (script mungkin belum load), allowed')
+            return True
+        try:
+            r = http_requests.post('https://www.recaptcha.net/recaptcha/api/siteverify', data={
+                'secret': secret_key,
+                'response': recaptcha_token,
+                'remoteip': request.httprequest.remote_addr,
+            }, timeout=5)
+            result = r.json()
+            score = result.get('score', 0)
+            success = result.get('success', False)
+            if success:
+                _logger.info('reCAPTCHA giat verified, score=%.2f', score)
+            else:
+                _logger.warning('reCAPTCHA giat failed: %s', result.get('error-codes'))
+            # Threshold 0.3 (bukan 0.5) karena mobile device sering dapat score lebih rendah
+            return success and score >= 0.3
+        except Exception as e:
+            _logger.error('reCAPTCHA verification error: %s', e)
+            return True  # Jika gagal koneksi ke Google, tetap izinkan
+
     @http.route('/giat/api/submit', type='json', auth='public', csrf=False)
     def giat_submit(self, token, data, **kwargs):
         jenis = request.env['petadigi.jenis_laporan'].sudo().search([
@@ -67,6 +102,10 @@ class GiatPublicController(http.Controller):
 
         if not jenis:
             return {'success': False, 'message': 'Form tidak valid atau sudah tidak aktif'}
+
+        recaptcha_token = data.get('recaptcha_token', '')
+        if not self._verify_recaptcha(recaptcha_token):
+            return {'success': False, 'message': 'Verifikasi keamanan gagal. Silakan coba lagi.'}
 
         try:
             vals = {

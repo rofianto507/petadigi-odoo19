@@ -38,14 +38,20 @@ Pengguna utama: **Kepolisian Resort (Polres)** dan **Kepolisian Sektor (Polsek)*
 petadigi/
 ├── __manifest__.py
 ├── __init__.py
-├── models/                    # 24 model data
-├── views/                     # 29 file XML views
+├── models/                    # 25 model data
+│   ├── tindak_lanjut.py       # Model petadigi.tindak_lanjut (baru)
+│   └── ...
+├── views/
+│   ├── menu_restrictions.xml  # Batasi menu "Apps" hanya group_system
+│   └── ...                    # 30+ file XML views
 ├── controllers/
 │   ├── __init__.py
 │   └── giat_public.py         # Public form controller untuk Cooling System
 ├── wizard/
 │   ├── import_lp_wizard.py
-│   └── import_lp_wizard_views.xml
+│   ├── import_lp_wizard_views.xml
+│   ├── tindak_lanjut_wizard.py       # Wizard tambah tindak lanjut (baru)
+│   └── tindak_lanjut_wizard_views.xml
 ├── utils/
 │   ├── parser_lp_a.py
 │   └── parser_lp_b.py
@@ -59,7 +65,10 @@ petadigi/
     │   └── echart/                     # ECharts untuk grafik
     └── src/
         ├── js/                         # 17 file JavaScript modular
-        ├── css/                        # 5 file CSS
+        ├── css/
+        │   ├── backend.css             # Menyembunyikan item user menu
+        │   ├── login.css               # Menyembunyikan elemen halaman login
+        │   └── ...
         └── xml/                        # QWeb templates
 ```
 
@@ -89,11 +98,26 @@ petadigi.desa            → Desa/Kelurahan (menyimpan GeoJSON geometry)
 - `sumber_dokumen_id` → `petadigi.sumber_dokumen` (field: `tahun`)
 
 **`petadigi.kasus_menonjol`** — Kasus menonjol / KAM
-- `no_lp`, `tanggal_kejadian`, `latitude`, `longitude`
+- `code` (auto-sequence, readonly), `no_lp`, `tanggal_kejadian`, `latitude`, `longitude`
 - `kabupaten_id`, `kecamatan_id`, `desa_id`
+- `polres_id`, `polsek_id`, `subdit_id`, `sumber_dokumen_id`
 - `kategori_id`, `modus_operandi_id`, `jenis_tkp_id`
-- `state`: `AKTIF` / `NON AKTIF`
-- `sumber_dokumen_id`
+- `tersangka`, `permasalahan`, `penanganan`, `tindak_lanjut` (Text — field lama, inline)
+- `state`: `PROSES` / `SELESAI`
+- `tindak_lanjut_ids` → One2many ke `petadigi.tindak_lanjut`
+- `has_tindak_lanjut` (Boolean, computed stored, `@api.depends('tindak_lanjut_ids')`)
+- Method: `action_set_selesai`, `action_set_proses`, `action_open_tindak_lanjut_wizard`
+
+**`petadigi.tindak_lanjut`** *(baru)* — Tindak Lanjut Kasus Menonjol
+- `kasus_menonjol_id` → Many2one `petadigi.kasus_menonjol` (required, ondelete='cascade')
+- `tanggal` (Datetime, required, default now), `_order = 'tanggal desc'`
+- `tindakan` (Text, required)
+- `attachment` (Binary, attachment=True), `attachment_filename` (Char)
+- **Auto-log chatter** di `kasus_menonjol_id`:
+  - `create`: log "Tindak Lanjut Ditambahkan" + tanggal + tindakan + lampiran (internal note)
+  - `unlink`: kumpulkan data dulu sebelum `super().unlink()`, lalu log "Tindak Lanjut Dihapus"
+- Import wajib: `from markupsafe import Markup` dan `from odoo.tools import format_datetime`
+- Pattern Markup: `Markup('<b>Label:</b> %s') % value` — JANGAN interpolasi f-string biasa (auto-escaped)
 
 **`petadigi.bencana`** — Data bencana
 - `code`, `nama_bencana`, `tanggal_kejadian`, `latitude`, `longitude`
@@ -140,6 +164,15 @@ petadigi.desa            → Desa/Kelurahan (menyimpan GeoJSON geometry)
 - `foto` (Binary, `attachment=True`) — diakses via `/web/image/petadigi.hasil_giat/{id}/foto`
 - `foto_filename` (Char)
 - `latitude`, `longitude` (Float, digits 10,6)
+
+### Model Wizard
+
+**`petadigi.tindak_lanjut.wizard`** *(baru)* — Wizard Tambah Tindak Lanjut
+- `kasus_menonjol_id` (Many2one, required), `tanggal` (Datetime, required, default now)
+- `tindakan` (Text, required), `attachment` (Binary), `attachment_filename` (Char)
+- Method `action_confirm`: create `petadigi.tindak_lanjut` lalu return `act_window_close`
+- Dipanggil dari tombol "Tambah Tindak Lanjut" di tab Tindak Lanjut pada form KAM
+- Context otomatis: `{'default_kasus_menonjol_id': self.id}`
 
 ### Model Konfigurasi/Lookup
 ```
@@ -256,7 +289,7 @@ const baseDomain = [
 | Model | Field status | Nilai |
 |---|---|---|
 | kriminalitas | `status_perkara` | `PROSES` / `SELESAI` |
-| kasus_menonjol | `state` | `AKTIF` / `NON AKTIF` |
+| kasus_menonjol | `state` | `PROSES` / `SELESAI` |
 | bencana | `state` | `AKTIF` / `NON AKTIF` |
 | lalu_lintas | `state` | `PROSES` / `SELESAI` |
 | lokasi_penting | `state` | `AKTIF` / `NON AKTIF` |
@@ -379,7 +412,7 @@ Dipakai di: `dashboard_layer_kriminal.js`, `dashboard_layer_kam.js`, `dashboard_
 | `dashboard_layer_lokasi.js` | Choropleth lokasi penting (ungu) + drill-down 3 level |
 | `dashboard_overlay_lokasi.js` | Panel checkbox overlay lokasi penting (multi-mode) |
 | `dashboard_charts_kriminal.js` | 5 row grafik kriminalitas |
-| `dashboard_charts_kam.js` | 3 row grafik kasus menonjol |
+| `dashboard_charts_kam.js` | 3 row grafik kasus menonjol + badge warna tindak lanjut |
 | `dashboard_charts_bencana.js` | 1 row grafik bencana |
 | `dashboard_charts_lalin.js` | 2 row grafik lalu lintas |
 | `dashboard_charts_lokasi.js` | 1 row grafik lokasi penting |
@@ -393,6 +426,9 @@ Dipakai di: `dashboard_layer_kriminal.js`, `dashboard_layer_kam.js`, `dashboard_
 ## 12. Urutan Asset di `__manifest__.py`
 
 ```python
+'web.assets_frontend': [
+    'petadigi/static/src/css/login.css',   # Sembunyikan elemen halaman login
+],
 'web.assets_backend': [
     # Libs
     'petadigi/static/lib/leaflet/leaflet.css',
@@ -410,7 +446,7 @@ Dipakai di: `dashboard_layer_kriminal.js`, `dashboard_layer_kam.js`, `dashboard_
     # Widgets
     'petadigi/static/src/js/kabupaten_map_widget.js',
     'petadigi/static/src/xml/geojson_map_widget.xml',
-    'petadigi/static/src/css/backend.css',
+    'petadigi/static/src/css/backend.css',      # User menu customization
     'petadigi/static/src/css/kabupaten_map_widget.css',
     'petadigi/static/src/js/latlon_leaflet_widget.js',
     'petadigi/static/src/xml/latlon_leaflet_widget.xml',
@@ -503,6 +539,35 @@ onClearDate() {
 }
 ```
 
+### Chatter Log dengan Markup (Odoo 16+)
+```python
+from markupsafe import Markup
+from odoo.tools import format_datetime
+
+# BENAR — gunakan Markup untuk interpolasi aman
+body = Markup('<b>Label:</b> %s<br/><b>Tindakan:</b> %s') % (nilai1, nilai2)
+record.message_post(body=body, message_type='comment', subtype_xmlid='mail.mt_note')
+
+# SALAH — string biasa akan di-escape oleh Odoo, tag HTML tampil sebagai teks
+body = f'<b>Label:</b> {nilai}'  # JANGAN PAKAI INI
+```
+
+### One2many dengan Delete tapi tanpa Edit-on-Click
+```xml
+<!-- no_open="1" → klik baris tidak membuka dialog edit -->
+<!-- Tombol delete tetap muncul karena field tidak readonly -->
+<field name="tindak_lanjut_ids" nolabel="1">
+    <list default_order="tanggal desc" no_open="1">
+        <field name="tanggal"/>
+        <field name="tindakan"/>
+        <field name="attachment" widget="binary" filename="attachment_filename"
+            string="Lampiran" readonly="1"/>
+        <field name="attachment_filename" column_invisible="1"/>
+    </list>
+</field>
+```
+> `readonly="1"` pada `<field name="tindak_lanjut_ids">` akan **memblokir** semua operasi termasuk delete. Jangan pasang readonly di level One2many field jika delete masih diperlukan.
+
 ### CSS Classes Penting
 - `.petadigi-popup` / `.petadigi-popup-header` / `.petadigi-popup-body` / `.petadigi-popup-footer`
 - `.petadigi-btn-detail` — tombol aksi di dalam popup
@@ -512,6 +577,29 @@ onClearDate() {
 - `.petadigi-kpi-card` / `.petadigi-kpi-icon` / `.petadigi-kpi-value`
 - `.petadigi-chart-row` / `.petadigi-chart-card` / `.petadigi-chart-body`
 - `.petadigi-lokasi-overlay` — panel checkbox overlay lokasi penting
+- `.petadigi-badge--blue` → `background: #d6eaf8; color: #1a5276` — badge biru di tabel dashboard
+
+### Badge Warna di Dashboard KAM (dashboard_charts_kam.js)
+```js
+// Field yang di-fetch: tambahkan has_tindak_lanjut
+const records = await ctx.orm.searchRead('petadigi.kasus_menonjol', domain,
+    ['id', 'code', 'state', 'has_tindak_lanjut', ...]);
+
+// Logic badge:
+const cls = r.state === 'SELESAI'
+    ? '--green'
+    : (r.has_tindak_lanjut ? '--blue' : '--red');
+```
+
+### Badge Dekorasi di List View (decoration-info)
+```xml
+<!-- has_tindak_lanjut harus di-fetch meski tidak tampil -->
+<field name="has_tindak_lanjut" column_invisible="1"/>
+<field name="state" widget="badge"
+    decoration-info="has_tindak_lanjut"
+    decoration-success="state == 'SELESAI' and not has_tindak_lanjut"
+    decoration-warning="state == 'PROSES' and not has_tindak_lanjut"/>
+```
 
 ---
 
@@ -535,18 +623,7 @@ def default_get(self, fields_list):
         defaults.setdefault('polres_id', user.polres_id.id)
     if user.polsek_id and 'polsek_id' in fields_list:
         defaults.setdefault('polsek_id', user.polsek_id.id)
-    if 'kabupaten_id' in fields_list:
-        if user.polsek_id:
-            kecs = self.env['petadigi.kecamatan'].search(
-                [('polsek_id', '=', user.polsek_id.id)], limit=2)
-            kab_ids = kecs.mapped('kabupaten_id')
-            if len(kab_ids) == 1:
-                defaults.setdefault('kabupaten_id', kab_ids.id)
-        elif user.polres_id:
-            kabs = self.env['petadigi.kabupaten'].search(
-                [('polres_id', '=', user.polres_id.id)], limit=2)
-            if len(kabs) == 1:
-                defaults.setdefault('kabupaten_id', kabs.id)
+    ...
     return defaults
 ```
 
@@ -575,21 +652,6 @@ def _onchange_polres_id(self):
 <field name="polsek_id" groups="petadigi.group_polsek" readonly="1"/>
 ```
 
-**WILAYAH group** — polsek: kabupaten readonly, kecamatan tanpa domain (record rule sudah filter):
-```xml
-<!-- Admin/Subdit/Polres -->
-<field name="kabupaten_id" groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"/>
-<field name="kecamatan_id" groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"
-       domain="[('kabupaten_id', '=', kabupaten_id)]"/>
-<field name="desa_id" groups="petadigi.group_admin,petadigi.group_subdit,petadigi.group_polres"
-       domain="[('kecamatan_id', '=', kecamatan_id)]"/>
-<!-- Polsek: kabupaten readonly -->
-<field name="kabupaten_id" groups="petadigi.group_polsek" readonly="1"/>
-<field name="kecamatan_id" groups="petadigi.group_polsek"/>
-<field name="desa_id" groups="petadigi.group_polsek"
-       domain="[('kecamatan_id', '=', kecamatan_id)]"/>
-```
-
 **Map Koordinat** — widget `latlong_map_picker` di Step 2:
 ```xml
 <group string="KOORDINAT KEJADIAN">
@@ -605,37 +667,113 @@ def _onchange_polres_id(self):
 
 ### Akses (`security/ir.model.access.csv`)
 ```csv
-access_import_lp_wizard_admin,import_lp_wizard admin,model_petadigi_import_lp_wizard,petadigi.group_admin,1,1,1,1
-access_import_lp_wizard_polres,import_lp_wizard polres,model_petadigi_import_lp_wizard,petadigi.group_polres,1,1,1,1
-access_import_lp_wizard_polsek,import_lp_wizard polsek,model_petadigi_import_lp_wizard,petadigi.group_polsek,1,1,1,1
+access_import_lp_wizard_admin,...,petadigi.group_admin,1,1,1,1
+access_import_lp_wizard_polres,...,petadigi.group_polres,1,1,1,1
+access_import_lp_wizard_polsek,...,petadigi.group_polsek,1,1,1,1
 ```
 > Wizard perlu full CRUD (bukan hanya read) karena `action_parse_dokumen` memanggil `self.write(vals)`.
 
 ---
 
-## 15. Catatan VPS & Kompatibilitas Odoo
+## 15. Kustomisasi UI
+
+### Halaman Login (`static/src/css/login.css` — asset: `web.assets_frontend`)
+```css
+/* Sembunyikan "Don't have an account?" */
+.oe_login_buttons a.btn-link[href*="signup"] { display: none !important; }
+
+/* Sembunyikan "Use a Passkey" dan separator */
+.o_login_auth { display: none !important; }
+
+/* Sembunyikan footer: "Manage Databases" dan "Powered by Odoo" */
+.o_database_list .text-center.small { display: none !important; }
+```
+
+### User Menu Backend (`static/src/css/backend.css` — asset: `web.assets_backend`)
+Item user menu di pojok kanan atas memakai atribut `data-menu="[id]"` pada `DropdownItem`.
+```css
+/* Sembunyikan Help, Shortcuts, My Odoo.com Account, Install App */
+[data-menu="support"],
+[data-menu="shortcuts"],
+[data-menu="account"],
+[data-menu="install_pwa"] {
+    display: none !important;
+}
+```
+ID dari `web/static/src/webclient/user_menu/user_menu_items.js`:
+- `support` → Help
+- `shortcuts` → Shortcuts (CTRL+K)
+- `account` → My Odoo.com Account
+- `install_pwa` → Install App
+
+### Pembatasan Menu "Apps" (`views/menu_restrictions.xml`)
+```xml
+<odoo>
+    <data noupdate="0">
+        <!-- noupdate="0" agar jalan setiap upgrade, name="Apps" wajib ada -->
+        <menuitem id="base.menu_management" name="Apps" groups="base.group_system"/>
+    </data>
+</odoo>
+```
+> **Catatan penting**: `<menuitem>` tanpa atribut `name` akan mereset nama menu menjadi XML ID (`"base.menu_management"`). Selalu sertakan `name="Apps"`. `<function name="write">` dan `<record>` tidak bisa digunakan untuk memodifikasi menu dari modul `base` di Odoo 19.
+
+---
+
+## 16. Manajemen User
+
+### Group Akses
+Didefinisikan di `security/security.xml`:
+- `petadigi.group_admin` — Admin PetaDigi
+- `petadigi.group_subdit` — Subdit (baca+tulis KAM & kriminalitas)
+- `petadigi.group_polres` — Polres (data wilayahnya sendiri)
+- `petadigi.group_polsek` — Polsek (data wilayahnya sendiri)
+
+### Format Username
+- **Polres**: `madmin_[nama_polres_slug]` — contoh: `madmin_banyuasin`, `madmin_empat_lawang`
+- **Polsek**: `[6-7-char-nama-slug][id]` — contoh: `ilibar283`, `madsuk365`
+  - Pakai ID polsek sebagai suffix untuk menjamin uniqueness (nama duplikat seperti Madang Suku I/II/III)
+
+### Password Default
+`*#PetaDigi2026`
+
+### Import User via CSV + SQL Fix Group
+Import CSV via Odoo UI hanya membuat user tanpa group. Setelah import, jalankan SQL:
+```sql
+INSERT INTO res_groups_users_rel (gid, uid)
+SELECT
+    (SELECT res_id FROM ir_model_data WHERE module='petadigi' AND name='group_polres') AS gid,
+    id AS uid
+FROM res_users
+WHERE login LIKE 'madmin_%'
+  AND id NOT IN (
+      SELECT uid FROM res_groups_users_rel
+      WHERE gid = (SELECT res_id FROM ir_model_data WHERE module='petadigi' AND name='group_polres')
+  );
+```
+> Gunakan subquery `ir_model_data` — jangan hardcode `gid` karena ID berbeda antara lokal dan server.
+
+---
+
+## 17. VPS & Kompatibilitas Odoo
 
 ### Versi
 - **Lokal**: Odoo 19.0.20251203 — manifest `version: '19.0.2.0.0'`
-- **VPS target**: harus Odoo 19.0 (sama dengan lokal)
+- **VPS target**: Odoo 19.0 (harus sama dengan lokal)
 
 ### Aturan Versi Manifest
 Prefix versi manifest harus cocok dengan seri Odoo yang dijalankan:
 - Odoo 19.0 → `'19.0.x.x.x'`
-- Odoo 19.4 → `'19.4.x.x.x'` (tidak kompatibel dengan lokal)
 
 Jika prefix tidak cocok → module tampil "Status: Uninstallable" tanpa tombol Install.
 
 ### Odoo 19.4 ALPHA — Tidak Direkomendasikan
 `version_info = (19, 4, 0, ALPHA, 1, '')` — pre-release, OWL API berubah:
 - `useRef` + `t-ref` rusak untuk client action component tanpa `static props`
-- Bahkan dengan `static props = ["*"]`, `useRef` masih gagal (`Ref is undefined or null`)
 - `this.el` undefined di OWL 19.4 untuk client action component
 
-**Keputusan**: downgrade VPS ke Odoo 19.0, tidak migrasi JS code.
+**Keputusan**: tetap di Odoo 19.0, tidak migrasi JS code.
 
 ### `static props = ["*"]` di `dashboard_map.js`
-Ditambahkan sebagai best practice (harmless di 19.0, diperlukan di 19.4+):
 ```js
 export class DashboardMap extends Component {
     static template = "petadigi.DashboardMap";
@@ -644,54 +782,60 @@ export class DashboardMap extends Component {
 }
 ```
 
+### Migrasi Data ke Server
+1. **Master data** (kabupaten/kecamatan/desa): `pg_dump --data-only --column-inserts` lalu jalankan dengan `psql --single-transaction -v ON_ERROR_STOP=1`
+   - Hapus baris `session_replication_role` dari dump (butuh superuser — tidak tersedia di hosting)
+   - Urutan dump: polres → kabupaten/polsek → kecamatan → desa (sesuai FK dependency)
+2. **User**: Import CSV via Odoo UI → jalankan SQL fix group via psql
+
 ---
 
-## 16. Status Fitur
+## 18. Status Fitur
 
 ### Selesai ✅
 - Model data dan views semua entitas (kriminalitas, KAM, bencana, lalin, lokasi penting)
-- Import wizard LP A dan B
-  - Akses untuk group polres dan polsek (full CRUD)
-  - Pre-fill otomatis polres/polsek/kabupaten berdasarkan login user (`default_get`)
-  - Field polres/polsek/kabupaten readonly untuk polsek, polres readonly untuk polres
-  - Map Leaflet di Step 2 untuk update koordinat (`latlong_map_picker` widget)
-- Dashboard Maps 5 mode peta dengan choropleth penuh
-- Drill-down 3 level (kabupaten → kecamatan → desa) di semua mode
-- Drill-down sync: KPI cards + grafik ikut terfilter saat drill
-- Dropdown kabupaten sync dengan drill-down navigasi
-- Marker clustering (Leaflet.markercluster)
-- Tombol "Lihat Detail" di popup marker → buka form view
+- Import wizard LP A dan B dengan pre-fill polres/polsek/kabupaten berdasarkan login user
+- Dashboard Maps 5 mode peta dengan choropleth + drill-down 3 level penuh
+- Drill-down sync KPI + grafik + dropdown filter
+- Marker clustering, popup "Lihat Detail"
 - Grafik ECharts per mode (bar + donut + tambahan per mode)
 - Overlay lokasi penting (panel checkbox) di semua mode peta non-umum
-- Widget lat/lon picker
-- Widget GeoJSON polygon editor
-- Format tanggal konsisten `DD Mon YYYY` / `DD Mon YYYY HH:MM` dengan UTC→local conversion
-- **Cooling System**:
-  - Model `jenis_laporan` dengan QR code, public token, public URL
-  - Model `hasil_giat` dengan foto, GPS, auto-sequence
-  - Public form di `/giat/<token>` (mobile-friendly, standalone OWL)
-  - Controller JSON-RPC submit + polsek lookup
-  - Dashboard Monitoring Giat (KPI, 3 charts, 2 data tables, map cluster)
-  - Rich popup foto lazy-load di map monitoring
-  - Stat button "Total Giat" di form Jenis Laporan + link ke data terkait
-  - Konfirmasi dialog di tombol "Buat Ulang URL"
+- Widget lat/lon picker + GeoJSON polygon editor
+- **Cooling System** lengkap (form publik + dashboard monitoring giat)
+- **Tindak Lanjut KAM**:
+  - Model `petadigi.tindak_lanjut` dengan attachment
+  - Wizard tambah tindak lanjut (bukan inline editable)
+  - Tab "Tindak Lanjut" di form KAM dengan tombol delete + no_open
+  - Auto-log chatter saat create (detail lengkap) dan delete (sebelum data dihapus)
+  - Filter "Ada Tindak Lanjut" di search view list KAM
+  - Badge biru di list view KAM untuk record yang ada tindak lanjutnya
+  - Badge biru di tabel dashboard KAM untuk kasus PROSES+has_tindak_lanjut
+- **Kustomisasi UI**:
+  - Login page: sembunyikan signup, passkey, manage DB, powered by Odoo
+  - Backend user menu: sembunyikan Help, Shortcuts, My Odoo.com Account, Install App
+  - Menu "Apps": hanya tampil untuk Administrator (base.group_system)
+- **Manajemen User**:
+  - Generate CSV polres (18 user) dan polsek (188 user) dengan format username konsisten
+  - SQL fix group akses setelah import CSV
 
 ### Potensial Pengembangan Berikutnya
 - Export/report Monitoring Giat ke PDF atau Excel
 - Notifikasi real-time kasus baru
 - Grafik tambahan untuk mode bencana (trend tahunan)
-- Filter tanggal di dashboard Monitoring Giat (saat ini hanya filter polres/polsek/jenis)
+- Filter tanggal di dashboard Monitoring Giat
 
 ---
 
-## 17. Development Environment
+## 19. Development Environment
 
 - **OS**: Windows 11
 - **Odoo path**: `C:\Program Files\Odoo 19.0.20251203\server\`
 - **Module path**: `...\server\odoo\addons\petadigi\`
+- **Database lokal**: `selstudio` (PostgreSQL, user: `openpg`, password: `openpgpwd`, port: 5432)
+- **pg_path**: `c:\program files\odoo 19.0.20251203\postgresql\bin`
 - **Git branch**: `main`
 - **Shell**: PowerShell (Windows)
 
 ---
 
-*Dokumen diperbarui: 2026-06-11*
+*Dokumen diperbarui: 2026-06-13*

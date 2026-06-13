@@ -275,6 +275,37 @@
             return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
         }
 
+        async _getRecaptchaToken() {
+            const siteKey = this.initData.recaptcha_site_key;
+            if (!siteKey) return '';
+            // Tunggu grecaptcha load, max 5 detik
+            const loaded = await new Promise((resolve) => {
+                if (window.grecaptcha) { resolve(true); return; }
+                const t0 = Date.now();
+                const poll = () => {
+                    if (window.grecaptcha) { resolve(true); return; }
+                    if (Date.now() - t0 > 5000) { resolve(false); return; }
+                    setTimeout(poll, 100);
+                };
+                poll();
+            });
+            if (!loaded) return '';
+            try {
+                // Timeout 8 detik agar tidak hang selamanya di jaringan lambat
+                return await Promise.race([
+                    new Promise((resolve) => {
+                        grecaptcha.ready(async () => {
+                            try {
+                                const token = await grecaptcha.execute(siteKey, { action: 'submit_giat' });
+                                resolve(token);
+                            } catch (_) { resolve(''); }
+                        });
+                    }),
+                    new Promise((resolve) => setTimeout(() => resolve(''), 8000)),
+                ]);
+            } catch (_) { return ''; }
+        }
+
         setup() {
             this.initData = window.GIAT_INIT_DATA;
             const cache = this._loadCache();
@@ -318,6 +349,17 @@
             const el = document.getElementById('gf-map');
             if (!el) return;
 
+            // Explicit icon dengan dimensi lengkap — lebih reliable di Android
+            // daripada mergeOptions yang mengandalkan prototype chain
+            this._markerIcon = L.icon({
+                iconUrl: '/petadigi/static/lib/leaflet/images/marker-icon.png',
+                shadowUrl: '/petadigi/static/lib/leaflet/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                shadowSize: [41, 41],
+            });
+
             this._map = L.map('gf-map', {
                 center: [-2.5, 118.0],  // Indonesia default
                 zoom: 5,
@@ -339,6 +381,7 @@
                 this._marker.setLatLng(latlng);
             } else {
                 this._marker = L.marker(latlng, {
+                    icon: this._markerIcon,
                     title: 'Lokasi Kegiatan',
                     draggable: true,
                 }).addTo(this._map);
@@ -477,6 +520,8 @@
             this.state.submitting = true;
             this.state.submitError = null;
 
+            const recaptchaToken = await this._getRecaptchaToken();
+
             try {
                 const resp = await this._jsonRpc('/giat/api/submit', {
                     token: this.initData.token,
@@ -491,6 +536,7 @@
                         latitude: this.state.latitude,
                         longitude: this.state.longitude,
                         foto: this.state.foto,
+                        recaptcha_token: recaptchaToken,
                     },
                 });
 
