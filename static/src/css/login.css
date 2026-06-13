@@ -1,0 +1,14 @@
+/* Sembunyikan "Don't have an account?" */
+.oe_login_buttons a.btn-link[href*="signup"] {
+    display: none !important;
+}
+
+/* Sembunyikan "Use a Passkey" beserta separator "- or -" */
+.o_login_auth {
+    display: none !important;
+}
+
+/* Sembunyikan footer: "Manage Databases" dan "Powered by Odoo" */
+.o_database_list .text-center.small {
+    display: none !important;
+}

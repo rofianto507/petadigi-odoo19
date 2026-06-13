@@ -89,9 +89,13 @@ TEKNOLOGI:
         'views/monitoring_giat_views.xml',
         'views/res_users_views.xml',
         'views/menu.xml',
+        'views/menu_restrictions.xml',
     ],
     'assets': {
-         'web.assets_backend': [
+        'web.assets_frontend': [
+            'petadigi/static/src/css/login.css',
+        ],
+        'web.assets_backend': [
             'petadigi/static/lib/leaflet/leaflet.css',
             'petadigi/static/lib/leaflet/leaflet.js',
             'petadigi/static/lib/leaflet-markercluster/MarkerCluster.css',

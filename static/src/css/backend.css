@@ -8,3 +8,11 @@
     grid-column: 1 / -1 !important;
     display: grid;
 }
+
+/* Sembunyikan item user menu yang tidak diperlukan */
+[data-menu="account"],
+[data-menu="install_pwa"],
+[data-menu="support"],
+[data-menu="shortcuts"] {
+    display: none !important;
+}

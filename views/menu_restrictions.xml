@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Batasi menu "Apps" hanya untuk Administrator -->
+        <menuitem id="base.menu_management" name="Apps" groups="base.group_system"/>
+    </data>
+</odoo>
