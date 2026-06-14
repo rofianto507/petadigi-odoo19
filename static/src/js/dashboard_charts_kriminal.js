@@ -672,7 +672,7 @@ export async function updateKriminalCharts(ctx, mode) {
             .sort((a, b) => b.value - a.value);
 
         // Bar chart (sub kategori)
-        const subKatSorted = [...subKatGroups].sort((a, b) => (b.__count || 0) - (a.__count || 0));
+        const subKatSorted = [...subKatGroups].sort((a, b) => (b.__count || 0) - (a.__count || 0)).slice(0, 10);
         const subKatNames  = subKatSorted.map(g => Array.isArray(g.sub_kategori_id) ? g.sub_kategori_id[1] : 'Lainnya');
         const subKatValues = subKatSorted.map(g => g.__count || 0);
 

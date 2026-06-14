@@ -78,6 +78,13 @@ kategori_cache = {r.name.upper(): r.id
 sub_kat_cache = {(r.kategori_kriminal_id.id, r.name.upper()): r.id
                  for r in env['petadigi.sub_kategori_kriminal'].search([])}
 
+# Alias nama sub_kategori: sistem lama → nama di Odoo (UPPERCASE)
+SUB_KAT_ALIAS = {
+    'PENCURIAN DENGAN KEKERASAN (CURAS)': 'CURAS',
+    # tambahkan alias lain jika ditemukan mismatch:
+    # 'NAMA LAMA': 'NAMA ODOO',
+}
+
 jenis_tkp_cache = {r.name.upper(): r.id
                    for r in env['petadigi.jenis_tkp'].search([])}
 
@@ -147,7 +154,8 @@ with open(CSV_PATH, encoding='utf-8') as f:
             kategori_id    = kategori_cache.get(kat_nama.upper()) if kat_nama else False
             sub_kategori_id = False
             if sub_kat_nama and kategori_id:
-                sub_kategori_id = sub_kat_cache.get((kategori_id, sub_kat_nama.upper()), False)
+                lookup_name = SUB_KAT_ALIAS.get(sub_kat_nama.upper(), sub_kat_nama.upper())
+                sub_kategori_id = sub_kat_cache.get((kategori_id, lookup_name), False)
 
             # ── relasi lain ────────────────────────────────────────────
             jtkp   = _v(row[26])

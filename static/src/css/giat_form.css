@@ -393,6 +393,7 @@ html, body {
     z-index: 0;
 }
 #gf-map .leaflet-top { margin-top: 4px; }
+.gf-map-hint { color: #888; }
 #gf-map .leaflet-control-zoom {
     border-radius: 8px !important;
     overflow: hidden;

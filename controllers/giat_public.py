@@ -1,7 +1,6 @@
 from odoo import http, fields
 from odoo.http import request
-from markupsafe import Markup
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import requests as http_requests
 import logging
@@ -27,7 +26,7 @@ class GiatPublicController(http.Controller):
 
         recaptcha_site_key = request.env['ir.config_parameter'].sudo().get_param('recaptcha_public_key', '')
 
-        raw_json = json.dumps({
+        init_data = json.dumps({
             'token': token,
             'jenis_laporan': {
                 'id': jenis.id,
@@ -37,43 +36,57 @@ class GiatPublicController(http.Controller):
             'polres_list': polres_list,
             'recaptcha_site_key': recaptcha_site_key,
         })
-        # Markup prevents t-out from HTML-escaping; replace </script> to avoid
-        # premature script tag closure (extremely unlikely but safe practice)
-        safe_init_data = Markup(raw_json.replace('</script>', r'<\/script>'))
 
         return request.render('petadigi.template_giat_form', {
             'jenis_laporan': jenis,
-            'init_data': safe_init_data,
+            'init_data': init_data,
             'recaptcha_site_key': recaptcha_site_key,
         })
 
     def _parse_tanggal(self, tanggal_str):
-        """Parse datetime-local string (YYYY-MM-DDTHH:MM) → Odoo Datetime (naive UTC-stored)."""
+        """Parse datetime-local string (WIB, YYYY-MM-DDTHH:MM) → UTC untuk disimpan Odoo."""
         if tanggal_str:
             for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
                 try:
-                    return datetime.strptime(tanggal_str.strip(), fmt)
+                    dt_wib = datetime.strptime(tanggal_str.strip(), fmt)
+                    return dt_wib - timedelta(hours=7)  # WIB (UTC+7) → UTC
                 except ValueError:
                     continue
         return fields.Datetime.now()
 
     @http.route('/giat/api/polsek', type='json', auth='public', csrf=False)
-    def get_polsek(self, polres_id, **kwargs):
-        polsek_list = request.env['petadigi.polsek'].sudo().search_read(
-            [('polres_id', '=', int(polres_id))],
-            ['id', 'name'],
-            order='name asc'
-        )
-        return polsek_list
+    def get_polsek(self, polres_id, token=None, **kwargs):
+        # Validasi token agar endpoint tidak bisa dienumerasi tanpa form yang valid
+        if not token:
+            _logger.warning('get_polsek: request tanpa token dari ip=%s',
+                            request.httprequest.remote_addr)
+            return []
+        try:
+            valid = request.env['petadigi.jenis_laporan'].sudo().search_count([
+                ('public_token', '=', token),
+                ('state', '=', 'aktif'),
+            ])
+            if not valid:
+                _logger.warning('get_polsek: token tidak valid atau non-aktif')
+                return []
+            return request.env['petadigi.polsek'].sudo().search_read(
+                [('polres_id', '=', int(polres_id))],
+                ['id', 'name'],
+                order='name asc'
+            )
+        except Exception as e:
+            _logger.error('get_polsek error: %s', e, exc_info=True)
+            return []
 
     def _verify_recaptcha(self, recaptcha_token):
         secret_key = request.env['ir.config_parameter'].sudo().get_param('recaptcha_private_key', '')
         if not secret_key:
-            return True  # reCAPTCHA tidak dikonfigurasi, lewati
-        if not recaptcha_token:
-            # Script gagal load (jaringan lambat/mobile) — izinkan dengan warning
-            _logger.warning('reCAPTCHA giat: token kosong (script mungkin belum load), allowed')
+            # Tidak ada kunci → reCAPTCHA memang tidak diaktifkan (dev/localhost), izinkan
             return True
+        if not recaptcha_token:
+            _logger.warning('reCAPTCHA giat: token kosong dari client (ip=%s)',
+                            request.httprequest.remote_addr)
+            return False
         try:
             r = http_requests.post('https://www.recaptcha.net/recaptcha/api/siteverify', data={
                 'secret': secret_key,
@@ -87,11 +100,16 @@ class GiatPublicController(http.Controller):
                 _logger.info('reCAPTCHA giat verified, score=%.2f', score)
             else:
                 _logger.warning('reCAPTCHA giat failed: %s', result.get('error-codes'))
-            # Threshold 0.3 (bukan 0.5) karena mobile device sering dapat score lebih rendah
-            return success and score >= 0.3
+            # Baca threshold dari system parameter (default 0.5 jika belum diset)
+            min_score = float(request.env['ir.config_parameter'].sudo().get_param(
+                'recaptcha_min_score', '0.5'))
+            return success and score >= min_score
         except Exception as e:
-            _logger.error('reCAPTCHA verification error: %s', e)
-            return True  # Jika gagal koneksi ke Google, tetap izinkan
+            # Jika Google tidak bisa dihubungi, tolak submit dan catat error.
+            # Lebih aman daripada mengizinkan tanpa verifikasi.
+            _logger.error('reCAPTCHA verification error (ip=%s): %s',
+                          request.httprequest.remote_addr, e)
+            return False
 
     @http.route('/giat/api/submit', type='json', auth='public', csrf=False)
     def giat_submit(self, token, data, **kwargs):
@@ -123,9 +141,17 @@ class GiatPublicController(http.Controller):
 
             foto = data.get('foto')
             if foto:
+                # Hapus prefix data URI jika ada (data:image/jpeg;base64,...)
+                if isinstance(foto, str) and ',' in foto:
+                    foto = foto.split(',', 1)[1]
+                # Batasi ukuran foto: base64 7 juta karakter ≈ 5 MB file asli
+                MAX_FOTO_B64 = 7_000_000
+                if len(foto) > MAX_FOTO_B64:
+                    return {'success': False, 'message': 'Ukuran foto melebihi batas 5 MB.'}
                 vals['foto'] = foto
 
             result = request.env['petadigi.hasil_giat'].sudo().create(vals)
             return {'success': True, 'code': result.code}
         except Exception as e:
-            return {'success': False, 'message': str(e)}
+            _logger.error('giat_submit error (token=%s): %s', token, e, exc_info=True)
+            return {'success': False, 'message': 'Terjadi kesalahan pada server. Silakan coba lagi.'}

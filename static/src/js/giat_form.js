@@ -307,7 +307,7 @@
         }
 
         setup() {
-            this.initData = window.GIAT_INIT_DATA;
+            this.initData = JSON.parse(document.getElementById('giat-app').dataset.init);
             const cache = this._loadCache();
             this.state = useState({
                 nrp: cache.nrp || '',
@@ -400,7 +400,7 @@
             this._marker.bindPopup(
                 '<b>Lokasi Kegiatan</b><br>' +
                 parseFloat(lat).toFixed(6) + ', ' + parseFloat(lng).toFixed(6) +
-                '<br><small style="color:#888">Geser marker untuk menyesuaikan</small>'
+                '<br><small class="gf-map-hint">Geser marker untuk menyesuaikan</small>'
             );
             this._map.setView(latlng, 16, { animate: true });
             this._marker.openPopup();
@@ -423,7 +423,7 @@
 
             this.state.loadingPolsek = true;
             try {
-                const resp = await this._jsonRpc('/giat/api/polsek', { polres_id: polresId });
+                const resp = await this._jsonRpc('/giat/api/polsek', { polres_id: polresId, token: this.initData.token });
                 this.state.polsek_list = resp.result || [];
             } catch (_) { /* polsek optional */ } finally {
                 this.state.loadingPolsek = false;
