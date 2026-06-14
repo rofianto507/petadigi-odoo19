@@ -219,7 +219,7 @@ export async function loadModeLokasi(ctx) {
                     const bounds = layer.getBounds();
                     const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
-                        interactive: false, zIndexOffset: 100,
+                        interactive: false, zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(label);
@@ -351,7 +351,7 @@ export async function drillDownLokasiKecamatan(ctx, kabProps, kabLayer, filters)
                     const bounds = layer.getBounds();
                     const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
-                        interactive: false, zIndexOffset: 100,
+                        interactive: false, zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.kecamatanLabelGroup.addLayer(label);
@@ -486,7 +486,7 @@ export async function drillDownLokasiKelurahan(ctx, kecProps, kecLayer, filters,
                     const bounds = layer.getBounds();
                     const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
-                        interactive: false, zIndexOffset: 100,
+                        interactive: false, zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.desaLabelGroup.addLayer(label);

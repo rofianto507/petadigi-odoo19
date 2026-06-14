@@ -14,13 +14,22 @@
                             display="always"/>
                     </header>
                     <field name="code"/>
+                    <field name="tahun"/>
                     <field name="jenis_lp"/>
-                    <field name="no_lp"/>
+                    <field name="no_lp" optional="hide"/>
                     <field name="kategori_id"/>
-                    <field name="sub_kategori_id"/>
+                    <field name="sub_kategori_id" optional="hide"/>
+                    <field name="jenis_tkp_id"/>
                     <field name="tanggal_kejadian"/>
+                    <field name="tanggal_laporan" optional="hide"/>
                     <field name="subdit_id"/>
                     <field name="polres_id"/>
+                    <field name="polsek_id" optional="hide"/>
+                    <field name="kabupaten_id"/>
+                    <field name="kecamatan_id" optional="hide"/>
+                    <field name="desa_id" optional="hide"/>
+                    <field name="penanggung_jawab" optional="hide"/>
+                    <field name="sub_status_perkara_id"/>
                     <field name="status_perkara" widget="badge"
                         decoration-success="status_perkara == 'SELESAI'"
                         decoration-warning="status_perkara == 'PROSES'"/>
@@ -48,6 +57,11 @@
                     <separator/>
                     <filter string="Tanggal Kejadian" name="filter_tanggal_kejadian" date="tanggal_kejadian"/>
                     <group>
+                        <filter string="Tahun" name="groupby_tahun" context="{'group_by': 'tahun'}"/>
+                        <filter string="Sub Kategori" name="groupby_sub_kategori" context="{'group_by': 'sub_kategori_id'}"/>
+                        <filter string="Jenis TKP" name="groupby_jenis_tkp" context="{'group_by': 'jenis_tkp_id'}"/>
+                        <filter string="Jenis LP" name="groupby_jenis_lp" context="{'group_by': 'jenis_lp'}"/>
+                        <filter string="Sub Status Perkara" name="groupby_sub_status_perkara" context="{'group_by': 'sub_status_perkara_id'}"/>
                         <filter string="Tujuan" name="groupby_tujuan" context="{'group_by': 'subdit_id'}"/>
                         <filter string="Kategori" name="groupby_kategori" context="{'group_by': 'kategori_id'}"/>
                         <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>

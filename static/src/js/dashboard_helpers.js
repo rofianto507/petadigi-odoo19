@@ -152,7 +152,7 @@ export async function loadModeComingSoon(ctx, label, color) {
                             iconSize: null,
                         }),
                         interactive: false,
-                        zIndexOffset: 100,
+                        zIndexOffset: -100,
                     });
                     lbl._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(lbl);

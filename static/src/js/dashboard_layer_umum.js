@@ -60,7 +60,7 @@ export async function loadKabupatenLayer(ctx) {
                             iconSize: null,
                         }),
                         interactive: false,
-                        zIndexOffset: 100,
+                        zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(label);
@@ -198,7 +198,7 @@ export async function drillDownKecamatan(ctx, kabProps, kabLayer) {
                             iconSize: null,
                         }),
                         interactive: false,
-                        zIndexOffset: 100,
+                        zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.kecamatanLabelGroup.addLayer(label);
@@ -331,7 +331,7 @@ export async function drillDownDesa(ctx, kecProps, kecLayer, kabProps) {
                             iconSize: null,
                         }),
                         interactive: false,
-                        zIndexOffset: 100,
+                        zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.desaLabelGroup.addLayer(label);

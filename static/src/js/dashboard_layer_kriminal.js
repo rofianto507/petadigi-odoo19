@@ -144,7 +144,7 @@ async function _loadKriminalMarkers(ctx, domain) {
     const records = await ctx.orm.searchRead(
         'petadigi.kriminalitas',
         [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
-        ['id', 'no_lp', 'latitude', 'longitude', 'tempat_kejadian',
+        ['id', 'code', 'no_lp', 'latitude', 'longitude', 'tempat_kejadian',
          'jenis_tkp_id', 'kategori_id', 'sub_kategori_id', 'status_perkara', 'tanggal_kejadian'],
     );
 
@@ -174,10 +174,14 @@ async function _loadKriminalMarkers(ctx, domain) {
             <div class="petadigi-popup">
                 <div class="petadigi-popup-header" style="background:#922b21;">
                     <i class="fa ${faIcon}"></i>
-                    <strong>${r.no_lp}</strong>
+                    <strong>${r.code}</strong>
                 </div>
                 <div class="petadigi-popup-body">
                     <table>
+                        <tr>
+                            <td><i class="fa fa-file-text-o"></i> No LP</td>
+                            <td><strong>${r.no_lp || '-'}</strong></td>
+                        </tr>
                         <tr>
                             <td><i class="fa fa-calendar"></i> Tanggal</td>
                             <td><strong>${tglKejadian}</strong></td>
@@ -297,7 +301,7 @@ export async function loadModeKriminal(ctx) {
                             iconSize: null,
                         }),
                         interactive: false,
-                        zIndexOffset: 100,
+                        zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(label);
@@ -443,7 +447,7 @@ export async function drillDownKriminalKecamatan(ctx, kabProps, kabLayer, filter
                             iconSize: null,
                         }),
                         interactive: false,
-                        zIndexOffset: 100,
+                        zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.kecamatanLabelGroup.addLayer(label);
@@ -593,7 +597,7 @@ export async function drillDownKriminalDesa(ctx, kecProps, kecLayer, filters, ka
                             iconSize: null,
                         }),
                         interactive: false,
-                        zIndexOffset: 100,
+                        zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.desaLabelGroup.addLayer(label);

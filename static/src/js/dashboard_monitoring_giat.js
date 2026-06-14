@@ -627,6 +627,15 @@ class MonitoringGiatDashboard extends Component {
             spiderfyOnMaxZoom: true,
             showCoverageOnHover: false,
             zoomToBoundsOnClick: true,
+            iconCreateFunction: (c) => {
+                const count = c.getChildCount();
+                const size  = count < 10 ? 32 : count < 100 ? 38 : 44;
+                return L.divIcon({
+                    html: `<div class="petadigi-cluster-icon" style="width:${size}px;height:${size}px;line-height:${size}px;">${count}</div>`,
+                    className: '',
+                    iconSize: L.point(size, size),
+                });
+            },
         });
 
         const points = this.state.mapPoints;

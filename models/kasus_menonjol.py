@@ -23,6 +23,12 @@ class KasusMenunjol(models.Model):
         domain=[('tipe_sumber', '=', 'KASUS MENONJOL')],
         tracking=True
     )
+    tahun = fields.Selection(
+        [(str(t), str(t)) for t in range(2020, 2031)],
+        string='Tahun',
+        related='sumber_dokumen_id.tahun',
+        store=True,
+    )
     state = fields.Selection([
         ('PROSES', 'PROSES'),
         ('SELESAI', 'SELESAI'),

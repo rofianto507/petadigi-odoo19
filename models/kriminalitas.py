@@ -37,6 +37,12 @@ class Kriminalitas(models.Model):
         domain=[('tipe_sumber', '=', 'KRIMINALITAS')],
         tracking=True
     )
+    tahun = fields.Selection(
+        [(str(t), str(t)) for t in range(2020, 2031)],
+        string='Tahun',
+        related='sumber_dokumen_id.tahun',
+        store=True,
+    )
     kategori_id = fields.Many2one('petadigi.kategori_kriminal', string='Kategori', tracking=True)
     sub_kategori_id = fields.Many2one(
         'petadigi.sub_kategori_kriminal',

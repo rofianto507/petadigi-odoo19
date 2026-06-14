@@ -732,6 +732,15 @@ export class DashboardMap extends Component {
             showCoverageOnHover:  false,
             spiderfyOnMaxZoom:    true,
             disableClusteringAtZoom: 16,
+            iconCreateFunction: (cluster) => {
+                const count = cluster.getChildCount();
+                const size  = count < 10 ? 32 : count < 100 ? 38 : 44;
+                return L.divIcon({
+                    html: `<div class="petadigi-cluster-icon" style="width:${size}px;height:${size}px;line-height:${size}px;">${count}</div>`,
+                    className: '',
+                    iconSize: L.point(size, size),
+                });
+            },
         }).addTo(this.map);
 
         // Layer terpisah untuk overlay lokasi penting (tidak ikut cluster)

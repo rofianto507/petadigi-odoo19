@@ -33,6 +33,12 @@ class Bencana(models.Model):
         domain=[('tipe_sumber', '=', 'BENCANA')],
         tracking=True
     )
+    tahun = fields.Selection(
+        [(str(t), str(t)) for t in range(2020, 2031)],
+        string='Tahun',
+        related='sumber_dokumen_id.tahun',
+        store=True,
+    )
     latitude = fields.Float('Latitude', digits=(10, 6), tracking=True)
     longitude = fields.Float('Longitude', digits=(10, 6), tracking=True)
     foto = fields.Binary('Foto', attachment=True)

@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
+import { fmtTanggal } from './dashboard_helpers';
 
 /**
  * Peta Lalu Lintas
@@ -140,6 +141,11 @@ async function _loadLalinMarkers(ctx, domain) {
                     <i class="fa ${faIcon}"></i>
                     <strong>${r.code}</strong>
                 </div>
+                <div id="lalin-foto-wrap-${r.id}" class="petadigi-popup-foto">
+                    <div class="petadigi-popup-foto-spinner">
+                        <i class="fa fa-circle-o-notch fa-spin"></i>
+                    </div>
+                </div>
                 <div class="petadigi-popup-body">
                     <table>
                         <tr><td><i class="fa fa-map-marker"></i> Lokasi</td><td><strong>${r.nama_lokasi || '-'}</strong></td></tr>
@@ -159,6 +165,26 @@ async function _loadLalinMarkers(ctx, domain) {
         `, { maxWidth: 300, className: 'petadigi-leaflet-popup' });
 
         marker.on('popupopen', () => {
+            // Lazy-load foto
+            const fotoWrap = document.getElementById(`lalin-foto-wrap-${r.id}`);
+            if (fotoWrap) {
+                const img = document.createElement('img');
+                img.className = 'petadigi-popup-foto-img';
+                img.alt = 'Foto Lalin';
+                const spinner = fotoWrap.querySelector('.petadigi-popup-foto-spinner');
+                img.onload = () => {
+                    if (img.naturalWidth > 1) {
+                        fotoWrap.appendChild(img);
+                        img.style.display = 'block';
+                        if (spinner) spinner.style.display = 'none';
+                    } else {
+                        fotoWrap.style.display = 'none';
+                    }
+                };
+                img.onerror = () => { fotoWrap.style.display = 'none'; };
+                img.src = `/web/image/petadigi.lalu_lintas/${r.id}/foto`;
+            }
+            // Bind tombol detail
             setTimeout(() => {
                 const btn = document.getElementById(`btn-detail-lalin-${r.id}`);
                 if (btn) btn.addEventListener('click', () => ctx.action.doAction({
@@ -235,7 +261,7 @@ export async function loadModeLalin(ctx) {
                     const bounds = layer.getBounds();
                     const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
-                        interactive: false, zIndexOffset: 100,
+                        interactive: false, zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.kabupatenLabelGroup.addLayer(label);
@@ -370,7 +396,7 @@ export async function drillDownLalinKecamatan(ctx, kabProps, kabLayer, filters) 
                     const bounds = layer.getBounds();
                     const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
-                        interactive: false, zIndexOffset: 100,
+                        interactive: false, zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.kecamatanLabelGroup.addLayer(label);
@@ -507,7 +533,7 @@ export async function drillDownLalinKelurahan(ctx, kecProps, kecLayer, filters, 
                     const bounds = layer.getBounds();
                     const label = L.marker(bounds.getCenter(), {
                         icon: L.divIcon({ className: 'kabupaten-label', html: `<span>${props.name}</span>`, iconSize: null }),
-                        interactive: false, zIndexOffset: 100,
+                        interactive: false, zIndexOffset: -100,
                     });
                     label._polygonBounds = bounds;
                     ctx.desaLabelGroup.addLayer(label);

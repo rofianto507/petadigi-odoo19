@@ -8,11 +8,13 @@
             <field name="arch" type="xml">
                 <list string="Data Bencana">
                     <field name="code"/>
+                    <field name="tahun"/>
                     <field name="nama_bencana"/>
                     <field name="kategori_id"/>
                     <field name="tanggal_kejadian"/>
                     <field name="kabupaten_id"/>
-                    <field name="kecamatan_id"/>
+                    <field name="kecamatan_id" optional="hide"/>
+                    <field name="desa_id" optional="hide"/>
                     <field name="state" widget="badge"
                         decoration-danger="state == 'AKTIF'"
                         decoration-success="state == 'NON AKTIF'"/>
@@ -35,6 +37,7 @@
                     <separator/>
                     <filter string="Tanggal Kejadian" name="filter_tanggal_kejadian" date="tanggal_kejadian"/>
                     <group>
+                        <filter string="Tahun" name="groupby_tahun" context="{'group_by': 'tahun'}"/>
                         <filter string="Kategori" name="groupby_kategori" context="{'group_by': 'kategori_id'}"/>
                         <filter string="Kabupaten" name="groupby_kabupaten" context="{'group_by': 'kabupaten_id'}"/>
                         <filter string="State" name="groupby_state" context="{'group_by': 'state'}"/>
