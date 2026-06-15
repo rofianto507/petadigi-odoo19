@@ -340,11 +340,12 @@ class MonitoringGiatDashboard extends Component {
             if (cnt > hariTeraktifCount) { hariTeraktifCount = cnt; hariTeraktif = d; }
         });
 
+        const _n = (n) => n.toLocaleString('id-ID');
         this.state.kpi = {
-            total: records.length, petugas: nrpSet.size,
-            polresTeraktif, polresTeraktifCount,
+            total: _n(records.length), petugas: _n(nrpSet.size),
+            polresTeraktif, polresTeraktifCount: _n(polresTeraktifCount),
             hariTeraktif: this._fmtDateDisplay(hariTeraktif),
-            hariTeraktifCount,
+            hariTeraktifCount: _n(hariTeraktifCount),
         };
 
         // Polres bar: always show ALL polres sorted by count desc
@@ -481,11 +482,11 @@ class MonitoringGiatDashboard extends Component {
         chart.setOption({
             color: ["#71639e","#27ae60","#e67e22","#8e44ad","#16a085","#c0392b","#2ecc71","#f39c12"],
             tooltip: { trigger: "item", formatter: "{b}: {c} ({d}%)" },
-            legend: { orient: "vertical", right: 10, top: "middle", type: "scroll", textStyle: { fontSize: 12 } },
+            legend: { orient: "horizontal", bottom: 0, left: "center", type: "scroll", textStyle: { fontSize: 11 }, itemWidth: 12, itemHeight: 12, pageIconSize: 10 },
             series: [{
                 type: "pie",
-                radius: ["40%", "70%"],
-                center: ["38%", "50%"],
+                radius: ["38%", "65%"],
+                center: ["50%", "44%"],
                 avoidLabelOverlap: false,
                 label: { show: false },
                 labelLine: { show: false },

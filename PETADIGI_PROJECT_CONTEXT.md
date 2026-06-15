@@ -205,12 +205,15 @@ petadigi.subdit                   petadigi.sub_status_perkara
 - Services: `orm`, `action`
 - State: `kpi{}`, `chartBar{}`, `chartLine{}`, `chartDonut{}`, `polsekAll[]`, `mapPoints[]`, `tblPolres{}`, `tblPolsek{}`
 
-**KPI Cards**: total giat, total polres lapor, total polsek lapor, hari paling aktif (+ jumlah giat hari itu)
+**KPI Cards**: total giat, petugas unik, polres teraktif, hari teraktif
+- **Format angka**: `toLocaleString('id-ID')` — pemisah ribuan titik (format Indonesia)
 
 **Charts** (ECharts):
 - Bar chart: giat per polres
 - Line chart: tren harian
 - Donut chart: distribusi per jenis laporan
+  - **Legend posisi bawah** (`orient: "horizontal", bottom: 0`) — tidak overlap chart di layar kecil
+  - `type: "scroll"` aktif — legend horizontal scrollable jika jenis laporan banyak
 
 **Data Tables** (sort + search + pagination):
 - **Ringkasan per Polres**: No, Polres, Belum Lapor, Sudah Lapor, Total Giat (semua polres selalu muncul)
@@ -317,7 +320,7 @@ const baseDomain = [
 
 ### Kriminal (5 chart rows)
 - Row 1: Bar per kabupaten + Donut per kategori
-- Row 2: Bar lokasi kejadian (TKP) + Bar sub kategori
+- Row 2: Bar lokasi kejadian (TKP) + Bar sub kategori (**dibatasi top 10**, sort desc by count)
 - Row 3: Area line trend bulanan + Area line waktu kejadian
 - Row 4: Area line waktu Curat + Curas + Curanmor
 - Row 5: Area line perbandingan 2 tahun (Data Tahunan)
@@ -347,6 +350,8 @@ Semua chart memakai `drillDomain` + semua filter aktif. Instance ECharts disimpa
 - **Inisialisasi**: `L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 60, showCoverageOnHover: false, spiderfyOnMaxZoom: true, disableClusteringAtZoom: 16 })`
 - **Layer cluster**: `ctx.markerLayerGroup` — dipakai semua mode peta
 - **Layer overlay lokasi**: `ctx.lokasiOverlayLayerGroup` — terpisah, tidak ikut cluster
+- **Monitoring Giat cluster**: pakai `iconCreateFunction` custom → class `petadigi-cluster-icon`, ukuran dinamis (32/38/44px berdasarkan count)
+- **Label marker z-index**: semua file layer pakai `zIndexOffset: -100` agar label di bawah cluster icon (mencegah label menutupi bubble cluster)
 
 **CSS marker classes**:
 - `petadigi-crime-marker` → kriminalitas (merah)
@@ -817,12 +822,40 @@ export class DashboardMap extends Component {
 - **Manajemen User**:
   - Generate CSV polres (18 user) dan polsek (188 user) dengan format username konsisten
   - SQL fix group akses setelah import CSV
+- **Migrasi Data dari Sistem Lama** (via tools/ scripts):
+  - `migrate_kriminalitas.py` — 14k record kriminalitas (WIB→UTC, skip duplikat via no_lp)
+  - `migrate_jenis_laporan.py` — jenis laporan cooling system (public_token auto-generated)
+  - `migrate_giat.py` — 1.5k record hasil giat + download foto dari server lama
+  - `update_jenis_lp.py` — derive jenis LP (A/B) dari format no_lp (normalisasi alphanumeric)
+  - `fix_sub_kategori_kriminalitas.py` — fix mapping sub kategori (alias: "Curas" = "PENCURIAN DENGAN KEKERASAN (CURAS)")
+- **Dashboard Kriminalitas**:
+  - Popup header pakai `code` (bukan no_lp yang terlalu panjang), No LP dipindah ke body
+  - Sub kategori chart dibatasi top 10 (sort desc)
+  - Word-break di popup value cells untuk teks panjang tanpa spasi
+- **Dashboard Monitoring Giat**:
+  - KPI angka format ribuan Indonesia (`toLocaleString('id-ID')`)
+  - Donut legend pindah ke bawah (horizontal) — tidak overlap di layar kecil
+- **Security Hardening**:
+  - Error message publik disembunyikan (hanya log internal)
+  - Foto limit 5MB (base64 7MB), strip data URI prefix
+  - reCAPTCHA: blokir jika key ada tapi verifikasi gagal; bypass jika key tidak diset (dev mode)
+  - Token wajib di endpoint `/giat/api/polsek`
+  - Timezone fix: `_parse_tanggal` konversi WIB→UTC (kurangi 7 jam)
+- **CSP Fix (Public Giat Form)**:
+  - Inline `<script>` dihapus dari template — data JSON kini di `data-init` attribute pada `#giat-app`
+  - `giat_form.js` membaca: `JSON.parse(document.getElementById('giat-app').dataset.init)`
+  - Inline style Leaflet popup → CSS class `.gf-map-hint`
+  - Halaman `/giat/<token>` kini zero inline script + zero inline style
+  - Cache buster JS: `?v=3`
+- **Production Server**:
+  - `list_db = False` — database manager sudah disabled ✅
+  - HTTPS aktif via Divtik Polri infrastructure ✅
+  - Security headers (Nginx) — konfigurasi siap, menunggu Divtik apply
 
 ### Potensial Pengembangan Berikutnya
 - Export/report Monitoring Giat ke PDF atau Excel
 - Notifikasi real-time kasus baru
 - Grafik tambahan untuk mode bencana (trend tahunan)
-- Filter tanggal di dashboard Monitoring Giat
 
 ---
 
@@ -838,4 +871,34 @@ export class DashboardMap extends Component {
 
 ---
 
-*Dokumen diperbarui: 2026-06-13*
+---
+
+## 20. Tools Migrasi Data (`tools/`)
+
+Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
+
+| File | Fungsi |
+|---|---|
+| `migrate_kriminalitas.py` | MySQL `kriminals` → `petadigi.kriminalitas` (14k records, batch 200) |
+| `migrate_jenis_laporan.py` | MySQL `rengiats` → `petadigi.jenis_laporan` |
+| `migrate_giat.py` | MySQL `giats` → `petadigi.hasil_giat` (1.5k records + foto download, batch 50) |
+| `update_jenis_lp.py` | Derive `jenis_lp` (A/B) dari format `no_lp` existing records |
+| `fix_sub_kategori_kriminalitas.py` | Fix `sub_kategori_id` yang tidak match karena nama alias |
+
+**Pola umum semua script**:
+- `_v(s)` → handle NULL (`\N` dari CSV) → return `None`
+- `_dt(s)` → parse datetime WIB → subtract `timedelta(hours=7)` untuk UTC
+- Batch commit: `env.cr.commit()` per batch (tidak satu giant transaction)
+- Skip duplikat berdasarkan field unik (misal: `no_lp`)
+
+**URL foto migrasi giat**: `https://petadigi.polisibaik.id/public/upload/giat/<filename>`
+
+**SUB_KAT_ALIAS di migrate_kriminalitas.py**:
+```python
+SUB_KAT_ALIAS = {'PENCURIAN DENGAN KEKERASAN (CURAS)': 'CURAS'}
+```
+Nama di sistem lama berbeda dengan nama di Odoo — perlu mapping eksplisit.
+
+---
+
+*Dokumen diperbarui: 2026-06-14*
