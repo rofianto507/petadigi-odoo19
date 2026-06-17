@@ -61,8 +61,7 @@
                                 <field name="pangkat_petugas"/>
                             </group>
                             <group string="FOTO">
-                                <field name="foto" widget="image" class="oe_avatar"
-                                    options="{'preview_image': 'foto'}" nolabel="1"/>
+                                <field name="foto" widget="image_popup" nolabel="1"/>
                             </group>
                         </group>
                         <group>

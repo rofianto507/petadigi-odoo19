@@ -86,7 +86,7 @@
                             </group>
                             <group>
                                 <field name="sumber_dokumen_id"/>
-                                <field name="foto" widget="image" class="oe_avatar" options="{'preview_image': 'foto'}"/>
+                                <field name="foto" widget="image_popup" nolabel="1"/>
                             </group>
                         </group>
                         <group>

@@ -54,7 +54,7 @@ class GiatPublicController(http.Controller):
                     continue
         return fields.Datetime.now()
 
-    @http.route('/giat/api/polsek', type='json', auth='public', csrf=False)
+    @http.route('/giat/api/polsek', type='jsonrpc', auth='public', csrf=False)
     def get_polsek(self, polres_id, token=None, **kwargs):
         # Validasi token agar endpoint tidak bisa dienumerasi tanpa form yang valid
         if not token:
@@ -111,7 +111,7 @@ class GiatPublicController(http.Controller):
                           request.httprequest.remote_addr, e)
             return False
 
-    @http.route('/giat/api/submit', type='json', auth='public', csrf=False)
+    @http.route('/giat/api/submit', type='jsonrpc', auth='public', csrf=False)
     def giat_submit(self, token, data, **kwargs):
         jenis = request.env['petadigi.jenis_laporan'].sudo().search([
             ('public_token', '=', token),

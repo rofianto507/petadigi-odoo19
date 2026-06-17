@@ -39,16 +39,18 @@ FITUR UTAMA:
    - Dashboard Monitoring Giat: KPI, grafik tren, tabel ringkasan polres/polsek, peta cluster
 
 AKSES BERBASIS PERAN:
-   - Admin: akses penuh semua data
-   - Subdit: baca + tulis kriminalitas dan KAM, baca data lainnya
-   - Polres: data wilayah polresnya, dapat akses wizard import LP
-   - Polsek: data wilayah polseknya, dapat akses wizard import LP
+
+- Admin: akses penuh semua data
+- Subdit: baca + tulis kriminalitas dan KAM, baca data lainnya
+- Polres: data wilayah polresnya, dapat akses wizard import LP
+- Polsek: data wilayah polseknya, dapat akses wizard import LP
 
 TEKNOLOGI:
-   - Frontend: OWL (Odoo Web Library), Leaflet.js, ECharts, Flatpickr
-   - Marker cluster: Leaflet.markercluster v1.5.3
-   - Parser dokumen: python-docx
-   - Platform: Odoo 19.0
+
+- Frontend: OWL (Odoo Web Library), Leaflet.js, ECharts, Flatpickr
+- Marker cluster: Leaflet.markercluster v1.5.3
+- Parser dokumen: python-docx
+- Platform: Odoo 19.0
 """,
     'category': 'Tools',
     'author': 'Cv Sel Studio',
@@ -114,6 +116,8 @@ TEKNOLOGI:
             'petadigi/static/src/js/latlon_leaflet_widget.js',
             'petadigi/static/src/xml/latlon_leaflet_widget.xml',
             'petadigi/static/src/css/latlon_leaflet_widget.css',
+            'petadigi/static/src/xml/image_popup_widget.xml',
+            'petadigi/static/src/js/image_popup_widget.js',
             # Dashboard modular
             'petadigi/static/src/js/dashboard_helpers.js',
             'petadigi/static/src/js/dashboard_layer_umum.js',
@@ -138,4 +142,5 @@ TEKNOLOGI:
     'installable': True,
     'application': True,
     'sequence': 1,
+    'license': 'LGPL-3',
 }
