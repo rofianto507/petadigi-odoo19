@@ -330,6 +330,40 @@
         <field name="perm_unlink" eval="False"/>
     </record>
 
+    <!-- ─── Sumur Minyak ────────────────────────────────── -->
+    <record id="rule_sumur_minyak_polres" model="ir.rule">
+        <field name="name">Sumur Minyak: akses polres</field>
+        <field name="model_id" ref="model_petadigi_sumur_minyak"/>
+        <field name="domain_force">[('kabupaten_id.polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_sumur_minyak_polsek" model="ir.rule">
+        <field name="name">Sumur Minyak: akses polsek</field>
+        <field name="model_id" ref="model_petadigi_sumur_minyak"/>
+        <field name="domain_force">[('kecamatan_id.polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_sumur_minyak_subdit_block" model="ir.rule">
+        <field name="name">Sumur Minyak: subdit blokir</field>
+        <field name="model_id" ref="model_petadigi_sumur_minyak"/>
+        <field name="domain_force">[('id', '=', -1)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
     <!-- ─── Hasil Giat ────────────────────────────────────── -->
     <record id="rule_hasil_giat_polres" model="ir.rule">
         <field name="name">Hasil Giat: akses polres</field>

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Demo Data — Hierarki Wilayah Sumatera Selatan
+    Struktur:
+      Polda Sumsel
+        ├── Polres Palembang  →  Kota Palembang (1671)
+        │     ├── Polsek Ilir Timur  →  Kec. Ilir Timur I  →  Kel. 26 Ilir, 28 Ilir
+        │     └── Polsek Ilir Barat  →  Kec. Ilir Barat I  →  Kel. 8 Ilir, 9 Ilir
+        └── Polres OKI         →  Kab. Ogan Komering Ilir (1602)
+              ├── Polsek Kayuagung   →  Kec. Kayuagung     →  Desa Jua-Jua, Kayuagung Lama
+              └── Polsek Tanjung Lubuk  →  Kec. Tanjung Lubuk  →  Desa Tanjung Lubuk, Sungai Lebung
+-->
+<odoo>
+    <data noupdate="1">
+
+        <!-- ═══════════════════════════════════════════════════
+             POLRES
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_polres_palembang" model="petadigi.polres">
+            <field name="name">Polres Palembang</field>
+            <field name="address">Jl. Jenderal Sudirman No. 459, Palembang</field>
+        </record>
+        <record id="demo_polres_oki" model="petadigi.polres">
+            <field name="name">Polres OKI</field>
+            <field name="address">Jl. Letnan Marzuki, Kayuagung, OKI</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             POLSEK
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_polsek_ilir_timur" model="petadigi.polsek">
+            <field name="name">Polsek Ilir Timur</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="address">Jl. Kapten A. Rivai, Ilir Timur I, Palembang</field>
+        </record>
+        <record id="demo_polsek_ilir_barat" model="petadigi.polsek">
+            <field name="name">Polsek Ilir Barat</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="address">Jl. R.E. Martadinata, Ilir Barat I, Palembang</field>
+        </record>
+        <record id="demo_polsek_kayuagung" model="petadigi.polsek">
+            <field name="name">Polsek Kayuagung</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="address">Jl. A. Yani, Kayuagung, OKI</field>
+        </record>
+        <record id="demo_polsek_tanjung_lubuk" model="petadigi.polsek">
+            <field name="name">Polsek Tanjung Lubuk</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="address">Jl. Lintas Sumatera, Tanjung Lubuk, OKI</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             KABUPATEN / KOTA
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_kab_palembang" model="petadigi.kabupaten">
+            <field name="code">1671</field>
+            <field name="name">Kota Palembang</field>
+            <field name="type">KOTA</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+        </record>
+        <record id="demo_kab_oki" model="petadigi.kabupaten">
+            <field name="code">1602</field>
+            <field name="name">Kab. Ogan Komering Ilir</field>
+            <field name="type">KABUPATEN</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             KECAMATAN
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_kec_ilir_timur_1" model="petadigi.kecamatan">
+            <field name="code">167101</field>
+            <field name="name">Ilir Timur I</field>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_timur"/>
+        </record>
+        <record id="demo_kec_ilir_barat_1" model="petadigi.kecamatan">
+            <field name="code">167102</field>
+            <field name="name">Ilir Barat I</field>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_barat"/>
+        </record>
+        <record id="demo_kec_kayuagung" model="petadigi.kecamatan">
+            <field name="code">160201</field>
+            <field name="name">Kayuagung</field>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="polsek_id" ref="demo_polsek_kayuagung"/>
+        </record>
+        <record id="demo_kec_tanjung_lubuk" model="petadigi.kecamatan">
+            <field name="code">160202</field>
+            <field name="name">Tanjung Lubuk</field>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="polsek_id" ref="demo_polsek_tanjung_lubuk"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             DESA / KELURAHAN
+        ═══════════════════════════════════════════════════ -->
+        <!-- Ilir Timur I -->
+        <record id="demo_desa_26_ilir" model="petadigi.desa">
+            <field name="code">1671010001</field>
+            <field name="name">26 Ilir D I</field>
+            <field name="kecamatan_id" ref="demo_kec_ilir_timur_1"/>
+            <field name="type">KELURAHAN</field>
+        </record>
+        <record id="demo_desa_28_ilir" model="petadigi.desa">
+            <field name="code">1671010002</field>
+            <field name="name">28 Ilir</field>
+            <field name="kecamatan_id" ref="demo_kec_ilir_timur_1"/>
+            <field name="type">KELURAHAN</field>
+        </record>
+        <!-- Ilir Barat I -->
+        <record id="demo_desa_8_ilir" model="petadigi.desa">
+            <field name="code">1671020001</field>
+            <field name="name">8 Ilir</field>
+            <field name="kecamatan_id" ref="demo_kec_ilir_barat_1"/>
+            <field name="type">KELURAHAN</field>
+        </record>
+        <record id="demo_desa_9_ilir" model="petadigi.desa">
+            <field name="code">1671020002</field>
+            <field name="name">9-10 Ulu</field>
+            <field name="kecamatan_id" ref="demo_kec_ilir_barat_1"/>
+            <field name="type">KELURAHAN</field>
+        </record>
+        <!-- Kayuagung -->
+        <record id="demo_desa_jua_jua" model="petadigi.desa">
+            <field name="code">1602010001</field>
+            <field name="name">Jua-Jua</field>
+            <field name="kecamatan_id" ref="demo_kec_kayuagung"/>
+            <field name="type">DESA</field>
+        </record>
+        <record id="demo_desa_kayuagung_lama" model="petadigi.desa">
+            <field name="code">1602010002</field>
+            <field name="name">Kayuagung Lama</field>
+            <field name="kecamatan_id" ref="demo_kec_kayuagung"/>
+            <field name="type">DESA</field>
+        </record>
+        <!-- Tanjung Lubuk -->
+        <record id="demo_desa_tanjung_lubuk" model="petadigi.desa">
+            <field name="code">1602020001</field>
+            <field name="name">Tanjung Lubuk</field>
+            <field name="kecamatan_id" ref="demo_kec_tanjung_lubuk"/>
+            <field name="type">DESA</field>
+        </record>
+        <record id="demo_desa_sungai_lebung" model="petadigi.desa">
+            <field name="code">1602020002</field>
+            <field name="name">Sungai Lebung</field>
+            <field name="kecamatan_id" ref="demo_kec_tanjung_lubuk"/>
+            <field name="type">DESA</field>
+        </record>
+
+    </data>
+</odoo>

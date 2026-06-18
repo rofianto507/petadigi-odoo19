@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="template_sumur_form" name="Input Data Sumur Minyak">
+        <html lang="id">
+            <head>
+                <meta charset="UTF-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+                <meta name="theme-color" content="#B45309"/>
+                <meta name="mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+                <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap"/>
+                <title>Input Sumur Minyak - <t t-out="kategori.name"/></title>
+                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/lib/leaflet/leaflet.css"/>
+                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/sumur_form.css"/>
+            </head>
+            <body>
+                <div id="sumur-app" t-att-data-init="init_data"/>
+                <script type="text/javascript" t-attf-src="/petadigi/static/lib/leaflet/leaflet.js"/>
+                <script type="text/javascript" t-attf-src="/web/static/lib/owl/owl.js"/>
+                <t t-if="recaptcha_site_key">
+                    <script t-attf-src="https://www.recaptcha.net/recaptcha/api.js?render=#{recaptcha_site_key}" async="" defer=""/>
+                </t>
+                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/sumur_form.js?v=1"/>
+            </body>
+        </html>
+    </template>
+</odoo>

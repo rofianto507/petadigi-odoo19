@@ -1,15 +1,15 @@
 /** @odoo-module **/
 
-// lokasi_penting tidak punya tanggal_kejadian / sumber_dokumen_id,
-// jadi domain hanya pakai kabupaten_id, kategori_id, state.
+// sumur_minyak tidak punya kategori, sumber_dokumen_id, atau tanggal_kejadian.
+// Domain hanya pakai kabupaten_id, state, dan drill-down context.
 
 // ─── Bar chart: total per kabupaten ──────────────────────────────────────────
-function _renderLokasiBarChart(ctx, names, values) {
-    const el = ctx.chartLokasiBarRef?.el;
+function _renderSumurBarChart(ctx, names, values) {
+    const el = ctx.chartSumurBarRef?.el;
     if (!el || typeof echarts === 'undefined') return;
-    if (ctx._echartsLokasiBar) ctx._echartsLokasiBar.dispose();
-    ctx._echartsLokasiBar = echarts.init(el);
-    ctx._echartsLokasiBar.setOption({
+    if (ctx._echartsSumurBar) ctx._echartsSumurBar.dispose();
+    ctx._echartsSumurBar = echarts.init(el);
+    ctx._echartsSumurBar.setOption({
         tooltip: {
             trigger: 'axis',
             backgroundColor: '#fff',
@@ -18,7 +18,7 @@ function _renderLokasiBarChart(ctx, names, values) {
             textStyle: { color: '#2c3e50', fontSize: 12 },
             formatter: params => {
                 const p = params[0];
-                return `${p.name}<br/><b>Total Lokasi: ${p.value.toLocaleString('id-ID')}</b>`;
+                return `${p.name}<br/><b>Total Sumur: ${p.value.toLocaleString('id-ID')}</b>`;
             },
         },
         grid: { left: 10, right: 16, top: 10, bottom: 55, containLabel: true },
@@ -32,7 +32,7 @@ function _renderLokasiBarChart(ctx, names, values) {
         yAxis: {
             type: 'value',
             axisLabel: { fontSize: 10, color: '#888' },
-            splitLine: { lineStyle: { color: '#f3f0f5', type: 'dashed' } },
+            splitLine: { lineStyle: { color: '#f5ece4', type: 'dashed' } },
         },
         series: [{
             type: 'bar',
@@ -40,25 +40,25 @@ function _renderLokasiBarChart(ctx, names, values) {
             barMaxWidth: 36,
             itemStyle: {
                 color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: '#A569BD' },
-                    { offset: 1, color: '#4A235A' },
+                    { offset: 0, color: '#E59866' },
+                    { offset: 1, color: '#A04000' },
                 ]),
                 borderRadius: [4, 4, 0, 0],
             },
-            emphasis: { itemStyle: { color: '#3B1A4A' } },
+            emphasis: { itemStyle: { color: '#7E5109' } },
         }],
     });
 }
 
 // ─── Donut chart: per kategori ────────────────────────────────────────────────
-function _renderLokasiDonutChart(ctx, data) {
-    const el = ctx.chartLokasiDonutRef?.el;
+const KATEGORI_COLORS = ['#A04000','#CA6F1E','#D4AC0D','#1E8BC3','#8E44AD','#27AE60','#E74C3C','#2C3E50','#16A085','#F39C12'];
+
+function _renderSumurDonutChart(ctx, data) {
+    const el = ctx.chartSumurDonutRef?.el;
     if (!el || typeof echarts === 'undefined') return;
-    if (ctx._echartsLokasiDonut) ctx._echartsLokasiDonut.dispose();
-    ctx._echartsLokasiDonut = echarts.init(el);
-    const COLORS = ['#7D3C98', '#A569BD', '#D2B4DE', '#2ECC71', '#3498DB',
-                    '#E74C3C', '#F39C12', '#1ABC9C', '#E91E63', '#795548'];
-    ctx._echartsLokasiDonut.setOption({
+    if (ctx._echartsSumurDonut) ctx._echartsSumurDonut.dispose();
+    ctx._echartsSumurDonut = echarts.init(el);
+    ctx._echartsSumurDonut.setOption({
         tooltip: {
             trigger: 'item',
             backgroundColor: '#fff',
@@ -68,22 +68,21 @@ function _renderLokasiDonutChart(ctx, data) {
             formatter: '{b}: {c} ({d}%)',
         },
         legend: {
-            orient: 'vertical',
-            right: 8,
-            top: 'middle',
-            textStyle: { fontSize: 11, color: '#555' },
+            orient: 'horizontal',
+            bottom: 4,
+            left: 'center',
+            textStyle: { fontSize: 10, color: '#555' },
             icon: 'circle',
-            itemWidth: 10,
-            itemHeight: 10,
+            itemWidth: 9,
+            itemHeight: 9,
         },
-        color: COLORS,
+        color: KATEGORI_COLORS,
         series: [{
             type: 'pie',
-            radius: ['42%', '68%'],
-            center: ['36%', '50%'],
+            radius: ['38%', '62%'],
+            center: ['50%', '46%'],
             data,
-            label: { show: true, formatter: '{b}\n{c}', fontSize: 10, color: '#555' },
-            labelLine: { length: 8, length2: 10 },
+            label: { show: false },
             itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
             emphasis: { itemStyle: { shadowBlur: 8, shadowOffsetX: 0, shadowColor: 'rgba(0,0,0,0.2)' } },
         }],
@@ -92,25 +91,25 @@ function _renderLokasiDonutChart(ctx, data) {
 
 // ─── Exported ─────────────────────────────────────────────────────────────────
 
-export function disposeLokasiCharts(ctx) {
-    if (ctx._echartsLokasiBar)   { ctx._echartsLokasiBar.dispose();   ctx._echartsLokasiBar   = null; }
-    if (ctx._echartsLokasiDonut) { ctx._echartsLokasiDonut.dispose(); ctx._echartsLokasiDonut = null; }
+export function disposeSumurCharts(ctx) {
+    if (ctx._echartsSumurBar)   { ctx._echartsSumurBar.dispose();   ctx._echartsSumurBar   = null; }
+    if (ctx._echartsSumurDonut) { ctx._echartsSumurDonut.dispose(); ctx._echartsSumurDonut = null; }
 }
 
-export async function updateLokasiCharts(ctx, mode) {
+export async function updateSumurCharts(ctx, mode) {
     const ver = ctx._modeVersion;
-    const row = ctx.chartLokasiRowRef?.el;
+    const row = ctx.chartSumurRowRef?.el;
     if (!row) return;
 
-    if (mode !== 'lokasi') {
-        if (ctx.currentMode !== 'lokasi') { row.style.display = 'none'; disposeLokasiCharts(ctx); }
+    if (mode !== 'sumur') {
+        if (ctx.currentMode !== 'sumur') { row.style.display = 'none'; disposeSumurCharts(ctx); }
         return;
     }
     row.style.display = 'flex';
 
-    const kategoriId  = parseInt(ctx.filterKategori?.el?.value)  || null;
-    const kabupatenId = parseInt(ctx.filterKabupaten?.el?.value) || null;
-    const stateValue  = ctx.filterState?.el?.value               || '';
+    const kabupatenId = parseInt(ctx.filterKabupaten?.el?.value)     || null;
+    const stateValue  = ctx.filterState?.el?.value                   || '';
+    const kategoriId  = parseInt(ctx.filterKategoriSumur?.el?.value) || null;
 
     const drillDomain = ctx.drillKecamatanId
         ? [['kecamatan_id', '=', ctx.drillKecamatanId]]
@@ -126,12 +125,12 @@ export async function updateLokasiCharts(ctx, mode) {
     ];
 
     try {
-        const [kabGroups, katGroups, allKabupaten] = await Promise.all([
-            ctx.orm.call('petadigi.lokasi_penting', 'read_group',
+        const [kabGroups, allKabupaten, kategoriGroups] = await Promise.all([
+            ctx.orm.call('petadigi.sumur_minyak', 'read_group',
                 [baseDomain, ['kabupaten_id'], ['kabupaten_id']], { lazy: false }),
-            ctx.orm.call('petadigi.lokasi_penting', 'read_group',
-                [baseDomain, ['kategori_id'],  ['kategori_id']],  { lazy: false }),
             ctx.orm.searchRead('petadigi.kabupaten', [], ['id', 'name'], { order: 'name asc' }),
+            ctx.orm.call('petadigi.sumur_minyak', 'read_group',
+                [baseDomain, ['kategori_id'], ['kategori_id']], { lazy: false }),
         ]);
 
         // Bar — semua kabupaten termasuk yang 0, sort desc
@@ -143,27 +142,20 @@ export async function updateLokasiCharts(ctx, mode) {
         const kabList = allKabupaten.map(k => ({ name: k.name, val: kabCountMap[k.id] || 0 }));
         kabList.sort((a, b) => b.val - a.val);
         if (ctx._modeVersion !== ver) return;
-        _renderLokasiBarChart(ctx, kabList.map(k => k.name), kabList.map(k => k.val));
+        _renderSumurBarChart(ctx, kabList.map(k => k.name), kabList.map(k => k.val));
 
         // Donut — per kategori
-        const donutData = katGroups
-            .filter(g => g.kategori_id)
-            .map(g => ({ name: g.kategori_id[1], value: g.__count || 0 }))
-            .sort((a, b) => b.value - a.value);
+        const donutData = kategoriGroups.map(g => ({
+            name:  Array.isArray(g.kategori_id) ? g.kategori_id[1] : 'Tanpa Kategori',
+            value: g.__count || 0,
+        })).filter(d => d.value > 0);
 
-        const titleEl = ctx.chartLokasiDonutTitleRef?.el;
-        if (titleEl) {
-            const loc = ctx.drillKecamatanId
-                ? 'Wilayah Kecamatan Terpilih'
-                : ctx.drillKabupatenId || kabupatenId
-                    ? 'Kabupaten Terpilih'
-                    : 'Semua Wilayah';
-            titleEl.innerHTML = `<i class="fa fa-pie-chart"></i> Lokasi Penting Berdasarkan Kategori (${loc})`;
-        }
-        _renderLokasiDonutChart(ctx, donutData);
+        _renderSumurDonutChart(ctx, donutData.length ? donutData : [
+            { name: 'Belum ada data', value: 0 },
+        ]);
 
     } catch (e) {
-        console.error('Gagal memuat grafik lokasi penting:', e);
+        console.error('Gagal memuat grafik sumur minyak:', e);
     }
 }
 
@@ -171,22 +163,21 @@ export async function updateLokasiCharts(ctx, mode) {
 
 const PAGE_SIZE = 20;
 
-export async function updateLokasiTable(ctx, mode, page) {
+export async function updateSumurTable(ctx, mode, page) {
     const ver    = ctx._modeVersion;
-    const rowEl  = ctx.tableLokasiRowRef?.el;
-    const bodyEl = ctx.tableLokasiBodyRef?.el;
+    const rowEl  = ctx.tableSumurRowRef?.el;
+    const bodyEl = ctx.tableSumurBodyRef?.el;
     if (!rowEl || !bodyEl) return;
 
-    if (mode !== 'lokasi') { if (ctx.currentMode !== 'lokasi') rowEl.style.display = 'none'; return; }
+    if (mode !== 'sumur') { if (ctx.currentMode !== 'sumur') rowEl.style.display = 'none'; return; }
     rowEl.style.display = 'flex';
 
-    ctx._lokasiTablePage = (page !== undefined) ? page : 1;
-    const offset = (ctx._lokasiTablePage - 1) * PAGE_SIZE;
+    ctx._sumurTablePage = (page !== undefined) ? page : 1;
+    const offset = (ctx._sumurTablePage - 1) * PAGE_SIZE;
 
-    // lokasi_penting tidak punya sumber_dokumen_id / tanggal_kejadian
-    const kategoriId  = parseInt(ctx.filterKategori?.el?.value)  || null;
-    const kabupatenId = parseInt(ctx.filterKabupaten?.el?.value) || null;
-    const stateValue  = ctx.filterState?.el?.value        || '';
+    const kabupatenId  = parseInt(ctx.filterKabupaten?.el?.value)       || null;
+    const stateValue   = ctx.filterState?.el?.value                     || '';
+    const kategoriId   = parseInt(ctx.filterKategoriSumur?.el?.value)   || null;
 
     const drillDomain = ctx.drillKecamatanId
         ? [['kecamatan_id', '=', ctx.drillKecamatanId]]
@@ -203,35 +194,34 @@ export async function updateLokasiTable(ctx, mode, page) {
 
     try {
         const [records, total] = await Promise.all([
-            ctx.orm.searchRead('petadigi.lokasi_penting', domain,
-                ['id', 'code', 'nama_lokasi', 'alamat_lengkap',
-                 'kabupaten_id', 'kecamatan_id', 'kategori_id', 'state'],
-                { order: 'nama_lokasi asc', limit: PAGE_SIZE, offset }),
-            ctx.orm.searchCount('petadigi.lokasi_penting', domain),
+            ctx.orm.searchRead('petadigi.sumur_minyak', domain,
+                ['id', 'code', 'name', 'desa_id', 'kecamatan_id', 'kabupaten_id',
+                 'jumlah_minyak', 'kategori_id', 'state'],
+                { order: 'name asc', limit: PAGE_SIZE, offset }),
+            ctx.orm.searchCount('petadigi.sumur_minyak', domain),
         ]);
 
         const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-        const curPage    = ctx._lokasiTablePage;
+        const curPage    = ctx._sumurTablePage;
         const fromRow    = total > 0 ? offset + 1 : 0;
         const toRow      = Math.min(offset + PAGE_SIZE, total);
 
         const rows = records.map((r, i) => {
-            const kab    = Array.isArray(r.kabupaten_id) ? r.kabupaten_id[1] : '-';
-            const kec    = Array.isArray(r.kecamatan_id) ? r.kecamatan_id[1] : '-';
-            const kat    = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
-            const alamat = r.alamat_lengkap
-                ? (r.alamat_lengkap.length > 50 ? r.alamat_lengkap.slice(0, 50) + '…' : r.alamat_lengkap)
-                : '-';
-            const cls = r.state === 'AKTIF' ? '--green' : '--gray';
+            const kab      = Array.isArray(r.kabupaten_id) ? r.kabupaten_id[1] : '-';
+            const kec      = Array.isArray(r.kecamatan_id) ? r.kecamatan_id[1] : '-';
+            const desa     = Array.isArray(r.desa_id)      ? r.desa_id[1]      : '-';
+            const kategori = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
+            const cls      = r.state === 'AKTIF' ? '--green' : '--gray';
             return `
                 <tr class="petadigi-table-row" data-id="${r.id}" style="cursor:pointer;">
                     <td class="petadigi-td">${offset + i + 1}</td>
                     <td class="petadigi-td petadigi-td--mono">${r.code || '-'}</td>
-                    <td class="petadigi-td">${r.nama_lokasi || '-'}</td>
-                    <td class="petadigi-td petadigi-td--wrap" title="${(r.alamat_lengkap || '').replace(/"/g, '&quot;')}">${alamat}</td>
-                    <td class="petadigi-td">${kab}</td>
+                    <td class="petadigi-td">${r.name || '-'}</td>
+                    <td class="petadigi-td">${desa}</td>
                     <td class="petadigi-td">${kec}</td>
-                    <td class="petadigi-td">${kat}</td>
+                    <td class="petadigi-td">${kab}</td>
+                    <td class="petadigi-td">${kategori}</td>
+                    <td class="petadigi-td">${r.jumlah_minyak ? r.jumlah_minyak.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
                     <td class="petadigi-td"><span class="petadigi-badge petadigi-badge${cls}">${r.state || '-'}</span></td>
                 </tr>`;
         }).join('');
@@ -255,15 +245,16 @@ export async function updateLokasiTable(ctx, mode, page) {
                     <thead><tr>
                         <th class="petadigi-th">#</th>
                         <th class="petadigi-th">Kode</th>
-                        <th class="petadigi-th">Nama Lokasi</th>
-                        <th class="petadigi-th">Alamat</th>
-                        <th class="petadigi-th">Kabupaten</th>
+                        <th class="petadigi-th">Nama Sumur</th>
+                        <th class="petadigi-th">Desa</th>
                         <th class="petadigi-th">Kecamatan</th>
+                        <th class="petadigi-th">Kabupaten</th>
                         <th class="petadigi-th">Kategori</th>
+                        <th class="petadigi-th">Jml. Minyak Produksi/Masuk</th>
                         <th class="petadigi-th">Status</th>
                     </tr></thead>
                     <tbody>
-                        ${rows || `<tr><td colspan="8" style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Tidak ada data</td></tr>`}
+                        ${rows || `<tr><td colspan="9" style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Tidak ada data</td></tr>`}
                     </tbody>
                 </table>
             </div>`;
@@ -272,15 +263,15 @@ export async function updateLokasiTable(ctx, mode, page) {
             tr.addEventListener('click', () => {
                 const id = parseInt(tr.dataset.id);
                 if (!id) return;
-                ctx.action.doAction({ type: 'ir.actions.act_window', res_model: 'petadigi.lokasi_penting',
+                ctx.action.doAction({ type: 'ir.actions.act_window', res_model: 'petadigi.sumur_minyak',
                     res_id: id, views: [[false, 'form']], target: 'current' });
             });
         });
-        bodyEl.querySelector('[data-action="prev"]')?.addEventListener('click', () => updateLokasiTable(ctx, mode, curPage - 1));
-        bodyEl.querySelector('[data-action="next"]')?.addEventListener('click', () => updateLokasiTable(ctx, mode, curPage + 1));
+        bodyEl.querySelector('[data-action="prev"]')?.addEventListener('click', () => updateSumurTable(ctx, mode, curPage - 1));
+        bodyEl.querySelector('[data-action="next"]')?.addEventListener('click', () => updateSumurTable(ctx, mode, curPage + 1));
 
     } catch (e) {
-        console.error('Lokasi table load error:', e);
+        console.error('Sumur table load error:', e);
         bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:#e74c3c;font-size:13px;">Gagal memuat data</div>`;
     }
 }

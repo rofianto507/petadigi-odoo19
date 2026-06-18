@@ -54,6 +54,11 @@ export class ImagePopupField extends Component {
         ev.target.value = "";
     }
 
+    clearImage() {
+        this.state.previewSrc = null;
+        this.props.record.update({ [this.props.name]: false });
+    }
+
     openPopup() {
         this.state.showPopup = true;
     }

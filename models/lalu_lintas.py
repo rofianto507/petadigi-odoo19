@@ -26,8 +26,8 @@ class LalLintas(models.Model):
         domain="[('kecamatan_id', '=', kecamatan_id)]",
         tracking=True
     )
-    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True)
-    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True)
+    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)
+    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
     penyebab = fields.Text('Penyebab', tracking=True)
     tindak_lanjut = fields.Text('Tindak Lanjut', tracking=True)
     keterangan = fields.Text('Keterangan', tracking=True)

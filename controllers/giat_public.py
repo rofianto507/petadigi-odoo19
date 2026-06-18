@@ -144,10 +144,10 @@ class GiatPublicController(http.Controller):
                 # Hapus prefix data URI jika ada (data:image/jpeg;base64,...)
                 if isinstance(foto, str) and ',' in foto:
                     foto = foto.split(',', 1)[1]
-                # Batasi ukuran foto: base64 7 juta karakter ≈ 5 MB file asli
-                MAX_FOTO_B64 = 7_000_000
+                # Batasi ukuran foto: base64 700 ribu karakter ≈ 500 KB file asli
+                MAX_FOTO_B64 = 700_000
                 if len(foto) > MAX_FOTO_B64:
-                    return {'success': False, 'message': 'Ukuran foto melebihi batas 5 MB.'}
+                    return {'success': False, 'message': 'Ukuran foto terlalu besar. Coba pilih foto lain atau hapus foto.'}
                 vals['foto'] = foto
 
             result = request.env['petadigi.hasil_giat'].sudo().create(vals)

@@ -39,8 +39,8 @@ class Bencana(models.Model):
         related='sumber_dokumen_id.tahun',
         store=True,
     )
-    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True)
-    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True)
+    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)
+    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
     foto = fields.Binary('Foto', attachment=True)
     foto_filename = fields.Char('Nama File Foto')
     state = fields.Selection([

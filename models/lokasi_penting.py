@@ -25,8 +25,8 @@ class LokasiPenting(models.Model):
         domain="[('kecamatan_id', '=', kecamatan_id)]",
         tracking=True
     )
-    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True)
-    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True)
+    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)
+    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
     foto = fields.Binary('Foto', attachment=True)
     foto_filename = fields.Char('Nama File Foto')
     keterangan = fields.Text('Keterangan', tracking=True)

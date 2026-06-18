@@ -42,6 +42,11 @@
                     <filter string="Status SELESAI" name="filter_status_selesai" domain="[('state','=','SELESAI')]"/>
                     <filter string="Ada Tindak Lanjut" name="filter_ada_tindak_lanjut" domain="[('has_tindak_lanjut','=',True)]"/>
                     <separator/>
+                    <filter string="Tahun Ini" name="filter_tahun_sekarang"
+                        domain="[('tahun', '=', context_today().year)]"/>
+                    <filter string="2025" name="filter_tahun_2025" domain="[('tahun', '=', '2025')]"/>
+                    <filter string="2024" name="filter_tahun_2024" domain="[('tahun', '=', '2024')]"/>
+                    <filter string="2023" name="filter_tahun_2023" domain="[('tahun', '=', '2023')]"/>
                     <filter string="Tanggal Kejadian" name="filter_tanggal_kejadian" date="tanggal_kejadian"/>
                     <group>
                         <filter string="Tahun" name="groupby_tahun" context="{'group_by': 'tahun'}"/>
@@ -67,6 +72,36 @@
                     <field name="state"/>
                     <field name="id" type="measure"/>
                 </graph>
+            </field>
+        </record>
+
+        <!-- PIVOT VIEW -->
+        <record id="view_petadigi_kasus_menonjol_pivot" model="ir.ui.view">
+            <field name="name">kasus_menonjol.pivot.petadigi</field>
+            <field name="model">petadigi.kasus_menonjol</field>
+            <field name="arch" type="xml">
+                <pivot string="Analisis Kasus Menonjol" disable_linking="False">
+                    <field name="kategori_id" type="row"/>
+                    <field name="state" type="col"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- CALENDAR VIEW -->
+        <record id="view_petadigi_kasus_menonjol_calendar" model="ir.ui.view">
+            <field name="name">kasus_menonjol.calendar.petadigi</field>
+            <field name="model">petadigi.kasus_menonjol</field>
+            <field name="arch" type="xml">
+                <calendar string="Kalender Kasus Menonjol"
+                          date_start="tanggal_kejadian"
+                          color="state"
+                          mode="month"
+                          quick_create="False">
+                    <field name="no_lp"/>
+                    <field name="kategori_id"/>
+                    <field name="kabupaten_id"/>
+                    <field name="state" filters="1" invisible="1"/>
+                </calendar>
             </field>
         </record>
 
@@ -196,13 +231,16 @@
         <record id="action_petadigi_kasus_menonjol" model="ir.actions.act_window">
             <field name="name">Kasus Menonjol</field>
             <field name="res_model">petadigi.kasus_menonjol</field>
-            <field name="view_mode">list,form,graph</field>
+            <field name="view_mode">list,form,graph,pivot,calendar</field>
             <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'list', 'view_id': ref('view_petadigi_kasus_menonjol_list')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('view_petadigi_kasus_menonjol_form')}),
-                (0, 0, {'view_mode': 'graph', 'view_id': ref('view_petadigi_kasus_menonjol_graph')}),
+                (0, 0, {'view_mode': 'list',     'view_id': ref('view_petadigi_kasus_menonjol_list')}),
+                (0, 0, {'view_mode': 'form',     'view_id': ref('view_petadigi_kasus_menonjol_form')}),
+                (0, 0, {'view_mode': 'graph',    'view_id': ref('view_petadigi_kasus_menonjol_graph')}),
+                (0, 0, {'view_mode': 'pivot',    'view_id': ref('view_petadigi_kasus_menonjol_pivot')}),
+                (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_petadigi_kasus_menonjol_calendar')}),
             ]"/>
             <field name="search_view_id" ref="petadigi.view_petadigi_kasus_menonjol_search"/>
+            <field name="context">{'search_default_filter_tahun_sekarang': 1}</field>
         </record>
     </data>
 </odoo>

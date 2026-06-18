@@ -3,157 +3,171 @@
 
     const { Component, useState, mount, xml, onMounted } = owl;
 
-    class GiatFormApp extends Component {
+    class SumurFormApp extends Component {
         static template = xml/* xml */`
-            <div class="gf-root">
+            <div class="sf-root">
 
                 <!-- ===== SUCCESS SCREEN ===== -->
-                <div t-att-class="'gf-success' + (state.submitted ? '' : ' gf-hidden')">
-                    <div class="gf-success-card">
-                        <div class="gf-success-icon">✓</div>
-                        <h2 class="gf-success-title">Laporan Terkirim</h2>
-                        <div class="gf-success-code" t-out="state.submitCode"/>
-                        <p class="gf-success-msg">
-                            Terima kasih, <strong t-out="state.nama_petugas"/>.<br/>
-                            Laporan kegiatan Anda telah berhasil dikirim.
+                <div t-att-class="'sf-success' + (state.submitted ? '' : ' sf-hidden')">
+                    <div class="sf-success-card">
+                        <div class="sf-success-icon">✓</div>
+                        <h2 class="sf-success-title">Data Terkirim</h2>
+                        <div class="sf-success-code" t-out="state.submitCode"/>
+                        <p class="sf-success-msg">
+                            Data sumur minyak berhasil dikirim dan tersimpan di sistem.
                         </p>
-                        <div class="gf-success-actions">
-                            <button class="gf-btn gf-btn-tonal gf-btn-block" t-on-click="resetForm">
-                                Kirim Laporan Baru
+                        <div class="sf-success-actions">
+                            <button class="sf-btn sf-btn-tonal sf-btn-block" t-on-click="resetForm">
+                                Input Data Baru
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- ===== FORM ===== -->
-                <div t-att-class="state.submitted ? 'gf-hidden' : ''">
+                <div t-att-class="state.submitted ? 'sf-hidden' : ''">
 
                     <!-- Top App Bar -->
-                    <div class="gf-appbar">
-                        <div class="gf-appbar-icon">⚔</div>
-                        <div class="gf-appbar-content">
-                            <div class="gf-appbar-title" t-out="initData.jenis_laporan.nama"/>
-                            <div class="gf-appbar-sub">Input Laporan Kegiatan</div>
+                    <div class="sf-appbar">
+                        <div class="sf-appbar-icon">🛢</div>
+                        <div class="sf-appbar-content">
+                            <div class="sf-appbar-title" t-out="initData.kategori.name"/>
+                            <div class="sf-appbar-sub">Input Data Sumur Minyak</div>
                         </div>
                     </div>
 
-                    <div class="gf-body">
+                    <div class="sf-body">
 
-                        <!-- Identitas Petugas -->
-                        <div class="gf-section">
-                            <div class="gf-section-label">Identitas Petugas</div>
-                            <div class="gf-card">
-                                <div class="gf-card-body">
+                        <!-- Identitas Surveyor -->
+                        <div class="sf-section">
+                            <div class="sf-section-label">Identitas Surveyor</div>
+                            <div class="sf-card">
+                                <div class="sf-card-body">
 
-                                    <div class="gf-field">
-                                        <label class="gf-label">NRP</label>
-                                        <input class="gf-input" type="text" inputmode="numeric"
-                                               t-att-value="state.nrp"
-                                               t-on-input="onNrpInput"
-                                               placeholder="Nomor Registrasi Pokok"/>
-                                    </div>
-
-                                    <div t-att-class="'gf-field' + (state.errors.nama_petugas ? ' has-error' : '')">
-                                        <label class="gf-label">
-                                            Nama Petugas
-                                            <span class="gf-req">*</span>
+                                    <div t-att-class="'sf-field' + (state.errors.nama_surveyor ? ' has-error' : '')">
+                                        <label class="sf-label">
+                                            Nama Surveyor
+                                            <span class="sf-req">*</span>
                                         </label>
-                                        <input class="gf-input" type="text"
-                                               t-att-value="state.nama_petugas"
-                                               t-on-input="onNamaPetugasInput"
-                                               placeholder="Nama lengkap petugas"/>
-                                        <div t-if="state.errors.nama_petugas" class="gf-errmsg"
-                                             t-out="state.errors.nama_petugas"/>
+                                        <input class="sf-input" type="text"
+                                               t-att-value="state.nama_surveyor"
+                                               t-on-input="onNamaSurveyorInput"
+                                               placeholder="Nama lengkap surveyor"/>
+                                        <div t-if="state.errors.nama_surveyor" class="sf-errmsg"
+                                             t-out="state.errors.nama_surveyor"/>
                                     </div>
 
-                                    <div class="gf-field">
-                                        <label class="gf-label">Pangkat</label>
-                                        <input class="gf-input" type="text"
-                                               t-att-value="state.pangkat_petugas"
-                                               t-on-input="onPangkatInput"
-                                               placeholder="Pangkat petugas"/>
+                                    <div class="sf-field">
+                                        <label class="sf-label">
+                                            No. HP
+                                            <span class="sf-opt">Opsional</span>
+                                        </label>
+                                        <input class="sf-input" type="tel" inputmode="numeric"
+                                               t-att-value="state.hp_surveyor"
+                                               t-on-input="onHpSurveyorInput"
+                                               placeholder="Nomor HP surveyor"/>
                                     </div>
 
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Satuan Wilayah -->
-                        <div class="gf-section">
-                            <div class="gf-section-label">Satuan Wilayah</div>
-                            <div class="gf-card">
-                                <div class="gf-card-body">
+                        <!-- Informasi Sumur -->
+                        <div class="sf-section">
+                            <div class="sf-section-label">Informasi Sumur</div>
+                            <div class="sf-card">
+                                <div class="sf-card-body">
 
-                                    <div t-att-class="'gf-field' + (state.errors.polres_id ? ' has-error' : '')">
-                                        <label class="gf-label">
-                                            Polres
-                                            <span class="gf-req">*</span>
+                                    <div t-att-class="'sf-field' + (state.errors.nama_sumur ? ' has-error' : '')">
+                                        <label class="sf-label">
+                                            Nama Sumur
+                                            <span class="sf-req">*</span>
                                         </label>
-                                        <select class="gf-input gf-select" t-on-change="onPolresChange">
-                                            <option value="">Pilih Polres</option>
-                                            <t t-foreach="initData.polres_list" t-as="pr" t-key="pr.id">
-                                                <option t-att-value="pr.id"
-                                                        t-att-selected="state.polres_id === pr.id"
-                                                        t-out="pr.name"/>
-                                            </t>
-                                        </select>
-                                        <div t-if="state.errors.polres_id" class="gf-errmsg"
-                                             t-out="state.errors.polres_id"/>
+                                        <input class="sf-input" type="text"
+                                               t-att-value="state.nama_sumur"
+                                               t-on-input="onNamaSumurInput"
+                                               placeholder="Nama atau identifikasi sumur"/>
+                                        <div t-if="state.errors.nama_sumur" class="sf-errmsg"
+                                             t-out="state.errors.nama_sumur"/>
                                     </div>
 
-                                    <div class="gf-field">
-                                        <label class="gf-label">
-                                            Polsek
-                                            <span class="gf-opt">Opsional</span>
+                                    <div class="sf-field">
+                                        <label class="sf-label">
+                                            Jumlah Minyak
+                                            <span class="sf-opt">Opsional</span>
                                         </label>
-                                        <select class="gf-input gf-select"
-                                                t-att-disabled="!state.polres_id || state.loadingPolsek"
-                                                t-on-change="onPolsekChange">
+                                        <input class="sf-input" type="number" inputmode="decimal"
+                                               step="any" min="0"
+                                               t-att-value="state.jumlah_minyak"
+                                               t-on-input="onJumlahMinyakInput"
+                                               placeholder="Produksi/masuk (liter atau barel)"/>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Lokasi Wilayah -->
+                        <div class="sf-section">
+                            <div class="sf-section-label">Lokasi Wilayah</div>
+                            <div class="sf-card">
+                                <div class="sf-card-body">
+
+                                    <div t-att-class="'sf-field' + (state.errors.kabupaten_id ? ' has-error' : '')">
+                                        <label class="sf-label">
+                                            Kabupaten/Kota
+                                            <span class="sf-req">*</span>
+                                        </label>
+                                        <select class="sf-input sf-select" t-on-change="onKabupatenChange">
+                                            <option value="">Pilih Kabupaten/Kota</option>
+                                            <t t-foreach="initData.kabupaten_list" t-as="kab" t-key="kab.id">
+                                                <option t-att-value="kab.id"
+                                                        t-att-selected="state.kabupaten_id === kab.id"
+                                                        t-out="kab.name"/>
+                                            </t>
+                                        </select>
+                                        <div t-if="state.errors.kabupaten_id" class="sf-errmsg"
+                                             t-out="state.errors.kabupaten_id"/>
+                                    </div>
+
+                                    <div class="sf-field">
+                                        <label class="sf-label">
+                                            Kecamatan
+                                            <span class="sf-opt">Opsional</span>
+                                        </label>
+                                        <select class="sf-input sf-select"
+                                                t-att-disabled="!state.kabupaten_id || state.loadingKecamatan"
+                                                t-on-change="onKecamatanChange">
                                             <option value="">
-                                                <t t-if="state.loadingPolsek">Memuat...</t>
-                                                <t t-else="">Pilih Polsek</t>
+                                                <t t-if="state.loadingKecamatan">Memuat...</t>
+                                                <t t-else="">Pilih Kecamatan</t>
                                             </option>
-                                            <t t-foreach="state.polsek_list" t-as="ps" t-key="ps.id">
-                                                <option t-att-value="ps.id"
-                                                        t-att-selected="state.polsek_id === ps.id"
-                                                        t-out="ps.name"/>
+                                            <t t-foreach="state.kecamatan_list" t-as="kec" t-key="kec.id">
+                                                <option t-att-value="kec.id"
+                                                        t-att-selected="state.kecamatan_id === kec.id"
+                                                        t-out="kec.name"/>
                                             </t>
                                         </select>
                                     </div>
 
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Uraian Kegiatan -->
-                        <div class="gf-section">
-                            <div class="gf-section-label">Uraian Kegiatan</div>
-                            <div class="gf-card">
-                                <div class="gf-card-body">
-
-                                    <div t-att-class="'gf-field' + (state.errors.tanggal ? ' has-error' : '')">
-                                        <label class="gf-label">
-                                            Tanggal Kegiatan
-                                            <span class="gf-req">*</span>
+                                    <div class="sf-field">
+                                        <label class="sf-label">
+                                            Desa/Kelurahan
+                                            <span class="sf-opt">Opsional</span>
                                         </label>
-                                        <input class="gf-input gf-input-datetime" type="datetime-local"
-                                               t-att-value="state.tanggal"
-                                               t-on-input="onTanggalInput"/>
-                                        <div t-if="state.errors.tanggal" class="gf-errmsg"
-                                             t-out="state.errors.tanggal"/>
-                                    </div>
-
-                                    <div t-att-class="'gf-field' + (state.errors.kegiatan ? ' has-error' : '')">
-                                        <label class="gf-label">
-                                            Deskripsi Kegiatan
-                                            <span class="gf-req">*</span>
-                                        </label>
-                                        <textarea class="gf-input gf-textarea" rows="5"
-                                                  t-att-value="state.kegiatan"
-                                                  t-on-input="onKegiatanInput"
-                                                  placeholder="Tuliskan uraian kegiatan yang dilakukan..."/>
-                                        <div t-if="state.errors.kegiatan" class="gf-errmsg"
-                                             t-out="state.errors.kegiatan"/>
+                                        <select class="sf-input sf-select"
+                                                t-att-disabled="!state.kecamatan_id || state.loadingDesa"
+                                                t-on-change="onDesaChange">
+                                            <option value="">
+                                                <t t-if="state.loadingDesa">Memuat...</t>
+                                                <t t-else="">Pilih Desa/Kelurahan</t>
+                                            </option>
+                                            <t t-foreach="state.desa_list" t-as="desa" t-key="desa.id">
+                                                <option t-att-value="desa.id"
+                                                        t-att-selected="state.desa_id === desa.id"
+                                                        t-out="desa.name"/>
+                                            </t>
+                                        </select>
                                     </div>
 
                                 </div>
@@ -161,78 +175,77 @@
                         </div>
 
                         <!-- Lokasi GPS + Map -->
-                        <div class="gf-section">
-                            <div class="gf-section-label">Lokasi Kegiatan</div>
-                            <div class="gf-card">
-                                <div class="gf-card-body">
+                        <div class="sf-section">
+                            <div class="sf-section-label">Lokasi GPS</div>
+                            <div class="sf-card">
+                                <div class="sf-card-body">
 
-                                    <button class="gf-btn gf-btn-tonal gf-btn-block"
+                                    <button class="sf-btn sf-btn-tonal sf-btn-block"
                                             t-on-click="getGPS"
                                             t-att-disabled="state.gpsLoading">
                                         <t t-if="state.gpsLoading">Mengambil lokasi GPS...</t>
                                         <t t-else="">Perbarui Lokasi GPS</t>
                                     </button>
 
-                                    <!-- Status GPS -->
                                     <div t-if="state.gpsError"
-                                         class="gf-location-status gf-location-status--err">
-                                        <div class="gf-location-dot"/>
+                                         class="sf-location-status sf-location-status--err">
+                                        <div class="sf-location-dot"/>
                                         <span t-out="state.gpsError"/>
                                     </div>
                                     <div t-elif="state.latitude"
-                                         class="gf-location-status gf-location-status--ok">
-                                        <div class="gf-location-dot"/>
+                                         class="sf-location-status sf-location-status--ok">
+                                        <div class="sf-location-dot"/>
                                         <span t-out="state.latitude"/>, <span t-out="state.longitude"/>
                                     </div>
                                     <div t-elif="state.gpsLoading"
-                                         class="gf-location-status gf-location-status--idle">
-                                        <div class="gf-location-dot"/>
+                                         class="sf-location-status sf-location-status--idle">
+                                        <div class="sf-location-dot"/>
                                         <span>Mengambil koordinat GPS...</span>
                                     </div>
                                     <div t-else=""
-                                         class="gf-location-status gf-location-status--idle">
-                                        <div class="gf-location-dot"/>
+                                         class="sf-location-status sf-location-status--idle">
+                                        <div class="sf-location-dot"/>
                                         <span>Menunggu izin akses GPS</span>
                                     </div>
 
-                                    <!-- Map always stays in DOM to avoid Leaflet reinit -->
-                                    <div id="gf-map" class="gf-map"/>
+                                    <!-- Map stays in DOM to avoid Leaflet reinit -->
+                                    <div id="sf-map" class="sf-map"/>
 
                                 </div>
                             </div>
                         </div>
 
                         <!-- Foto Dokumentasi -->
-                        <div class="gf-section">
-                            <div class="gf-section-label">Foto Dokumentasi</div>
-                            <div class="gf-card">
-                                <div class="gf-card-body">
-                                    <div class="gf-foto-btns">
-                                        <label class="gf-btn gf-btn-outlined">
+                        <div class="sf-section">
+                            <div class="sf-section-label">Foto Dokumentasi</div>
+                            <div class="sf-card">
+                                <div class="sf-card-body">
+                                    <div class="sf-foto-btns">
+                                        <label class="sf-btn sf-btn-outlined">
                                             Kamera
                                             <input type="file" accept="image/*" capture="environment"
-                                                   class="gf-file-hidden" t-on-change="handleFoto"/>
+                                                   class="sf-file-hidden" t-on-change="handleFoto"/>
                                         </label>
-                                        <label class="gf-btn gf-btn-outlined">
+                                        <label class="sf-btn sf-btn-outlined">
                                             Galeri
                                             <input type="file" accept="image/*"
-                                                   class="gf-file-hidden" t-on-change="handleFoto"/>
+                                                   class="sf-file-hidden" t-on-change="handleFoto"/>
                                         </label>
                                     </div>
-                                    <div t-if="state.fotoPreview" class="gf-foto-preview">
-                                        <img t-att-src="state.fotoPreview" class="gf-preview-img"
-                                             alt="Foto dokumentasi"/>
-                                        <div class="gf-foto-meta">
+                                    <div t-if="state.fotoPreview" class="sf-foto-preview">
+                                        <img t-att-src="state.fotoPreview" class="sf-preview-img"
+                                             alt="Foto sumur"/>
+                                        <div class="sf-foto-meta">
                                             <t t-if="state.fotoLoading">
-                                                <span class="gf-foto-size gf-foto-size--loading">
+                                                <span class="sf-foto-size sf-foto-size--loading">
                                                     ⏳ Mengompresi...
                                                 </span>
                                             </t>
                                             <t t-elif="state.fotoSizeLabel">
-                                                <span t-att-class="'gf-foto-size ' + (state.fotoCompressed ? 'gf-foto-size--ok' : 'gf-foto-size--info')"
+                                                <span t-att-class="'sf-foto-size ' + (state.fotoCompressed ? 'sf-foto-size--ok' : 'sf-foto-size--info')"
                                                       t-out="state.fotoSizeLabel"/>
                                             </t>
-                                            <button class="gf-btn gf-btn-text" t-on-click="removeFoto">
+                                            <button class="sf-btn sf-btn-text" t-on-click="removeFoto">
                                                 Hapus Foto
                                             </button>
                                         </div>
@@ -242,19 +255,19 @@
                         </div>
 
                         <!-- Submit area -->
-                        <div class="gf-submit-area">
-                            <div t-if="state.submitError" class="gf-error-banner">
-                                <div class="gf-error-banner-icon"/>
+                        <div class="sf-submit-area">
+                            <div t-if="state.submitError" class="sf-error-banner">
+                                <div class="sf-error-banner-icon"/>
                                 <span t-out="state.submitError"/>
                             </div>
-                            <button class="gf-btn gf-btn-filled gf-btn-submit"
+                            <button class="sf-btn sf-btn-filled sf-btn-submit"
                                     t-on-click="submit"
                                     t-att-disabled="state.submitting || state.gpsLoading">
-                                <t t-if="state.submitting">Mengirim laporan...</t>
+                                <t t-if="state.submitting">Mengirim data...</t>
                                 <t t-elif="state.gpsLoading">Menunggu lokasi GPS...</t>
-                                <t t-else="">Kirim Laporan</t>
+                                <t t-else="">Kirim Data Sumur</t>
                             </button>
-                            <div class="gf-footer">PetaDigi · Cooling System</div>
+                            <div class="sf-footer">PetaDigi · Sumur Minyak</div>
                         </div>
 
                     </div>
@@ -265,30 +278,22 @@
 
         _loadCache() {
             try {
-                return JSON.parse(localStorage.getItem('petadigi_giat_petugas') || '{}');
+                return JSON.parse(localStorage.getItem('petadigi_sumur_surveyor') || '{}');
             } catch (_) { return {}; }
         }
 
         _saveCache() {
             try {
-                localStorage.setItem('petadigi_giat_petugas', JSON.stringify({
-                    nrp: this.state.nrp,
-                    nama_petugas: this.state.nama_petugas,
-                    pangkat_petugas: this.state.pangkat_petugas,
+                localStorage.setItem('petadigi_sumur_surveyor', JSON.stringify({
+                    nama_surveyor: this.state.nama_surveyor,
+                    hp_surveyor: this.state.hp_surveyor,
                 }));
             } catch (_) {}
-        }
-
-        _nowLocal() {
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
         }
 
         async _getRecaptchaToken() {
             const siteKey = this.initData.recaptcha_site_key;
             if (!siteKey) return '';
-            // Tunggu grecaptcha load, max 5 detik
             const loaded = await new Promise((resolve) => {
                 if (window.grecaptcha) { resolve(true); return; }
                 const t0 = Date.now();
@@ -301,12 +306,11 @@
             });
             if (!loaded) return '';
             try {
-                // Timeout 8 detik agar tidak hang selamanya di jaringan lambat
                 return await Promise.race([
                     new Promise((resolve) => {
                         grecaptcha.ready(async () => {
                             try {
-                                const token = await grecaptcha.execute(siteKey, { action: 'submit_giat' });
+                                const token = await grecaptcha.execute(siteKey, { action: 'submit_sumur' });
                                 resolve(token);
                             } catch (_) { resolve(''); }
                         });
@@ -317,18 +321,20 @@
         }
 
         setup() {
-            this.initData = JSON.parse(document.getElementById('giat-app').dataset.init);
+            this.initData = JSON.parse(document.getElementById('sumur-app').dataset.init);
             const cache = this._loadCache();
             this.state = useState({
-                nrp: cache.nrp || '',
-                nama_petugas: cache.nama_petugas || '',
-                pangkat_petugas: cache.pangkat_petugas || '',
-                polres_id: null,
-                polsek_id: null,
-                polsek_list: [],
-                loadingPolsek: false,
-                tanggal: this._nowLocal(),
-                kegiatan: '',
+                nama_surveyor: cache.nama_surveyor || '',
+                hp_surveyor: cache.hp_surveyor || '',
+                nama_sumur: '',
+                jumlah_minyak: '',
+                kabupaten_id: null,
+                kecamatan_id: null,
+                desa_id: null,
+                kecamatan_list: [],
+                desa_list: [],
+                loadingKecamatan: false,
+                loadingDesa: false,
                 latitude: null,
                 longitude: null,
                 gpsLoading: false,
@@ -345,13 +351,11 @@
                 errors: {},
             });
 
-            // Leaflet instances — not reactive state
             this._map = null;
             this._marker = null;
 
             onMounted(() => {
                 this._initMap();
-                // Auto-request GPS on load so browser shows permission dialog immediately
                 this.getGPS();
             });
         }
@@ -359,11 +363,9 @@
         /* ------ Leaflet map ------ */
         _initMap() {
             if (this._map || !window.L) return;
-            const el = document.getElementById('gf-map');
+            const el = document.getElementById('sf-map');
             if (!el) return;
 
-            // Explicit icon dengan dimensi lengkap — lebih reliable di Android
-            // daripada mergeOptions yang mengandalkan prototype chain
             this._markerIcon = L.icon({
                 iconUrl: '/petadigi/static/lib/leaflet/images/marker-icon.png',
                 shadowUrl: '/petadigi/static/lib/leaflet/images/marker-shadow.png',
@@ -373,8 +375,8 @@
                 shadowSize: [41, 41],
             });
 
-            this._map = L.map('gf-map', {
-                center: [-2.5, 118.0],  // Indonesia default
+            this._map = L.map('sf-map', {
+                center: [-2.5, 118.0],
                 zoom: 5,
                 zoomControl: true,
                 attributionControl: true,
@@ -395,7 +397,7 @@
             } else {
                 this._marker = L.marker(latlng, {
                     icon: this._markerIcon,
-                    title: 'Lokasi Kegiatan',
+                    title: 'Lokasi Sumur',
                     draggable: true,
                 }).addTo(this._map);
 
@@ -404,47 +406,71 @@
                     this.state.latitude = pos.lat.toFixed(6);
                     this.state.longitude = pos.lng.toFixed(6);
                     this._marker.bindPopup(
-                        '<b>Lokasi Kegiatan</b><br>' +
+                        '<b>Lokasi Sumur</b><br>' +
                         this.state.latitude + ', ' + this.state.longitude
                     ).openPopup();
                 });
             }
 
             this._marker.bindPopup(
-                '<b>Lokasi Kegiatan</b><br>' +
+                '<b>Lokasi Sumur</b><br>' +
                 parseFloat(lat).toFixed(6) + ', ' + parseFloat(lng).toFixed(6) +
-                '<br><small class="gf-map-hint">Geser marker untuk menyesuaikan</small>'
+                '<br><small style="color:#888">Geser marker untuk menyesuaikan</small>'
             );
             this._map.setView(latlng, 16, { animate: true });
             this._marker.openPopup();
         }
 
         /* ------ Field handlers ------ */
-        onNrpInput(ev) { this.state.nrp = ev.target.value; }
-        onNamaPetugasInput(ev) { this.state.nama_petugas = ev.target.value; }
-        onPangkatInput(ev) { this.state.pangkat_petugas = ev.target.value; }
-        onTanggalInput(ev) { this.state.tanggal = ev.target.value; }
-        onKegiatanInput(ev) { this.state.kegiatan = ev.target.value; }
+        onNamaSurveyorInput(ev) { this.state.nama_surveyor = ev.target.value; }
+        onHpSurveyorInput(ev) { this.state.hp_surveyor = ev.target.value; }
+        onNamaSumurInput(ev) { this.state.nama_sumur = ev.target.value; }
+        onJumlahMinyakInput(ev) { this.state.jumlah_minyak = ev.target.value; }
 
-        async onPolresChange(ev) {
-            const polresId = parseInt(ev.target.value) || null;
-            this.state.polres_id = polresId;
-            this.state.polsek_id = null;
-            this.state.polsek_list = [];
+        async onKabupatenChange(ev) {
+            const kabupatenId = parseInt(ev.target.value) || null;
+            this.state.kabupaten_id = kabupatenId;
+            this.state.kecamatan_id = null;
+            this.state.kecamatan_list = [];
+            this.state.desa_id = null;
+            this.state.desa_list = [];
 
-            if (!polresId) return;
+            if (!kabupatenId) return;
 
-            this.state.loadingPolsek = true;
+            this.state.loadingKecamatan = true;
             try {
-                const resp = await this._jsonRpc('/giat/api/polsek', { polres_id: polresId, token: this.initData.token });
-                this.state.polsek_list = resp.result || [];
-            } catch (_) { /* polsek optional */ } finally {
-                this.state.loadingPolsek = false;
+                const resp = await this._jsonRpc('/sumur/api/kecamatan', {
+                    kabupaten_id: kabupatenId,
+                    token: this.initData.token,
+                });
+                this.state.kecamatan_list = resp.result || [];
+            } catch (_) {} finally {
+                this.state.loadingKecamatan = false;
             }
         }
 
-        onPolsekChange(ev) {
-            this.state.polsek_id = parseInt(ev.target.value) || null;
+        async onKecamatanChange(ev) {
+            const kecamatanId = parseInt(ev.target.value) || null;
+            this.state.kecamatan_id = kecamatanId;
+            this.state.desa_id = null;
+            this.state.desa_list = [];
+
+            if (!kecamatanId) return;
+
+            this.state.loadingDesa = true;
+            try {
+                const resp = await this._jsonRpc('/sumur/api/desa', {
+                    kecamatan_id: kecamatanId,
+                    token: this.initData.token,
+                });
+                this.state.desa_list = resp.result || [];
+            } catch (_) {} finally {
+                this.state.loadingDesa = false;
+            }
+        }
+
+        onDesaChange(ev) {
+            this.state.desa_id = parseInt(ev.target.value) || null;
         }
 
         /* ------ GPS ------ */
@@ -498,7 +524,6 @@
                 ev.target.value = '';
                 return;
             }
-            // Tampilkan preview dan ukuran asli segera
             this.state.fotoPreview = URL.createObjectURL(file);
             this.state.fotoSizeLabel = this._formatSize(file.size);
             this.state.fotoCompressed = false;
@@ -534,19 +559,16 @@
                 img.onload = () => {
                     URL.revokeObjectURL(url);
                     const canvas = document.createElement('canvas');
-                    // Turunkan dimensi agar payload kecil di jaringan mobile lemah
                     let w = img.width, h = img.height;
                     const MAX_W = 960;
                     if (w > MAX_W) { h = Math.round(h * MAX_W / w); w = MAX_W; }
                     canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
 
-                    // Coba quality bertahap sampai base64 < 500 KB
                     for (const q of [0.75, 0.60, 0.45]) {
                         const b64 = canvas.toDataURL('image/jpeg', q).split(',')[1];
                         if (b64 && b64.length < 500_000) { resolve(b64); return; }
                     }
-                    // Fallback: ambil quality terkecil apapun hasilnya
                     resolve(canvas.toDataURL('image/jpeg', 0.45).split(',')[1]);
                 };
                 img.onerror = reject;
@@ -566,23 +588,21 @@
         /* ------ Validation ------ */
         _validate() {
             const errors = {};
-            if (!this.state.nama_petugas.trim()) errors.nama_petugas = 'Nama petugas wajib diisi';
-            if (!this.state.polres_id) errors.polres_id = 'Pilih Polres terlebih dahulu';
-            if (!this.state.tanggal) errors.tanggal = 'Tanggal kegiatan wajib diisi';
-            if (!this.state.kegiatan.trim()) errors.kegiatan = 'Uraian kegiatan wajib diisi';
+            if (!this.state.nama_surveyor.trim()) errors.nama_surveyor = 'Nama surveyor wajib diisi';
+            if (!this.state.nama_sumur.trim()) errors.nama_sumur = 'Nama sumur wajib diisi';
+            if (!this.state.kabupaten_id) errors.kabupaten_id = 'Pilih Kabupaten/Kota terlebih dahulu';
             this.state.errors = errors;
             return Object.keys(errors).length === 0;
         }
 
         /* ------ Submit ------ */
         async submit() {
-            // Jika lokasi belum ada, paksa minta GPS dulu sebelum lanjut
             if (!this.state.latitude) {
                 this.state.submitError = null;
                 const ok = await this._requestGPSAndWait();
                 if (!ok || !this.state.latitude) {
                     this.state.submitError = 'Lokasi GPS diperlukan. Izinkan akses lokasi di browser lalu coba lagi.';
-                    document.getElementById('gf-map')
+                    document.getElementById('sf-map')
                         ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     return;
                 }
@@ -594,7 +614,6 @@
                 return;
             }
 
-            // Cek ukuran foto sebelum dikirim (base64 > 600 KB → tolak)
             if (this.state.foto && this.state.foto.length > 600_000) {
                 this.state.submitError = 'Foto masih terlalu besar setelah dikompresi. Coba hapus foto atau pilih foto yang lebih sederhana.';
                 return;
@@ -606,16 +625,16 @@
             const recaptchaToken = await this._getRecaptchaToken();
 
             try {
-                const resp = await this._jsonRpc('/giat/api/submit', {
+                const resp = await this._jsonRpc('/sumur/api/submit', {
                     token: this.initData.token,
                     data: {
-                        nrp: this.state.nrp,
-                        nama_petugas: this.state.nama_petugas,
-                        pangkat_petugas: this.state.pangkat_petugas,
-                        polres_id: this.state.polres_id,
-                        polsek_id: this.state.polsek_id,
-                        tanggal: this.state.tanggal,
-                        kegiatan: this.state.kegiatan,
+                        nama_surveyor: this.state.nama_surveyor,
+                        hp_surveyor: this.state.hp_surveyor,
+                        nama_sumur: this.state.nama_sumur,
+                        jumlah_minyak: parseFloat(this.state.jumlah_minyak) || 0,
+                        kabupaten_id: this.state.kabupaten_id,
+                        kecamatan_id: this.state.kecamatan_id,
+                        desa_id: this.state.desa_id,
                         latitude: this.state.latitude,
                         longitude: this.state.longitude,
                         foto: this.state.foto,
@@ -630,7 +649,7 @@
                     this.state.submitCode = result.code;
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
-                    this.state.submitError = result.message || 'Gagal mengirim laporan';
+                    this.state.submitError = result.message || 'Gagal mengirim data';
                 }
             } catch (err) {
                 console.error('[PetaDigi] submit error:', err);
@@ -656,28 +675,27 @@
             if (this.state.fotoPreview) URL.revokeObjectURL(this.state.fotoPreview);
             const cache = this._loadCache();
             Object.assign(this.state, {
-                nrp: cache.nrp || '', nama_petugas: cache.nama_petugas || '', pangkat_petugas: cache.pangkat_petugas || '',
-                polres_id: null, polsek_id: null, polsek_list: [],
-                tanggal: this._nowLocal(),
-                kegiatan: '', latitude: null, longitude: null,
+                nama_surveyor: cache.nama_surveyor || '',
+                hp_surveyor: cache.hp_surveyor || '',
+                nama_sumur: '', jumlah_minyak: '',
+                kabupaten_id: null, kecamatan_id: null, desa_id: null,
+                kecamatan_list: [], desa_list: [],
+                latitude: null, longitude: null,
                 gpsError: null, foto: null, fotoPreview: null,
                 fotoSizeLabel: null, fotoCompressed: false, fotoLoading: false,
                 submitted: false, submitCode: null, submitError: null, errors: {},
             });
 
-            // Remove previous marker, reset map to Indonesia view
             if (this._marker) {
                 this._marker.remove();
                 this._marker = null;
             }
             if (this._map) {
                 this._map.setView([-2.5, 118.0], 5);
-                // Re-render Leaflet after element becomes visible again
                 setTimeout(() => this._map.invalidateSize(), 50);
             }
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            // Auto request GPS again for new report
             setTimeout(() => this.getGPS(), 200);
         }
 
@@ -705,8 +723,8 @@
     }
 
     function init() {
-        const root = document.getElementById('giat-app');
-        if (root) mount(GiatFormApp, root);
+        const root = document.getElementById('sumur-app');
+        if (root) mount(SumurFormApp, root);
     }
 
     if (document.readyState === 'loading') {

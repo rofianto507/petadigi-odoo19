@@ -549,6 +549,7 @@ export function disposeKriminalCharts(ctx) {
 }
 
 export async function updateKriminalCharts(ctx, mode) {
+    const ver  = ctx._modeVersion;
     const row  = ctx.chartRowRef?.el;
     const row2 = ctx.chartRow2Ref?.el;
     const row3 = ctx.chartRow3Ref?.el;
@@ -557,12 +558,14 @@ export async function updateKriminalCharts(ctx, mode) {
     if (!row) return;
 
     if (mode !== 'kriminal') {
-        row.style.display  = 'none';
-        if (row2) row2.style.display = 'none';
-        if (row3) row3.style.display = 'none';
-        if (row4) row4.style.display = 'none';
-        if (row5) row5.style.display = 'none';
-        disposeKriminalCharts(ctx);
+        if (ctx.currentMode !== 'kriminal') {
+            row.style.display = 'none';
+            if (row2) row2.style.display = 'none';
+            if (row3) row3.style.display = 'none';
+            if (row4) row4.style.display = 'none';
+            if (row5) row5.style.display = 'none';
+            disposeKriminalCharts(ctx);
+        }
         return;
     }
     row.style.display  = 'flex';
@@ -574,6 +577,7 @@ export async function updateKriminalCharts(ctx, mode) {
     const tahun         = ctx.filterTahun?.el?.value         || '';
     const dateFrom      = ctx.activeDateFrom                  || '';
     const dateTo        = ctx.activeDateTo                    || '';
+    const jenisLp       = ctx.filterJenisLP?.el?.value        || '';
     const kategoriId    = parseInt(ctx.filterKategori?.el?.value)     || null;
     const subKategoriId = parseInt(ctx.filterSubKategori?.el?.value)  || null;
     const kabupatenId   = parseInt(ctx.filterKabupaten?.el?.value)    || null;
@@ -592,6 +596,7 @@ export async function updateKriminalCharts(ctx, mode) {
         ...(tahun         ? [['sumber_dokumen_id.tahun', '=',  tahun]]                          : []),
         ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
         ...(dateTo        ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']]         : []),
+        ...(jenisLp       ? [['jenis_lp',                '=',  jenisLp]]                        : []),
         ...(kategoriId    ? [['kategori_id',             '=',  kategoriId]]                     : []),
         ...(subKategoriId ? [['sub_kategori_id',         '=',  subKategoriId]]                  : []),
     ];
@@ -649,6 +654,7 @@ export async function updateKriminalCharts(ctx, mode) {
         const barNames  = merged.map(k => k.name);
         const barValues = merged.map(k => k.count);
 
+        if (ctx._modeVersion !== ver) return;
         // Donut chart (kategori)
         const donutData = katGroups.map(g => ({
             name:  Array.isArray(g.kategori_id) ? g.kategori_id[1] : 'Lainnya',
@@ -723,12 +729,13 @@ export async function updateKriminalCharts(ctx, mode) {
 const PAGE_SIZE = 20;
 
 export async function updateKriminalTable(ctx, mode, page) {
+    const ver    = ctx._modeVersion;
     const rowEl  = ctx.tableKriminalRowRef?.el;
     const bodyEl = ctx.tableKriminalBodyRef?.el;
     if (!rowEl) return;
 
     if (mode !== 'kriminal') {
-        rowEl.style.display = 'none';
+        if (ctx.currentMode !== 'kriminal') rowEl.style.display = 'none';
         return;
     }
     rowEl.style.display = 'flex';
@@ -741,6 +748,7 @@ export async function updateKriminalTable(ctx, mode, page) {
     const tahun         = ctx.filterTahun?.el?.value         || '';
     const dateFrom      = ctx.activeDateFrom                  || '';
     const dateTo        = ctx.activeDateTo                    || '';
+    const jenisLp       = ctx.filterJenisLP?.el?.value        || '';
     const kategoriId    = parseInt(ctx.filterKategori?.el?.value)    || null;
     const subKategoriId = parseInt(ctx.filterSubKategori?.el?.value) || null;
     const kabupatenId   = parseInt(ctx.filterKabupaten?.el?.value)   || null;
@@ -759,6 +767,7 @@ export async function updateKriminalTable(ctx, mode, page) {
         ...(tahun         ? [['sumber_dokumen_id.tahun', '=',  tahun]]                          : []),
         ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
         ...(dateTo        ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']]         : []),
+        ...(jenisLp       ? [['jenis_lp',                '=',  jenisLp]]                        : []),
         ...(kategoriId    ? [['kategori_id',             '=',  kategoriId]]                     : []),
         ...(subKategoriId ? [['sub_kategori_id',         '=',  subKategoriId]]                  : []),
     ];
@@ -809,6 +818,7 @@ export async function updateKriminalTable(ctx, mode, page) {
                 </tr>`;
         }).join('');
 
+        if (ctx._modeVersion !== ver) return;
         bodyEl.innerHTML = `
             <div class="petadigi-table-toolbar">
                 <span class="petadigi-table-info">

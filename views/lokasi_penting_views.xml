@@ -117,15 +117,28 @@
             </field>
         </record>
 
+        <!-- PIVOT VIEW -->
+        <record id="view_petadigi_lokasi_penting_pivot" model="ir.ui.view">
+            <field name="name">lokasi_penting.pivot.petadigi</field>
+            <field name="model">petadigi.lokasi_penting</field>
+            <field name="arch" type="xml">
+                <pivot string="Analisis Lokasi Penting" disable_linking="False">
+                    <field name="kategori_id" type="row"/>
+                    <field name="state" type="col"/>
+                </pivot>
+            </field>
+        </record>
+
         <!-- ACTION -->
         <record id="action_petadigi_lokasi_penting" model="ir.actions.act_window">
             <field name="name">Lokasi Penting</field>
             <field name="res_model">petadigi.lokasi_penting</field>
-            <field name="view_mode">list,form,graph</field>
+            <field name="view_mode">list,form,graph,pivot</field>
             <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'list', 'view_id': ref('view_petadigi_lokasi_penting_list')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('view_petadigi_lokasi_penting_form')}),
+                (0, 0, {'view_mode': 'list',  'view_id': ref('view_petadigi_lokasi_penting_list')}),
+                (0, 0, {'view_mode': 'form',  'view_id': ref('view_petadigi_lokasi_penting_form')}),
                 (0, 0, {'view_mode': 'graph', 'view_id': ref('view_petadigi_lokasi_penting_graph')}),
+                (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_petadigi_lokasi_penting_pivot')}),
             ]"/>
             <field name="search_view_id" ref="petadigi.view_petadigi_lokasi_penting_search"/>
         </record>

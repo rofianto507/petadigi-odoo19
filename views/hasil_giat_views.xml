@@ -33,8 +33,17 @@
                     <field name="polsek_id"/>
                     <separator/>
                     <filter string="Hari Ini" name="filter_today"
-                        domain="[('tanggal','&gt;=', (context_today()).strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal','&lt;=', (context_today()).strftime('%Y-%m-%d 23:59:59'))]"/>
+                        domain="[('tanggal','&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal','&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="Minggu Ini" name="filter_this_week"
+                        domain="[('tanggal','&gt;=', (context_today() - relativedelta(days=context_today().weekday())).strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal','&lt;=', (context_today() - relativedelta(days=context_today().weekday()) + relativedelta(days=6)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="Bulan Ini" name="filter_this_month"
+                        domain="[('tanggal','&gt;=', context_today().replace(day=1).strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal','&lt;=', (context_today().replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="Tahun Ini" name="filter_this_year"
+                        domain="[('tanggal','&gt;=', context_today().replace(month=1, day=1).strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal','&lt;=', context_today().replace(month=12, day=31).strftime('%Y-%m-%d 23:59:59'))]"/>
                     <group>
                         <filter string="Jenis Laporan" name="groupby_jenis" context="{'group_by': 'jenis_laporan_id'}"/>
                         <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>
@@ -128,15 +137,47 @@
             </field>
         </record>
 
+        <!-- PIVOT VIEW -->
+        <record id="view_petadigi_hasil_giat_pivot" model="ir.ui.view">
+            <field name="name">hasil_giat.pivot.petadigi</field>
+            <field name="model">petadigi.hasil_giat</field>
+            <field name="arch" type="xml">
+                <pivot string="Analisis Hasil Giat" disable_linking="False">
+                    <field name="jenis_laporan_id" type="row"/>
+                    <field name="polres_id" type="col"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- CALENDAR VIEW -->
+        <record id="view_petadigi_hasil_giat_calendar" model="ir.ui.view">
+            <field name="name">hasil_giat.calendar.petadigi</field>
+            <field name="model">petadigi.hasil_giat</field>
+            <field name="arch" type="xml">
+                <calendar string="Kalender Hasil Giat"
+                          date_start="tanggal"
+                          color="jenis_laporan_id"
+                          mode="month"
+                          quick_create="False">
+                    <field name="nama_petugas"/>
+                    <field name="jenis_laporan_id"/>
+                    <field name="polres_id"/>
+                    <field name="jenis_laporan_id" filters="1" invisible="1"/>
+                </calendar>
+            </field>
+        </record>
+
         <!-- ACTION -->
         <record id="action_petadigi_hasil_giat" model="ir.actions.act_window">
             <field name="name">Hasil Giat</field>
             <field name="res_model">petadigi.hasil_giat</field>
-            <field name="view_mode">list,form,graph</field>
+            <field name="view_mode">list,form,graph,pivot,calendar</field>
             <field name="view_ids" eval="[(5, 0, 0),
-                (0, 0, {'view_mode': 'list', 'view_id': ref('view_petadigi_hasil_giat_list')}),
-                (0, 0, {'view_mode': 'form', 'view_id': ref('view_petadigi_hasil_giat_form')}),
-                (0, 0, {'view_mode': 'graph', 'view_id': ref('view_petadigi_hasil_giat_graph')}),
+                (0, 0, {'view_mode': 'list',     'view_id': ref('view_petadigi_hasil_giat_list')}),
+                (0, 0, {'view_mode': 'form',     'view_id': ref('view_petadigi_hasil_giat_form')}),
+                (0, 0, {'view_mode': 'graph',    'view_id': ref('view_petadigi_hasil_giat_graph')}),
+                (0, 0, {'view_mode': 'pivot',    'view_id': ref('view_petadigi_hasil_giat_pivot')}),
+                (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_petadigi_hasil_giat_calendar')}),
             ]"/>
             <field name="search_view_id" ref="petadigi.view_petadigi_hasil_giat_search"/>
         </record>

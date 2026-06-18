@@ -21,17 +21,19 @@
                         t-on-click="openPopup"
                         alt="Foto"
                     />
-                    <div class="pg-foto-hint">
-                        <i class="fa fa-search-plus"/> Klik untuk perbesar
-                    </div>
+                    <t t-if="isEditable">
+                        <div class="pg-foto-actions">
+                            <button class="pg-foto-action-btn" type="button"
+                                t-on-click.stop="triggerUpload" title="Ganti Foto">
+                                <i class="fa fa-pencil"/>
+                            </button>
+                            <button class="pg-foto-action-btn pg-foto-action-btn--danger" type="button"
+                                t-on-click.stop="clearImage" title="Hapus Foto">
+                                <i class="fa fa-trash"/>
+                            </button>
+                        </div>
+                    </t>
                 </div>
-                <t t-if="isEditable">
-                    <button class="btn btn-sm btn-outline-secondary mt-2 pg-btn-ganti-foto"
-                        type="button"
-                        t-on-click="triggerUpload">
-                        <i class="fa fa-upload me-1"/> Ganti Foto
-                    </button>
-                </t>
             </t>
 
             <t t-else="">

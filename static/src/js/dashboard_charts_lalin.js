@@ -210,14 +210,13 @@ export function disposeLalinCharts(ctx) {
 }
 
 export async function updateLalinCharts(ctx, mode) {
+    const ver  = ctx._modeVersion;
     const row  = ctx.chartLalinRowRef?.el;
     const row2 = ctx.chartLalinRow2Ref?.el;
     if (!row) return;
 
     if (mode !== 'lalin') {
-        row.style.display  = 'none';
-        if (row2) row2.style.display = 'none';
-        disposeLalinCharts(ctx);
+        if (ctx.currentMode !== 'lalin') { row.style.display = 'none'; if (row2) row2.style.display = 'none'; disposeLalinCharts(ctx); }
         return;
     }
     row.style.display  = 'flex';
@@ -267,6 +266,7 @@ export async function updateLalinCharts(ctx, mode) {
         });
         const kabList = allKabupaten.map(k => ({ name: k.name, val: kabCountMap[k.id] || 0 }));
         kabList.sort((a, b) => b.val - a.val);
+        if (ctx._modeVersion !== ver) return;
         _renderLalinBarChart(ctx, kabList.map(k => k.name), kabList.map(k => k.val));
 
         // Donut — per kategori
@@ -307,11 +307,12 @@ export async function updateLalinCharts(ctx, mode) {
 const PAGE_SIZE = 20;
 
 export async function updateLalinTable(ctx, mode, page) {
+    const ver    = ctx._modeVersion;
     const rowEl  = ctx.tableLalinRowRef?.el;
     const bodyEl = ctx.tableLalinBodyRef?.el;
     if (!rowEl) return;
 
-    if (mode !== 'lalin') { rowEl.style.display = 'none'; return; }
+    if (mode !== 'lalin') { if (ctx.currentMode !== 'lalin') rowEl.style.display = 'none'; return; }
     rowEl.style.display = 'flex';
 
     ctx._lalinTablePage = (page !== undefined) ? page : 1;
@@ -374,6 +375,7 @@ export async function updateLalinTable(ctx, mode, page) {
                 </tr>`;
         }).join('');
 
+        if (ctx._modeVersion !== ver) return;
         bodyEl.innerHTML = `
             <div class="petadigi-table-toolbar">
                 <span class="petadigi-table-info">

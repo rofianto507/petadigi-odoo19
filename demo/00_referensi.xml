@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Demo Data — Data Referensi Master
+    Mencakup: Subdit, Sumber Dokumen, semua Kategori, Jenis Jalan,
+              Modus Operandi, Jenis TKP, Sub Status Perkara.
+-->
+<odoo>
+    <data noupdate="1">
+
+        <!-- ═══════════════════════════════════════════════════
+             SUBDIT
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_subdit_krimsus" model="petadigi.subdit">
+            <field name="name">Subdit I — Krimsus</field>
+            <field name="keterangan">Subdirektorat Tindak Pidana Khusus</field>
+        </record>
+        <record id="demo_subdit_krimum" model="petadigi.subdit">
+            <field name="name">Subdit II — Krimum</field>
+            <field name="keterangan">Subdirektorat Tindak Pidana Umum</field>
+        </record>
+        <record id="demo_subdit_kamtibmas" model="petadigi.subdit">
+            <field name="name">Subdit III — Kamtibmas</field>
+            <field name="keterangan">Subdirektorat Keamanan dan Ketertiban Masyarakat</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             SUMBER DOKUMEN
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_sdok_krim_2025" model="petadigi.sumber_dokumen">
+            <field name="name">LP Kriminalitas 2025</field>
+            <field name="tipe_sumber">KRIMINALITAS</field>
+            <field name="tahun">2025</field>
+        </record>
+        <record id="demo_sdok_krim_2024" model="petadigi.sumber_dokumen">
+            <field name="name">LP Kriminalitas 2024</field>
+            <field name="tipe_sumber">KRIMINALITAS</field>
+            <field name="tahun">2024</field>
+        </record>
+        <record id="demo_sdok_kam_2025" model="petadigi.sumber_dokumen">
+            <field name="name">Laporan KAM 2025</field>
+            <field name="tipe_sumber">KASUS MENONJOL</field>
+            <field name="tahun">2025</field>
+        </record>
+        <record id="demo_sdok_bcn_2025" model="petadigi.sumber_dokumen">
+            <field name="name">Laporan Bencana 2025</field>
+            <field name="tipe_sumber">BENCANA</field>
+            <field name="tahun">2025</field>
+        </record>
+        <record id="demo_sdok_lalin_2025" model="petadigi.sumber_dokumen">
+            <field name="name">Laporan Lalu Lintas 2025</field>
+            <field name="tipe_sumber">LALU LINTAS</field>
+            <field name="tahun">2025</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             KATEGORI KRIMINAL + SUB KATEGORI
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_kat_krim_curanmor" model="petadigi.kategori_kriminal">
+            <field name="name">Curanmor</field>
+            <field name="icon">fa-car</field>
+        </record>
+        <record id="demo_kat_krim_curat" model="petadigi.kategori_kriminal">
+            <field name="name">Curas / Curat</field>
+            <field name="icon">fa-home</field>
+        </record>
+        <record id="demo_kat_krim_narkoba" model="petadigi.kategori_kriminal">
+            <field name="name">Narkoba</field>
+            <field name="icon">fa-exclamation-triangle</field>
+        </record>
+        <record id="demo_kat_krim_penganiayaan" model="petadigi.kategori_kriminal">
+            <field name="name">Penganiayaan</field>
+            <field name="icon">fa-male</field>
+        </record>
+
+        <record id="demo_sub_kat_curanmor_motor" model="petadigi.sub_kategori_kriminal">
+            <field name="name">Sepeda Motor</field>
+            <field name="kategori_kriminal_id" ref="demo_kat_krim_curanmor"/>
+        </record>
+        <record id="demo_sub_kat_curanmor_mobil" model="petadigi.sub_kategori_kriminal">
+            <field name="name">Kendaraan Roda Empat</field>
+            <field name="kategori_kriminal_id" ref="demo_kat_krim_curanmor"/>
+        </record>
+        <record id="demo_sub_kat_curat_rumah" model="petadigi.sub_kategori_kriminal">
+            <field name="name">Rumah Tinggal</field>
+            <field name="kategori_kriminal_id" ref="demo_kat_krim_curat"/>
+        </record>
+        <record id="demo_sub_kat_curat_toko" model="petadigi.sub_kategori_kriminal">
+            <field name="name">Toko / Ruko</field>
+            <field name="kategori_kriminal_id" ref="demo_kat_krim_curat"/>
+        </record>
+        <record id="demo_sub_kat_narkoba_sabu" model="petadigi.sub_kategori_kriminal">
+            <field name="name">Sabu-Sabu</field>
+            <field name="kategori_kriminal_id" ref="demo_kat_krim_narkoba"/>
+        </record>
+        <record id="demo_sub_kat_narkoba_ganja" model="petadigi.sub_kategori_kriminal">
+            <field name="name">Ganja</field>
+            <field name="kategori_kriminal_id" ref="demo_kat_krim_narkoba"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             KATEGORI KAMTIBMAS (untuk Kasus Menonjol)
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_kat_kam_begal" model="petadigi.kategori_kamtibmas">
+            <field name="name">Begal</field>
+        </record>
+        <record id="demo_kat_kam_tawuran" model="petadigi.kategori_kamtibmas">
+            <field name="name">Tawuran</field>
+        </record>
+        <record id="demo_kat_kam_narkoba" model="petadigi.kategori_kamtibmas">
+            <field name="name">Peredaran Narkoba</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             KATEGORI BENCANA
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_kat_bcn_banjir" model="petadigi.kategori_bencana">
+            <field name="name">Banjir</field>
+        </record>
+        <record id="demo_kat_bcn_longsor" model="petadigi.kategori_bencana">
+            <field name="name">Tanah Longsor</field>
+        </record>
+        <record id="demo_kat_bcn_kebakaran" model="petadigi.kategori_bencana">
+            <field name="name">Kebakaran</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             KATEGORI LALU LINTAS
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_kat_lalin_laka" model="petadigi.kategori_lalu_lintas">
+            <field name="name">Laka Lantas</field>
+        </record>
+        <record id="demo_kat_lalin_pelanggaran" model="petadigi.kategori_lalu_lintas">
+            <field name="name">Pelanggaran Lalu Lintas</field>
+        </record>
+        <record id="demo_kat_lalin_macet" model="petadigi.kategori_lalu_lintas">
+            <field name="name">Kemacetan</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             KATEGORI LOKASI PENTING
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_kat_lokasi_polisi" model="petadigi.kategori_lokasi">
+            <field name="name">Kantor Polisi</field>
+        </record>
+        <record id="demo_kat_lokasi_rs" model="petadigi.kategori_lokasi">
+            <field name="name">Rumah Sakit</field>
+        </record>
+        <record id="demo_kat_lokasi_sekolah" model="petadigi.kategori_lokasi">
+            <field name="name">Sekolah / Kampus</field>
+        </record>
+        <record id="demo_kat_lokasi_pasar" model="petadigi.kategori_lokasi">
+            <field name="name">Pasar Tradisional</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             JENIS JALAN
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_jenis_jalan_nasional" model="petadigi.jenis_jalan">
+            <field name="name">Jalan Nasional</field>
+        </record>
+        <record id="demo_jenis_jalan_provinsi" model="petadigi.jenis_jalan">
+            <field name="name">Jalan Provinsi</field>
+        </record>
+        <record id="demo_jenis_jalan_kota" model="petadigi.jenis_jalan">
+            <field name="name">Jalan Kota / Kabupaten</field>
+        </record>
+        <record id="demo_jenis_jalan_lingkungan" model="petadigi.jenis_jalan">
+            <field name="name">Jalan Lingkungan</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             MODUS OPERANDI
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_modus_begal" model="petadigi.modus_operandi">
+            <field name="name">Begal Motor</field>
+        </record>
+        <record id="demo_modus_jambret" model="petadigi.modus_operandi">
+            <field name="name">Penjambretan</field>
+        </record>
+        <record id="demo_modus_pecah_kaca" model="petadigi.modus_operandi">
+            <field name="name">Pecah Kaca Kendaraan</field>
+        </record>
+        <record id="demo_modus_dor" model="petadigi.modus_operandi">
+            <field name="name">Door-on-Road (DOR)</field>
+        </record>
+        <record id="demo_modus_hipnotis" model="petadigi.modus_operandi">
+            <field name="name">Hipnotis / Penipuan</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             JENIS TKP
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_jenis_tkp_jalan" model="petadigi.jenis_tkp">
+            <field name="name">Jalan Umum</field>
+        </record>
+        <record id="demo_jenis_tkp_rumah" model="petadigi.jenis_tkp">
+            <field name="name">Perumahan / Permukiman</field>
+        </record>
+        <record id="demo_jenis_tkp_pertokoan" model="petadigi.jenis_tkp">
+            <field name="name">Pertokoan / Mall</field>
+        </record>
+        <record id="demo_jenis_tkp_sekolah" model="petadigi.jenis_tkp">
+            <field name="name">Lingkungan Sekolah</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             SUB STATUS PERKARA
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_sub_status_lidik" model="petadigi.sub_status_perkara">
+            <field name="status_perkara">PROSES</field>
+            <field name="name">Dalam Penyelidikan (Lidik)</field>
+        </record>
+        <record id="demo_sub_status_sidik" model="petadigi.sub_status_perkara">
+            <field name="status_perkara">PROSES</field>
+            <field name="name">Dalam Penyidikan (Sidik)</field>
+        </record>
+        <record id="demo_sub_status_p21" model="petadigi.sub_status_perkara">
+            <field name="status_perkara">SELESAI</field>
+            <field name="name">P21 — Berkas Dinyatakan Lengkap</field>
+        </record>
+        <record id="demo_sub_status_sp3" model="petadigi.sub_status_perkara">
+            <field name="status_perkara">SELESAI</field>
+            <field name="name">SP3 — Penghentian Penyidikan</field>
+        </record>
+
+    </data>
+</odoo>

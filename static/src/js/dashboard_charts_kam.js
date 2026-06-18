@@ -312,16 +312,19 @@ export function disposeKamCharts(ctx) {
 }
 
 export async function updateKamCharts(ctx, mode) {
+    const ver  = ctx._modeVersion;
     const row  = ctx.chartKamRowRef?.el;
     const row2 = ctx.chartKamRow2Ref?.el;
     const row3 = ctx.chartKamRow3Ref?.el;
     if (!row) return;
 
     if (mode !== 'kam') {
-        row.style.display  = 'none';
-        if (row2) row2.style.display = 'none';
-        if (row3) row3.style.display = 'none';
-        disposeKamCharts(ctx);
+        if (ctx.currentMode !== 'kam') {
+            row.style.display = 'none';
+            if (row2) row2.style.display = 'none';
+            if (row3) row3.style.display = 'none';
+            disposeKamCharts(ctx);
+        }
         return;
     }
     row.style.display  = 'flex';
@@ -421,6 +424,7 @@ export async function updateKamCharts(ctx, mode) {
         const currentYrData = _processKamMonthGroups(currentYrGroups);
         const prevYrData    = _processKamMonthGroups(prevYrGroups);
 
+        if (ctx._modeVersion !== ver) return;
         _renderKamBarChart(ctx, merged.map(k => k.name), merged.map(k => k.count));
         _renderKamDonutChart(ctx, donutData);
         _renderKamModusChart(ctx, modusNames, modusValues);
@@ -436,11 +440,12 @@ export async function updateKamCharts(ctx, mode) {
 const PAGE_SIZE = 20;
 
 export async function updateKamTable(ctx, mode, page) {
+    const ver    = ctx._modeVersion;
     const rowEl  = ctx.tableKamRowRef?.el;
     const bodyEl = ctx.tableKamBodyRef?.el;
     if (!rowEl) return;
 
-    if (mode !== 'kam') { rowEl.style.display = 'none'; return; }
+    if (mode !== 'kam') { if (ctx.currentMode !== 'kam') rowEl.style.display = 'none'; return; }
     rowEl.style.display = 'flex';
 
     ctx._kamTablePage = (page !== undefined) ? page : 1;
@@ -502,6 +507,7 @@ export async function updateKamTable(ctx, mode, page) {
                 </tr>`;
         }).join('');
 
+        if (ctx._modeVersion !== ver) return;
         bodyEl.innerHTML = `
             <div class="petadigi-table-toolbar">
                 <span class="petadigi-table-info">

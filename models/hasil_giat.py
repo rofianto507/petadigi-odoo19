@@ -27,8 +27,8 @@ class HasilGiat(models.Model):
     kegiatan = fields.Text('Uraian Kegiatan', tracking=True)
     foto = fields.Binary('Foto', attachment=True)
     foto_filename = fields.Char('Nama File Foto')
-    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True)
-    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True)
+    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)
+    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
 
     @api.model
     def default_get(self, fields_list):

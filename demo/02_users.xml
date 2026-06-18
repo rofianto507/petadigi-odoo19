@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Demo Data — Akun Pengguna per Peran
+    Password semua akun: Demo@12345
+
+    Skenario kewenangan yang dapat diuji:
+    ┌──────────────────────────┬────────────┬─────────────────────────────────────────────┐
+    │ Login                    │ Peran      │ Akses                                       │
+    ├──────────────────────────┼────────────┼─────────────────────────────────────────────┤
+    │ admin.demo               │ Admin      │ Semua data, semua wilayah, semua modul      │
+    │ subdit.krimsus           │ Subdit     │ Kriminalitas + KAM milik Subdit Krimsus     │
+    │ subdit.kamtibmas         │ Subdit     │ Kriminalitas + KAM milik Subdit Kamtibmas   │
+    │ polres.palembang         │ Polres     │ Seluruh data wilayah Polres Palembang       │
+    │ polres.oki               │ Polres     │ Seluruh data wilayah Polres OKI             │
+    │ polsek.ilirtimur         │ Polsek     │ Data polsek Ilir Timur saja                 │
+    │ polsek.ilirbarat         │ Polsek     │ Data polsek Ilir Barat saja                 │
+    │ polsek.kayuagung         │ Polsek     │ Data polsek Kayuagung saja                  │
+    └──────────────────────────┴────────────┴─────────────────────────────────────────────┘
+-->
+<odoo>
+    <data noupdate="1">
+
+        <!-- ═══════════════════════════════════════════════════
+             ADMIN
+             Akses: penuh ke seluruh data dan konfigurasi
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_user_admin_petadigi" model="res.users">
+            <field name="name">Admin PetaDigi (Demo)</field>
+            <field name="login">admin.demo</field>
+            <field name="password">Demo@12345</field>
+            <field name="groups_id" eval="[
+                (6, 0, [
+                    ref('base.group_user'),
+                    ref('petadigi.group_admin'),
+                ])
+            ]"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             SUBDIT — Krimsus
+             Akses: Kriminalitas + KAM WHERE subdit_id = Krimsus
+             TIDAK dapat melihat: Bencana, Lalin, Lokasi Penting, Hasil Giat
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_user_subdit_krimsus" model="res.users">
+            <field name="name">Operator Subdit Krimsus (Demo)</field>
+            <field name="login">subdit.krimsus</field>
+            <field name="password">Demo@12345</field>
+            <field name="subdit_id" ref="demo_subdit_krimsus"/>
+            <field name="groups_id" eval="[
+                (6, 0, [
+                    ref('base.group_user'),
+                    ref('petadigi.group_subdit'),
+                ])
+            ]"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             SUBDIT — Kamtibmas
+             Akses: Kriminalitas + KAM WHERE subdit_id = Kamtibmas
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_user_subdit_kamtibmas" model="res.users">
+            <field name="name">Operator Subdit Kamtibmas (Demo)</field>
+            <field name="login">subdit.kamtibmas</field>
+            <field name="password">Demo@12345</field>
+            <field name="subdit_id" ref="demo_subdit_kamtibmas"/>
+            <field name="groups_id" eval="[
+                (6, 0, [
+                    ref('base.group_user'),
+                    ref('petadigi.group_subdit'),
+                ])
+            ]"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             POLRES — Palembang
+             Akses: semua data di wilayah Polres Palembang
+             (Kriminalitas polres=Palembang, Bencana/Lalin/Lokasi kab=Palembang)
+             TIDAK dapat melihat data Polres OKI
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_user_polres_palembang" model="res.users">
+            <field name="name">Operator Polres Palembang (Demo)</field>
+            <field name="login">polres.palembang</field>
+            <field name="password">Demo@12345</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="groups_id" eval="[
+                (6, 0, [
+                    ref('base.group_user'),
+                    ref('petadigi.group_polres'),
+                ])
+            ]"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             POLRES — OKI
+             Akses: semua data di wilayah Polres OKI
+             TIDAK dapat melihat data Polres Palembang
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_user_polres_oki" model="res.users">
+            <field name="name">Operator Polres OKI (Demo)</field>
+            <field name="login">polres.oki</field>
+            <field name="password">Demo@12345</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="groups_id" eval="[
+                (6, 0, [
+                    ref('base.group_user'),
+                    ref('petadigi.group_polres'),
+                ])
+            ]"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             POLSEK — Ilir Timur (Palembang)
+             Akses: hanya data di wilayah Polsek Ilir Timur
+             TIDAK dapat melihat data Polsek Ilir Barat (sesama Palembang)
+             TIDAK dapat melihat data Polres OKI
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_user_polsek_ilir_timur" model="res.users">
+            <field name="name">Operator Polsek Ilir Timur (Demo)</field>
+            <field name="login">polsek.ilirtimur</field>
+            <field name="password">Demo@12345</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_timur"/>
+            <field name="groups_id" eval="[
+                (6, 0, [
+                    ref('base.group_user'),
+                    ref('petadigi.group_polsek'),
+                ])
+            ]"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             POLSEK — Ilir Barat (Palembang)
+             Akses: hanya data di wilayah Polsek Ilir Barat
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_user_polsek_ilir_barat" model="res.users">
+            <field name="name">Operator Polsek Ilir Barat (Demo)</field>
+            <field name="login">polsek.ilirbarat</field>
+            <field name="password">Demo@12345</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_barat"/>
+            <field name="groups_id" eval="[
+                (6, 0, [
+                    ref('base.group_user'),
+                    ref('petadigi.group_polsek'),
+                ])
+            ]"/>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             POLSEK — Kayuagung (OKI)
+             Akses: hanya data di wilayah Polsek Kayuagung
+             TIDAK dapat melihat data Polsek Tanjung Lubuk (sesama OKI)
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_user_polsek_kayuagung" model="res.users">
+            <field name="name">Operator Polsek Kayuagung (Demo)</field>
+            <field name="login">polsek.kayuagung</field>
+            <field name="password">Demo@12345</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="polsek_id" ref="demo_polsek_kayuagung"/>
+            <field name="groups_id" eval="[
+                (6, 0, [
+                    ref('base.group_user'),
+                    ref('petadigi.group_polsek'),
+                ])
+            ]"/>
+        </record>
+
+    </data>
+</odoo>

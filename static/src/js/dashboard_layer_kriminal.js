@@ -72,6 +72,7 @@ function _getActiveFilters(ctx) {
         kabupatenId:  ctx.filterKabupaten?.el?.value    ? parseInt(ctx.filterKabupaten.el.value)    : null,
         dateFrom:     ctx.activeDateFrom                 || '',
         dateTo:       ctx.activeDateTo                   || '',
+        jenisLp:      ctx.filterJenisLP?.el?.value      || '',
         kategoriId:   ctx.filterKategori?.el?.value     ? parseInt(ctx.filterKategori.el.value)     : null,
         subKategoriId:ctx.filterSubKategori?.el?.value  ? parseInt(ctx.filterSubKategori.el.value)  : null,
         stateValue:   ctx.filterState?.el?.value        || '',
@@ -84,6 +85,7 @@ function _buildDomain(filters, extraDomain = []) {
     if (filters.tahun)        domain.push(['sumber_dokumen_id.tahun', '=',  filters.tahun]);
     if (filters.dateFrom)     domain.push(['tanggal_kejadian',        '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)       domain.push(['tanggal_kejadian',        '<=', filters.dateTo   + ' 23:59:59']);
+    if (filters.jenisLp)      domain.push(['jenis_lp',                '=',  filters.jenisLp]);
     if (filters.kategoriId)   domain.push(['kategori_id',             '=',  filters.kategoriId]);
     if (filters.subKategoriId)domain.push(['sub_kategori_id',         '=',  filters.subKategoriId]);
     if (filters.stateValue)   domain.push(['status_perkara',          '=',  filters.stateValue]);

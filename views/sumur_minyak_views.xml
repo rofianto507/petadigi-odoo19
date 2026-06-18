@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- LIST VIEW -->
+        <record id="view_petadigi_sumur_minyak_list" model="ir.ui.view">
+            <field name="name">sumur_minyak.list.petadigi</field>
+            <field name="model">petadigi.sumur_minyak</field>
+            <field name="arch" type="xml">
+                <list string="Sumur Minyak">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="kategori_id"/>
+                    <field name="kabupaten_id"/>
+                    <field name="kecamatan_id"/>
+                    <field name="desa_id"/>
+                    <field name="jumlah_minyak"/>
+                    <field name="is_data_lengkap" widget="boolean" string="Lengkap"/>
+                    <field name="state" widget="badge"
+                        decoration-success="state == 'AKTIF'"
+                        decoration-danger="state == 'TIDAK AKTIF'"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- SEARCH VIEW -->
+        <record id="view_petadigi_sumur_minyak_search" model="ir.ui.view">
+            <field name="name">sumur_minyak.search.petadigi</field>
+            <field name="model">petadigi.sumur_minyak</field>
+            <field name="arch" type="xml">
+                <search string="Cari Sumur Minyak">
+                    <field name="code"/>
+                    <field name="name"/>
+                    <field name="kategori_id"/>
+                    <field name="desa_id"/>
+                    <field name="kecamatan_id"/>
+                    <field name="kabupaten_id"/>
+                    <separator/>
+                    <filter string="AKTIF" name="filter_aktif" domain="[('state','=','AKTIF')]"/>
+                    <filter string="TIDAK AKTIF" name="filter_tidak_aktif" domain="[('state','=','TIDAK AKTIF')]"/>
+                    <separator/>
+                    <filter string="Data Lengkap" name="filter_lengkap" domain="[('is_data_lengkap','=',True)]"/>
+                    <filter string="Data Tidak Lengkap" name="filter_tidak_lengkap" domain="[('is_data_lengkap','=',False)]"/>
+                    <group>
+                        <filter string="Kategori" name="groupby_kategori" context="{'group_by': 'kategori_id'}"/>
+                        <filter string="Kabupaten" name="groupby_kabupaten" context="{'group_by': 'kabupaten_id'}"/>
+                        <filter string="Kecamatan" name="groupby_kecamatan" context="{'group_by': 'kecamatan_id'}"/>
+                        <filter string="State" name="groupby_state" context="{'group_by': 'state'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- GRAPH VIEW -->
+        <record id="view_petadigi_sumur_minyak_graph" model="ir.ui.view">
+            <field name="name">sumur_minyak.graph.petadigi</field>
+            <field name="model">petadigi.sumur_minyak</field>
+            <field name="arch" type="xml">
+                <graph string="Grafik Sumur Minyak" type="bar">
+                    <field name="kabupaten_id"/>
+                    <field name="id" type="measure"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- FORM VIEW -->
+        <record id="view_petadigi_sumur_minyak_form" model="ir.ui.view">
+            <field name="name">sumur_minyak.form.petadigi</field>
+            <field name="model">petadigi.sumur_minyak</field>
+            <field name="arch" type="xml">
+                <form string="Sumur Minyak">
+                    <header>
+                        <button name="action_set_tidak_aktif" string="Non Aktifkan" type="object"
+                            class="btn-danger" invisible="state == 'TIDAK AKTIF'"/>
+                        <button name="action_set_aktif" string="Aktifkan Kembali" type="object"
+                            class="btn-secondary" invisible="state == 'AKTIF'"/>
+                        <field name="state" widget="statusbar"
+                            statusbar_visible="AKTIF,TIDAK AKTIF"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="code" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="kategori_id"/>
+                                <field name="sumber_dokumen_id"/>
+                                <field name="jumlah_minyak"/>
+                            </group>
+                            <group>
+                                <field name="foto" widget="image_popup" nolabel="1"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group string="WILAYAH">
+                                <field name="kabupaten_id"/>
+                                <field name="kecamatan_id" domain="[('kabupaten_id', '=', kabupaten_id)]"/>
+                                <field name="desa_id" domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                            </group>
+                            <group string="SURVEYOR">
+                                <field name="nama_surveyor" string="Nama"/>
+                                <field name="hp_surveyor" string="No. HP"/>
+                            </group>
+                        </group>
+                        <group>
+                            <group>
+                                <field name="is_data_lengkap" readonly="1"/>
+                                <field name="state" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <div>
+                            <field name="latitude" widget="latlong_map_picker"
+                                class="latlong-mappicker-wrapper"
+                                nolabel="1"/>
+                        </div>
+
+                        <group>
+                            <field name="latitude" string="Latitude"/>
+                            <field name="longitude" string="Longitude"/>
+                        </group>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- PIVOT VIEW -->
+        <record id="view_petadigi_sumur_minyak_pivot" model="ir.ui.view">
+            <field name="name">sumur_minyak.pivot.petadigi</field>
+            <field name="model">petadigi.sumur_minyak</field>
+            <field name="arch" type="xml">
+                <pivot string="Analisis Sumur Minyak" disable_linking="False">
+                    <field name="kategori_id" type="row"/>
+                    <field name="kabupaten_id" type="row"/>
+                    <field name="state" type="col"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- ACTION -->
+        <record id="action_petadigi_sumur_minyak" model="ir.actions.act_window">
+            <field name="name">Sumur Minyak</field>
+            <field name="res_model">petadigi.sumur_minyak</field>
+            <field name="view_mode">list,form,graph,pivot</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'list',  'view_id': ref('view_petadigi_sumur_minyak_list')}),
+                (0, 0, {'view_mode': 'form',  'view_id': ref('view_petadigi_sumur_minyak_form')}),
+                (0, 0, {'view_mode': 'graph', 'view_id': ref('view_petadigi_sumur_minyak_graph')}),
+                (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_petadigi_sumur_minyak_pivot')}),
+            ]"/>
+            <field name="search_view_id" ref="petadigi.view_petadigi_sumur_minyak_search"/>
+        </record>
+    </data>
+</odoo>

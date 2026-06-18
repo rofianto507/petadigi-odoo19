@@ -54,8 +54,8 @@ class KasusMenunjol(models.Model):
         domain="[('kecamatan_id', '=', kecamatan_id)]",
         tracking=True
     )
-    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True)
-    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True)
+    latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)
+    longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
     tindak_lanjut_ids = fields.One2many(
         'petadigi.tindak_lanjut', 'kasus_menonjol_id', string='Tindak Lanjut'
     )

@@ -1,0 +1,575 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Demo Data — Data Operasional
+    Mencakup: Kriminalitas, Kasus Menonjol, Bencana,
+              Lalu Lintas, Lokasi Penting, Jenis Laporan, Hasil Giat.
+
+    Skenario yang di-cover:
+    A. Kriminalitas
+       - KRI-PLG-IT-1  : Polres Palembang / Polsek Ilir Timur / Subdit Krimsus  → PROSES (Krimsus lihat, Ilir Barat tidak)
+       - KRI-PLG-IT-2  : Polres Palembang / Polsek Ilir Timur / Subdit Krimsus  → SELESAI
+       - KRI-PLG-IB-1  : Polres Palembang / Polsek Ilir Barat / Subdit Krimum   → PROSES (Krimsus tidak lihat, Ilir Timur tidak)
+       - KRI-OKI-KG-1  : Polres OKI / Polsek Kayuagung / Subdit Krimsus         → PROSES (Palembang tidak lihat)
+       - KRI-OKI-TL-1  : Polres OKI / Polsek Tanjung Lubuk / Subdit Krimum      → SELESAI (Kayuagung tidak lihat)
+
+    B. Kasus Menonjol
+       - KAM-PLG-IT-1  : Polres Palembang / Polsek Ilir Timur / Subdit Kamtibmas → PROSES
+       - KAM-PLG-IB-1  : Polres Palembang / Polsek Ilir Barat / Subdit Kamtibmas → SELESAI
+       - KAM-OKI-KG-1  : Polres OKI / Polsek Kayuagung / Subdit Kamtibmas        → PROSES
+
+    C. Bencana (rule: kabupaten_id.polres_id)
+       - BCN-PLG-1 → kab Palembang kec Ilir Timur I  (hanya Polres Plg + Polsek IT)
+       - BCN-PLG-2 → kab Palembang kec Ilir Barat I  (hanya Polres Plg + Polsek IB)
+       - BCN-OKI-1 → kab OKI kec Kayuagung           (hanya Polres OKI + Polsek KG)
+
+    D. Lalu Lintas (rule: kecamatan_id.polsek_id untuk polsek)
+       - LTS-PLG-1 → kab Palembang kec Ilir Timur I
+       - LTS-PLG-2 → kab Palembang kec Ilir Barat I
+       - LTS-OKI-1 → kab OKI kec Kayuagung
+       - LTS-OKI-2 → kab OKI kec Tanjung Lubuk       (Polsek Kayuagung tidak lihat)
+
+    E. Lokasi Penting
+       - LOK di Palembang (Ilir Timur): Mapolres Palembang
+       - LOK di Palembang (Ilir Barat): RS Bhayangkara
+       - LOK di OKI (Kayuagung): Mapolres OKI
+       - LOK di OKI (Kayuagung): Pasar Kayuagung
+
+    F. Jenis Laporan Cooling System
+       - Sosialisasi Video Layanan 110 (aktif)
+       - Patroli Rutin (aktif)
+       - Sambang Warga (draft — tidak bisa dipakai submit form publik)
+
+    G. Hasil Giat (Cooling System)
+       - 3 entri Polres Palembang / Polsek Ilir Timur
+       - 2 entri Polres Palembang / Polsek Ilir Barat
+       - 2 entri Polres OKI / Polsek Kayuagung
+-->
+<odoo>
+    <data noupdate="1">
+
+        <!-- ═══════════════════════════════════════════════════
+             A. KRIMINALITAS
+        ═══════════════════════════════════════════════════ -->
+
+        <!-- Polres Palembang / Polsek Ilir Timur / Subdit Krimsus — PROSES -->
+        <record id="demo_krim_plg_it_1" model="petadigi.kriminalitas">
+            <field name="jenis_lp">LP B</field>
+            <field name="no_lp">LP/B/001/I/2025/SPKT/POLSEK-IT</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_timur"/>
+            <field name="subdit_id" ref="demo_subdit_krimsus"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_timur_1"/>
+            <field name="desa_id" ref="demo_desa_26_ilir"/>
+            <field name="kategori_id" ref="demo_kat_krim_curanmor"/>
+            <field name="sub_kategori_id" ref="demo_sub_kat_curanmor_motor"/>
+            <field name="jenis_tkp_id" ref="demo_jenis_tkp_jalan"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_krim_2025"/>
+            <field name="tanggal_kejadian">2025-01-10 22:30:00</field>
+            <field name="tanggal_laporan">2025-01-11 08:00:00</field>
+            <field name="tempat_kejadian">Jl. Kapten A. Rivai, depan Masjid Al-Amin, Kel. 26 Ilir</field>
+            <field name="pelapor">Budi Santoso (082178xxxxx)</field>
+            <field name="apa_yang_terjadi">Korban kehilangan sepeda motor Honda Beat warna merah ketika diparkir di depan rumah</field>
+            <field name="tindak_pidana">Pencurian Kendaraan Bermotor (Curanmor)</field>
+            <field name="penanggung_jawab">Aiptu Hendra Kurniawan</field>
+            <field name="status_perkara">PROSES</field>
+            <field name="sub_status_perkara_id" ref="demo_sub_status_sidik"/>
+            <field name="latitude">-2.997700</field>
+            <field name="longitude">104.748000</field>
+        </record>
+
+        <!-- Polres Palembang / Polsek Ilir Timur / Subdit Krimsus — SELESAI -->
+        <record id="demo_krim_plg_it_2" model="petadigi.kriminalitas">
+            <field name="jenis_lp">LP A</field>
+            <field name="no_lp">LP/A/002/II/2025/SPKT/POLSEK-IT</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_timur"/>
+            <field name="subdit_id" ref="demo_subdit_krimsus"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_timur_1"/>
+            <field name="desa_id" ref="demo_desa_28_ilir"/>
+            <field name="kategori_id" ref="demo_kat_krim_narkoba"/>
+            <field name="sub_kategori_id" ref="demo_sub_kat_narkoba_sabu"/>
+            <field name="jenis_tkp_id" ref="demo_jenis_tkp_rumah"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_krim_2025"/>
+            <field name="tanggal_kejadian">2025-02-05 14:00:00</field>
+            <field name="tanggal_laporan">2025-02-05 16:30:00</field>
+            <field name="tempat_kejadian">Jl. Merdeka Gang Mawar No. 7, Kel. 28 Ilir</field>
+            <field name="pelapor">Polsek Ilir Timur (laporan proaktif)</field>
+            <field name="apa_yang_terjadi">Tersangka kedapatan membawa sabu-sabu seberat 0,5 gram saat digeledah</field>
+            <field name="tindak_pidana">Penyalahgunaan Narkotika Gol. I (UU No. 35/2009)</field>
+            <field name="tersangka">Rahmat Hidayat, 28 tahun</field>
+            <field name="penanggung_jawab">Ipda Wahyu Prasetyo</field>
+            <field name="status_perkara">SELESAI</field>
+            <field name="sub_status_perkara_id" ref="demo_sub_status_p21"/>
+            <field name="tanggal_selesai">2025-03-01 10:00:00</field>
+            <field name="latitude">-2.998500</field>
+            <field name="longitude">104.750200</field>
+        </record>
+
+        <!-- Polres Palembang / Polsek Ilir BARAT / Subdit Krimum — PROSES -->
+        <record id="demo_krim_plg_ib_1" model="petadigi.kriminalitas">
+            <field name="jenis_lp">LP B</field>
+            <field name="no_lp">LP/B/003/I/2025/SPKT/POLSEK-IB</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_barat"/>
+            <field name="subdit_id" ref="demo_subdit_krimum"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_barat_1"/>
+            <field name="desa_id" ref="demo_desa_8_ilir"/>
+            <field name="kategori_id" ref="demo_kat_krim_curat"/>
+            <field name="sub_kategori_id" ref="demo_sub_kat_curat_rumah"/>
+            <field name="jenis_tkp_id" ref="demo_jenis_tkp_rumah"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_krim_2025"/>
+            <field name="tanggal_kejadian">2025-01-20 03:00:00</field>
+            <field name="tanggal_laporan">2025-01-20 07:00:00</field>
+            <field name="tempat_kejadian">Jl. R.E. Martadinata Blok C No. 12, Kel. 8 Ilir</field>
+            <field name="pelapor">Dewi Lestari (081234xxxxx)</field>
+            <field name="apa_yang_terjadi">Rumah korban dibobol pelaku melalui jendela belakang, laptop dan perhiasan emas hilang</field>
+            <field name="tindak_pidana">Pencurian Dengan Pemberatan (Curat)</field>
+            <field name="penanggung_jawab">Bripka Agus Salim</field>
+            <field name="status_perkara">PROSES</field>
+            <field name="sub_status_perkara_id" ref="demo_sub_status_lidik"/>
+            <field name="latitude">-2.991300</field>
+            <field name="longitude">104.737000</field>
+        </record>
+
+        <!-- Polres OKI / Polsek Kayuagung / Subdit Krimsus — PROSES -->
+        <record id="demo_krim_oki_kg_1" model="petadigi.kriminalitas">
+            <field name="jenis_lp">LP B</field>
+            <field name="no_lp">LP/B/001/I/2025/SPKT/POLSEK-KG</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="polsek_id" ref="demo_polsek_kayuagung"/>
+            <field name="subdit_id" ref="demo_subdit_krimsus"/>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="kecamatan_id" ref="demo_kec_kayuagung"/>
+            <field name="desa_id" ref="demo_desa_jua_jua"/>
+            <field name="kategori_id" ref="demo_kat_krim_curanmor"/>
+            <field name="sub_kategori_id" ref="demo_sub_kat_curanmor_motor"/>
+            <field name="jenis_tkp_id" ref="demo_jenis_tkp_jalan"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_krim_2025"/>
+            <field name="tanggal_kejadian">2025-03-12 21:00:00</field>
+            <field name="tanggal_laporan">2025-03-12 23:00:00</field>
+            <field name="tempat_kejadian">Jl. A. Yani Km 3, depan SPBU, Desa Jua-Jua, Kayuagung</field>
+            <field name="pelapor">Slamet Riyadi (085678xxxxx)</field>
+            <field name="apa_yang_terjadi">Motor Yamaha NMAX warna hitam hilang saat parkir di depan minimarket</field>
+            <field name="tindak_pidana">Pencurian Kendaraan Bermotor (Curanmor)</field>
+            <field name="penanggung_jawab">Aiptu Bambang Wiyono</field>
+            <field name="status_perkara">PROSES</field>
+            <field name="sub_status_perkara_id" ref="demo_sub_status_sidik"/>
+            <field name="latitude">-3.396400</field>
+            <field name="longitude">104.933000</field>
+        </record>
+
+        <!-- Polres OKI / Polsek Tanjung Lubuk / Subdit Krimum — SELESAI -->
+        <record id="demo_krim_oki_tl_1" model="petadigi.kriminalitas">
+            <field name="jenis_lp">LP B</field>
+            <field name="no_lp">LP/B/002/IV/2024/SPKT/POLSEK-TL</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="polsek_id" ref="demo_polsek_tanjung_lubuk"/>
+            <field name="subdit_id" ref="demo_subdit_krimum"/>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="kecamatan_id" ref="demo_kec_tanjung_lubuk"/>
+            <field name="desa_id" ref="demo_desa_tanjung_lubuk"/>
+            <field name="kategori_id" ref="demo_kat_krim_penganiayaan"/>
+            <field name="jenis_tkp_id" ref="demo_jenis_tkp_jalan"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_krim_2024"/>
+            <field name="tanggal_kejadian">2024-11-08 19:30:00</field>
+            <field name="tanggal_laporan">2024-11-09 09:00:00</field>
+            <field name="tempat_kejadian">Jl. Lintas Sumatera, Desa Tanjung Lubuk, OKI</field>
+            <field name="pelapor">Marwati (087654xxxxx)</field>
+            <field name="apa_yang_terjadi">Korban mengalami penganiayaan fisik oleh sekelompok pemuda</field>
+            <field name="tindak_pidana">Penganiayaan (Pasal 351 KUHP)</field>
+            <field name="penanggung_jawab">Briptu Dian Saputra</field>
+            <field name="status_perkara">SELESAI</field>
+            <field name="sub_status_perkara_id" ref="demo_sub_status_p21"/>
+            <field name="tanggal_selesai">2025-01-15 14:00:00</field>
+            <field name="latitude">-3.450000</field>
+            <field name="longitude">104.850000</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             B. KASUS MENONJOL
+        ═══════════════════════════════════════════════════ -->
+
+        <!-- Polres Palembang / Polsek Ilir Timur / Subdit Kamtibmas — PROSES -->
+        <record id="demo_kam_plg_it_1" model="petadigi.kasus_menonjol">
+            <field name="no_lp">LP/KAM/001/II/2025/POLSEK-IT</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_timur"/>
+            <field name="subdit_id" ref="demo_subdit_kamtibmas"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_timur_1"/>
+            <field name="desa_id" ref="demo_desa_26_ilir"/>
+            <field name="kategori_id" ref="demo_kat_kam_begal"/>
+            <field name="modus_operandi_id" ref="demo_modus_begal"/>
+            <field name="jenis_tkp_id" ref="demo_jenis_tkp_jalan"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_kam_2025"/>
+            <field name="tanggal_kejadian">2025-02-18 23:00:00</field>
+            <field name="permasalahan">Aksi begal bersenjata tajam meresahkan warga di Jl. Kapten A. Rivai pada malam hari</field>
+            <field name="penanganan">Tim Resmob melakukan pengejaran dan identifikasi pelaku</field>
+            <field name="tindak_lanjut">Masih dalam pengejaran, DPO 2 orang</field>
+            <field name="state">PROSES</field>
+            <field name="latitude">-2.997700</field>
+            <field name="longitude">104.748000</field>
+        </record>
+
+        <!-- Polres Palembang / Polsek Ilir BARAT / Subdit Kamtibmas — SELESAI -->
+        <record id="demo_kam_plg_ib_1" model="petadigi.kasus_menonjol">
+            <field name="no_lp">LP/KAM/002/I/2025/POLSEK-IB</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_barat"/>
+            <field name="subdit_id" ref="demo_subdit_kamtibmas"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_barat_1"/>
+            <field name="desa_id" ref="demo_desa_9_ilir"/>
+            <field name="kategori_id" ref="demo_kat_kam_tawuran"/>
+            <field name="modus_operandi_id" ref="demo_modus_jambret"/>
+            <field name="jenis_tkp_id" ref="demo_jenis_tkp_sekolah"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_kam_2025"/>
+            <field name="tanggal_kejadian">2025-01-25 16:30:00</field>
+            <field name="permasalahan">Tawuran antar pelajar SMA di sekitar Jl. Sriwijaya, melibatkan 30 orang</field>
+            <field name="penanganan">Polsek Ilir Barat berhasil membubarkan dan mengamankan 5 orang</field>
+            <field name="tindak_lanjut">Mediasi bersama pihak sekolah dan orang tua telah dilakukan</field>
+            <field name="state">SELESAI</field>
+            <field name="latitude">-2.992000</field>
+            <field name="longitude">104.738000</field>
+        </record>
+
+        <!-- Polres OKI / Polsek Kayuagung / Subdit Kamtibmas — PROSES -->
+        <record id="demo_kam_oki_kg_1" model="petadigi.kasus_menonjol">
+            <field name="no_lp">LP/KAM/001/III/2025/POLSEK-KG</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="polsek_id" ref="demo_polsek_kayuagung"/>
+            <field name="subdit_id" ref="demo_subdit_kamtibmas"/>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="kecamatan_id" ref="demo_kec_kayuagung"/>
+            <field name="desa_id" ref="demo_desa_kayuagung_lama"/>
+            <field name="kategori_id" ref="demo_kat_kam_narkoba"/>
+            <field name="modus_operandi_id" ref="demo_modus_hipnotis"/>
+            <field name="jenis_tkp_id" ref="demo_jenis_tkp_rumah"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_kam_2025"/>
+            <field name="tanggal_kejadian">2025-03-05 20:00:00</field>
+            <field name="permasalahan">Jaringan peredaran narkoba lintas kecamatan terdeteksi di Kayuagung Lama</field>
+            <field name="penanganan">Operasi pengungkapan bersama Satres Narkoba Polres OKI sedang berlangsung</field>
+            <field name="state">PROSES</field>
+            <field name="latitude">-3.398000</field>
+            <field name="longitude">104.935000</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             C. BENCANA
+        ═══════════════════════════════════════════════════ -->
+
+        <!-- Kab Palembang / Kec Ilir Timur I — AKTIF -->
+        <record id="demo_bcn_plg_it_1" model="petadigi.bencana">
+            <field name="nama_bencana">Banjir Jl. Kapten A. Rivai</field>
+            <field name="kategori_id" ref="demo_kat_bcn_banjir"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_timur_1"/>
+            <field name="desa_id" ref="demo_desa_26_ilir"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_bcn_2025"/>
+            <field name="tanggal_kejadian">2025-02-20 06:00:00</field>
+            <field name="penyebab">Luapan Sungai Musi akibat curah hujan tinggi selama 3 hari berturut-turut</field>
+            <field name="tindak_lanjut">Evakuasi warga ke posko pengungsian, koordinasi dengan BPBD</field>
+            <field name="keterangan">Ketinggian air mencapai 80 cm, 45 KK terdampak</field>
+            <field name="state">AKTIF</field>
+            <field name="latitude">-2.998000</field>
+            <field name="longitude">104.748500</field>
+        </record>
+
+        <!-- Kab Palembang / Kec Ilir Barat I — NON AKTIF -->
+        <record id="demo_bcn_plg_ib_1" model="petadigi.bencana">
+            <field name="nama_bencana">Kebakaran Pasar 16 Ilir</field>
+            <field name="kategori_id" ref="demo_kat_bcn_kebakaran"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_barat_1"/>
+            <field name="desa_id" ref="demo_desa_8_ilir"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_bcn_2025"/>
+            <field name="tanggal_kejadian">2025-01-08 02:30:00</field>
+            <field name="penyebab">Korsleting listrik pada kios di lapak barat pasar</field>
+            <field name="tindak_lanjut">Kebakaran berhasil dipadamkan oleh 6 unit Damkar, kerugian ditaksir Rp 2,1 M</field>
+            <field name="keterangan">7 kios hangus, tidak ada korban jiwa</field>
+            <field name="state">NON AKTIF</field>
+            <field name="latitude">-2.991500</field>
+            <field name="longitude">104.737500</field>
+        </record>
+
+        <!-- Kab OKI / Kec Kayuagung — AKTIF -->
+        <record id="demo_bcn_oki_kg_1" model="petadigi.bencana">
+            <field name="nama_bencana">Longsor Desa Jua-Jua</field>
+            <field name="kategori_id" ref="demo_kat_bcn_longsor"/>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="kecamatan_id" ref="demo_kec_kayuagung"/>
+            <field name="desa_id" ref="demo_desa_jua_jua"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_bcn_2025"/>
+            <field name="tanggal_kejadian">2025-03-18 11:00:00</field>
+            <field name="penyebab">Hujan lebat menyebabkan tanah di tepi sungai amblas</field>
+            <field name="tindak_lanjut">Tim SAR gabungan melakukan pembersihan, warga dipindahkan sementara</field>
+            <field name="keterangan">3 rumah mengalami kerusakan struktur</field>
+            <field name="state">AKTIF</field>
+            <field name="latitude">-3.397000</field>
+            <field name="longitude">104.932000</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             D. LALU LINTAS
+        ═══════════════════════════════════════════════════ -->
+
+        <!-- Kab Palembang / Kec Ilir Timur I — SELESAI -->
+        <record id="demo_lalin_plg_it_1" model="petadigi.lalu_lintas">
+            <field name="nama_lokasi">Simpang Jl. Kapten A. Rivai — Jl. Merdeka</field>
+            <field name="kategori_id" ref="demo_kat_lalin_laka"/>
+            <field name="jenis_jalan_id" ref="demo_jenis_jalan_nasional"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_timur_1"/>
+            <field name="desa_id" ref="demo_desa_26_ilir"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_lalin_2025"/>
+            <field name="tanggal_kejadian">2025-02-10 07:30:00</field>
+            <field name="penanggung_jawab">Briptu Andi Prasetya</field>
+            <field name="penyebab">Pengendara sepeda motor menerobos lampu merah dan bertabrakan dengan mobil</field>
+            <field name="tindak_lanjut">Korban luka ringan, proses BAP selesai</field>
+            <field name="keterangan">1 korban luka ringan, kerugian materiil Rp 3,5 juta</field>
+            <field name="state">SELESAI</field>
+            <field name="latitude">-2.997500</field>
+            <field name="longitude">104.747800</field>
+        </record>
+
+        <!-- Kab Palembang / Kec Ilir Barat I — PROSES -->
+        <record id="demo_lalin_plg_ib_1" model="petadigi.lalu_lintas">
+            <field name="nama_lokasi">Jl. Sriwijaya depan RSUD Bari</field>
+            <field name="kategori_id" ref="demo_kat_lalin_pelanggaran"/>
+            <field name="jenis_jalan_id" ref="demo_jenis_jalan_provinsi"/>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_barat_1"/>
+            <field name="desa_id" ref="demo_desa_8_ilir"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_lalin_2025"/>
+            <field name="tanggal_kejadian">2025-03-01 08:00:00</field>
+            <field name="penanggung_jawab">Aiptu Rudi Hartanto</field>
+            <field name="penyebab">Kemacetan panjang akibat penutupan jalur untuk perbaikan jalan</field>
+            <field name="tindak_lanjut">Petugas disiagakan mengatur lalu lintas</field>
+            <field name="state">PROSES</field>
+            <field name="latitude">-2.991800</field>
+            <field name="longitude">104.738200</field>
+        </record>
+
+        <!-- Kab OKI / Kec Kayuagung — PROSES -->
+        <record id="demo_lalin_oki_kg_1" model="petadigi.lalu_lintas">
+            <field name="nama_lokasi">Jl. Lintas Sumatera Km 65, Kayuagung</field>
+            <field name="kategori_id" ref="demo_kat_lalin_laka"/>
+            <field name="jenis_jalan_id" ref="demo_jenis_jalan_nasional"/>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="kecamatan_id" ref="demo_kec_kayuagung"/>
+            <field name="desa_id" ref="demo_desa_jua_jua"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_lalin_2025"/>
+            <field name="tanggal_kejadian">2025-03-22 14:15:00</field>
+            <field name="penanggung_jawab">Bripka Yanto Setiawan</field>
+            <field name="penyebab">Truk mengalami rem blong dan menabrak kendaraan di depannya</field>
+            <field name="tindak_lanjut">Olah TKP, korban dibawa ke RSUD Kayuagung</field>
+            <field name="keterangan">2 korban luka sedang, 1 kendaraan roda empat rusak berat</field>
+            <field name="state">PROSES</field>
+            <field name="latitude">-3.396000</field>
+            <field name="longitude">104.931000</field>
+        </record>
+
+        <!-- Kab OKI / Kec Tanjung Lubuk — SELESAI (Polsek Kayuagung tidak bisa lihat ini) -->
+        <record id="demo_lalin_oki_tl_1" model="petadigi.lalu_lintas">
+            <field name="nama_lokasi">Jl. Lintas Sumatera, Desa Tanjung Lubuk</field>
+            <field name="kategori_id" ref="demo_kat_lalin_laka"/>
+            <field name="jenis_jalan_id" ref="demo_jenis_jalan_nasional"/>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="kecamatan_id" ref="demo_kec_tanjung_lubuk"/>
+            <field name="desa_id" ref="demo_desa_tanjung_lubuk"/>
+            <field name="sumber_dokumen_id" ref="demo_sdok_lalin_2025"/>
+            <field name="tanggal_kejadian">2025-01-30 19:45:00</field>
+            <field name="penanggung_jawab">Aiptu Faisal Rahman</field>
+            <field name="penyebab">Tabrakan beruntun akibat jarak aman tidak dijaga di ruas jalan berkabut</field>
+            <field name="tindak_lanjut">BAP selesai, berkas dilimpahkan ke Polres OKI</field>
+            <field name="state">SELESAI</field>
+            <field name="latitude">-3.450500</field>
+            <field name="longitude">104.850800</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             E. LOKASI PENTING
+        ═══════════════════════════════════════════════════ -->
+
+        <!-- Palembang — Polsek Ilir Timur coverage -->
+        <record id="demo_lok_mapolres_plg" model="petadigi.lokasi_penting">
+            <field name="nama_lokasi">Mapolres Palembang</field>
+            <field name="kategori_id" ref="demo_kat_lokasi_polisi"/>
+            <field name="alamat_lengkap">Jl. Jenderal Sudirman No. 459, Kel. 26 Ilir D I, Ilir Timur I, Palembang</field>
+            <field name="hp_kontak">(0711) 378100</field>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_timur_1"/>
+            <field name="desa_id" ref="demo_desa_26_ilir"/>
+            <field name="state">AKTIF</field>
+            <field name="latitude">-2.997700</field>
+            <field name="longitude">104.748000</field>
+            <field name="keterangan">Kantor Polres Palembang, buka 24 jam</field>
+        </record>
+
+        <!-- Palembang — Polsek Ilir Barat coverage -->
+        <record id="demo_lok_rs_bhayangkara" model="petadigi.lokasi_penting">
+            <field name="nama_lokasi">RS Bhayangkara Palembang</field>
+            <field name="kategori_id" ref="demo_kat_lokasi_rs"/>
+            <field name="alamat_lengkap">Jl. Jend. Sudirman Km 4,5, Kel. 8 Ilir, Ilir Barat I, Palembang</field>
+            <field name="hp_kontak">(0711) 810175</field>
+            <field name="kabupaten_id" ref="demo_kab_palembang"/>
+            <field name="kecamatan_id" ref="demo_kec_ilir_barat_1"/>
+            <field name="desa_id" ref="demo_desa_8_ilir"/>
+            <field name="state">AKTIF</field>
+            <field name="latitude">-2.992000</field>
+            <field name="longitude">104.737000</field>
+            <field name="keterangan">Rumah sakit rujukan Polri wilayah Palembang</field>
+        </record>
+
+        <!-- OKI — Kayuagung -->
+        <record id="demo_lok_mapolres_oki" model="petadigi.lokasi_penting">
+            <field name="nama_lokasi">Mapolres OKI</field>
+            <field name="kategori_id" ref="demo_kat_lokasi_polisi"/>
+            <field name="alamat_lengkap">Jl. Letnan Marzuki, Kayuagung, Kab. OKI</field>
+            <field name="hp_kontak">(0712) 321001</field>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="kecamatan_id" ref="demo_kec_kayuagung"/>
+            <field name="desa_id" ref="demo_desa_jua_jua"/>
+            <field name="state">AKTIF</field>
+            <field name="latitude">-3.396200</field>
+            <field name="longitude">104.932500</field>
+            <field name="keterangan">Kantor Polres Ogan Komering Ilir, buka 24 jam</field>
+        </record>
+
+        <!-- OKI — Kayuagung (lokasi NON AKTIF untuk uji skenario) -->
+        <record id="demo_lok_pasar_kayuagung" model="petadigi.lokasi_penting">
+            <field name="nama_lokasi">Pasar Kayuagung</field>
+            <field name="kategori_id" ref="demo_kat_lokasi_pasar"/>
+            <field name="alamat_lengkap">Jl. Pasar Lama, Kayuagung Lama, Kab. OKI</field>
+            <field name="hp_kontak">-</field>
+            <field name="kabupaten_id" ref="demo_kab_oki"/>
+            <field name="kecamatan_id" ref="demo_kec_kayuagung"/>
+            <field name="desa_id" ref="demo_desa_kayuagung_lama"/>
+            <field name="state">NON AKTIF</field>
+            <field name="latitude">-3.397500</field>
+            <field name="longitude">104.934000</field>
+            <field name="keterangan">Pasar tradisional — dinonaktifkan sementara untuk renovasi</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             F. JENIS LAPORAN (COOLING SYSTEM)
+        ═══════════════════════════════════════════════════ -->
+        <record id="demo_jenis_lap_sosialisasi" model="petadigi.jenis_laporan">
+            <field name="nama">Sosialisasi Video Layanan 110</field>
+            <field name="keterangan">Form untuk petugas yang melaksanakan sosialisasi penggunaan hotline 110 kepada masyarakat</field>
+            <field name="state">aktif</field>
+        </record>
+        <record id="demo_jenis_lap_patroli" model="petadigi.jenis_laporan">
+            <field name="nama">Patroli Rutin</field>
+            <field name="keterangan">Form pelaporan kegiatan patroli rutin harian oleh anggota</field>
+            <field name="state">aktif</field>
+        </record>
+        <record id="demo_jenis_lap_sambang" model="petadigi.jenis_laporan">
+            <field name="nama">Sambang Warga</field>
+            <field name="keterangan">Form pelaporan kegiatan sambang/door-to-door ke warga</field>
+            <field name="state">draft</field>
+        </record>
+
+        <!-- ═══════════════════════════════════════════════════
+             G. HASIL GIAT (COOLING SYSTEM)
+             Polres Palembang / Polsek Ilir Timur (3 entri)
+             Polres Palembang / Polsek Ilir Barat  (2 entri)
+             Polres OKI / Polsek Kayuagung          (2 entri)
+        ═══════════════════════════════════════════════════ -->
+
+        <record id="demo_giat_plt_1" model="petadigi.hasil_giat">
+            <field name="jenis_laporan_id" ref="demo_jenis_lap_sosialisasi"/>
+            <field name="nrp">96050801</field>
+            <field name="nama_petugas">Briptu Agus Santoso</field>
+            <field name="pangkat_petugas">Briptu</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_timur"/>
+            <field name="tanggal">2025-03-10 09:00:00</field>
+            <field name="kegiatan">Sosialisasi hotline 110 kepada pedagang dan pengunjung Pasar Sekanak, Kel. 26 Ilir. Diikuti ±40 orang, respon positif dari warga.</field>
+            <field name="latitude">-2.997500</field>
+            <field name="longitude">104.748000</field>
+        </record>
+
+        <record id="demo_giat_plt_2" model="petadigi.hasil_giat">
+            <field name="jenis_laporan_id" ref="demo_jenis_lap_patroli"/>
+            <field name="nrp">96050802</field>
+            <field name="nama_petugas">Briptu Ririn Wahyuni</field>
+            <field name="pangkat_petugas">Briptu</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_timur"/>
+            <field name="tanggal">2025-03-11 21:00:00</field>
+            <field name="kegiatan">Patroli malam rutin di kawasan Jl. Kapten A. Rivai dan sekitarnya. Situasi aman terkendali, tidak ada kejadian menonjol.</field>
+            <field name="latitude">-2.998000</field>
+            <field name="longitude">104.749000</field>
+        </record>
+
+        <record id="demo_giat_plt_3" model="petadigi.hasil_giat">
+            <field name="jenis_laporan_id" ref="demo_jenis_lap_sosialisasi"/>
+            <field name="nrp">96050803</field>
+            <field name="nama_petugas">Bripda Hendi Pratama</field>
+            <field name="pangkat_petugas">Bripda</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_timur"/>
+            <field name="tanggal">2025-03-14 10:30:00</field>
+            <field name="kegiatan">Sosialisasi hotline 110 di lingkungan SD Negeri 52 Palembang, Kel. 28 Ilir. Peserta 60 siswa kelas 5-6 dan 3 guru.</field>
+            <field name="latitude">-2.999000</field>
+            <field name="longitude">104.750500</field>
+        </record>
+
+        <record id="demo_giat_plb_1" model="petadigi.hasil_giat">
+            <field name="jenis_laporan_id" ref="demo_jenis_lap_patroli"/>
+            <field name="nrp">96050804</field>
+            <field name="nama_petugas">Brigadir Eko Purwanto</field>
+            <field name="pangkat_petugas">Brigadir</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_barat"/>
+            <field name="tanggal">2025-03-12 20:00:00</field>
+            <field name="kegiatan">Patroli rutin di wilayah Ilir Barat I, melintasi Jl. R.E. Martadinata dan Jl. Sriwijaya. Kamtibmas aman.</field>
+            <field name="latitude">-2.991500</field>
+            <field name="longitude">104.737500</field>
+        </record>
+
+        <record id="demo_giat_plb_2" model="petadigi.hasil_giat">
+            <field name="jenis_laporan_id" ref="demo_jenis_lap_sosialisasi"/>
+            <field name="nrp">96050805</field>
+            <field name="nama_petugas">Briptu Sari Dewi</field>
+            <field name="pangkat_petugas">Briptu</field>
+            <field name="polres_id" ref="demo_polres_palembang"/>
+            <field name="polsek_id" ref="demo_polsek_ilir_barat"/>
+            <field name="tanggal">2025-03-15 09:30:00</field>
+            <field name="kegiatan">Sambang warga dan sosialisasi 110 di RW 05, Kel. 9-10 Ulu. 25 warga hadir, antusias dengan program kepolisian.</field>
+            <field name="latitude">-2.992500</field>
+            <field name="longitude">104.738500</field>
+        </record>
+
+        <record id="demo_giat_okg_1" model="petadigi.hasil_giat">
+            <field name="jenis_laporan_id" ref="demo_jenis_lap_patroli"/>
+            <field name="nrp">96050806</field>
+            <field name="nama_petugas">Briptu Dwi Raharjo</field>
+            <field name="pangkat_petugas">Briptu</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="polsek_id" ref="demo_polsek_kayuagung"/>
+            <field name="tanggal">2025-03-13 19:30:00</field>
+            <field name="kegiatan">Patroli malam di kawasan Jl. A. Yani dan Pasar Kayuagung. Ditemukan 2 remaja nongkrong mencurigakan, sudah dilakukan pendekatan humanis.</field>
+            <field name="latitude">-3.396500</field>
+            <field name="longitude">104.933000</field>
+        </record>
+
+        <record id="demo_giat_okg_2" model="petadigi.hasil_giat">
+            <field name="jenis_laporan_id" ref="demo_jenis_lap_sosialisasi"/>
+            <field name="nrp">96050807</field>
+            <field name="nama_petugas">Bripda Nurhalim</field>
+            <field name="pangkat_petugas">Bripda</field>
+            <field name="polres_id" ref="demo_polres_oki"/>
+            <field name="polsek_id" ref="demo_polsek_kayuagung"/>
+            <field name="tanggal">2025-03-16 09:00:00</field>
+            <field name="kegiatan">Sosialisasi penggunaan hotline 110 di Balai Desa Jua-Jua. Dihadiri kepala desa, ketua RT/RW, dan 35 warga.</field>
+            <field name="latitude">-3.397000</field>
+            <field name="longitude">104.932000</field>
+        </record>
+
+    </data>
+</odoo>

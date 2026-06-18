@@ -71,3 +71,9 @@ access_hasil_giat_polsek,hasil_giat polsek,model_petadigi_hasil_giat,petadigi.gr
 access_import_lp_wizard_admin,import_lp_wizard admin,model_petadigi_import_lp_wizard,petadigi.group_admin,1,1,1,1
 access_import_lp_wizard_polres,import_lp_wizard polres,model_petadigi_import_lp_wizard,petadigi.group_polres,1,1,1,1
 access_import_lp_wizard_polsek,import_lp_wizard polsek,model_petadigi_import_lp_wizard,petadigi.group_polsek,1,1,1,1
+access_kategori_sumur_minyak_admin,kategori_sumur_minyak admin,model_petadigi_kategori_sumur_minyak,petadigi.group_admin,1,1,1,1
+access_kategori_sumur_minyak_user,kategori_sumur_minyak user,model_petadigi_kategori_sumur_minyak,petadigi.group_petadigi_user,1,0,0,0
+access_sumur_minyak_admin,sumur_minyak admin,model_petadigi_sumur_minyak,petadigi.group_admin,1,1,1,1
+access_sumur_minyak_polres,sumur_minyak polres,model_petadigi_sumur_minyak,petadigi.group_polres,1,1,1,1
+access_sumur_minyak_polsek,sumur_minyak polsek,model_petadigi_sumur_minyak,petadigi.group_polsek,1,1,1,1
+access_sumur_minyak_subdit,sumur_minyak subdit read,model_petadigi_sumur_minyak,petadigi.group_subdit,1,0,0,0

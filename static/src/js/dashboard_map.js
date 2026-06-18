@@ -11,12 +11,14 @@ import { loadModeKam, removeKamLegend } from "./dashboard_layer_kam";
 import { loadModeLalin, removeLalinLegend } from "./dashboard_layer_lalin";
 import { loadModeBencana, removeBencanaLegend } from "./dashboard_layer_bencana";
 import { loadModeLokasi, removeLokasiLegend } from "./dashboard_layer_lokasi";
+import { loadModeSumur, removeSumurLegend } from "./dashboard_layer_sumur_minyak";
 import { removeLokasiOverlay } from "./dashboard_overlay_lokasi";
 import { updateKriminalCharts, disposeKriminalCharts, updateKriminalTable } from "./dashboard_charts_kriminal";
 import { updateKamCharts, disposeKamCharts, updateKamTable } from "./dashboard_charts_kam";
 import { updateBencanaCharts, disposeBencanaCharts, updateBencanaTable } from "./dashboard_charts_bencana";
 import { updateLalinCharts, disposeLalinCharts, updateLalinTable } from "./dashboard_charts_lalin";
 import { updateLokasiCharts, disposeLokasiCharts, updateLokasiTable } from "./dashboard_charts_lokasi";
+import { updateSumurCharts, disposeSumurCharts, updateSumurTable } from "./dashboard_charts_sumur_minyak";
 
 export class DashboardMap extends Component {
     static template = "petadigi.DashboardMap";
@@ -28,6 +30,7 @@ export class DashboardMap extends Component {
         this.breadcrumbRef   = useRef("breadcrumb");
         this.collapseIcon    = useRef("collapseIcon");
         this.collapseText    = useRef("collapseText");
+        this.filterJenisLP          = useRef("filterJenisLP");
         this.filterKategori         = useRef("filterKategori");
         this.filterSubKategori      = useRef("filterSubKategori");
         this.filterTahun            = useRef("filterTahun");
@@ -80,6 +83,10 @@ export class DashboardMap extends Component {
         this.chartLokasiBarRef         = useRef("chartLokasiBar");
         this.chartLokasiDonutRef       = useRef("chartLokasiDonut");
         this.chartLokasiDonutTitleRef  = useRef("chartLokasiDonutTitle");
+        this.filterKategoriSumur       = useRef("filterKategoriSumur");
+        this.chartSumurRowRef          = useRef("chartSumurRow");
+        this.chartSumurBarRef          = useRef("chartSumurBar");
+        this.chartSumurDonutRef        = useRef("chartSumurDonut");
         this.tableKriminalRowRef       = useRef("tableKriminalRow");
         this.tableKriminalBodyRef      = useRef("tableKriminalBody");
         this.tableKamRowRef            = useRef("tableKamRow");
@@ -90,6 +97,8 @@ export class DashboardMap extends Component {
         this.tableLalinBodyRef         = useRef("tableLalinBody");
         this.tableLokasiRowRef         = useRef("tableLokasiRow");
         this.tableLokasiBodyRef        = useRef("tableLokasiBody");
+        this.tableSumurRowRef          = useRef("tableSumurRow");
+        this.tableSumurBodyRef         = useRef("tableSumurBody");
 
         this.orm    = useService("orm");
         this.action = useService("action");
@@ -125,6 +134,8 @@ export class DashboardMap extends Component {
         this._echartsLalinWaktu      = null;
         this._echartsLokasiBar       = null;
         this._echartsLokasiDonut     = null;
+        this._echartsSumurBar        = null;
+        this._echartsSumurDonut      = null;
 
         // Drill-down context — set oleh layer file saat user klik polygon
         this.drillKabupatenId = null;
@@ -134,6 +145,7 @@ export class DashboardMap extends Component {
         this._bencanaTablePage  = 1;
         this._lalinTablePage    = 1;
         this._lokasiTablePage   = 1;
+        this._sumurTablePage    = 1;
 
         // Overlay lokasi penting (multi-mode)
         this.lokasiOverlaySelected = new Set();
@@ -145,6 +157,7 @@ export class DashboardMap extends Component {
             bencana:  'petadigi.kategori_bencana',
             lalin:    'petadigi.kategori_lalu_lintas',
             lokasi:   'petadigi.kategori_lokasi',
+            // sumur tidak punya kategori — tidak didaftarkan
         };
 
         onMounted(async () => {
@@ -152,7 +165,11 @@ export class DashboardMap extends Component {
             this._initFlatpickr();
             await this._updateFilterVisibility('umum');
             await this._initMap();
+            // User may have clicked a different menu while map/KPI was loading.
+            // If so, _switchMode already handled the new mode — skip umum init.
+            if (this.currentMode !== 'umum') return;
             await this._updateKpiCards('umum');
+            if (this.currentMode !== 'umum') return;
             this._updateFilterSummary('umum');
             this._updateSumberDokumenInfo('umum');
             this._updateCharts('umum');
@@ -261,6 +278,7 @@ export class DashboardMap extends Component {
             lalin:   { icon: 'fa-car',                  label: 'Peta Lalu Lintas' },
             bencana: { icon: 'fa-bolt',                 label: 'Peta Bencana' },
             lokasi:  { icon: 'fa-map-marker',           label: 'Lokasi Penting' },
+            sumur:   { icon: 'fa-tint',                 label: 'Peta Sumur Minyak' },
         };
         const meta = modeLabels[mode] || modeLabels['umum'];
         this._updateBreadcrumb(`<i class="fa ${meta.icon}"></i> ${meta.label}`);
@@ -289,6 +307,7 @@ export class DashboardMap extends Component {
             case 'lalin':    loadModeLalin(this); break;
             case 'bencana':  loadModeBencana(this); break;
             case 'lokasi':   loadModeLokasi(this); break;
+            case 'sumur':    loadModeSumur(this); break;
             default:         loadKabupatenLayer(this); break;
         }
     }
@@ -313,36 +332,45 @@ export class DashboardMap extends Component {
     // FILTER VISIBILITY per mode
     // ─────────────────────────────────────────────
     async _updateFilterVisibility(mode) {
-        const showKategori    = mode !== 'umum';
-        const showSubKategori = mode === 'kriminal';
-        const showExtended    = !['umum', 'lokasi'].includes(mode);
-        const showState       = mode !== 'umum';
+        const showJenisLP       = mode === 'kriminal';
+        const showKategori      = !['umum', 'sumur'].includes(mode);
+        const showKategoriSumur = mode === 'sumur';
+        const showSubKategori   = mode === 'kriminal';
+        const showExtended      = !['umum', 'lokasi', 'sumur'].includes(mode);
+        const showState         = mode !== 'umum';
 
-        const tahunEl       = this.filterTahun?.el;
-        const dateWrap      = this.filterDateRangeWrapper?.el;
-        const kategoriEl    = this.filterKategori?.el;
-        const subKategoriEl = this.filterSubKategori?.el;
-        const stateEl       = this.filterState?.el;
+        const jenisLpEl          = this.filterJenisLP?.el;
+        const tahunEl            = this.filterTahun?.el;
+        const dateWrap           = this.filterDateRangeWrapper?.el;
+        const kategoriEl         = this.filterKategori?.el;
+        const kategoriSumurEl    = this.filterKategoriSumur?.el;
+        const subKategoriEl      = this.filterSubKategori?.el;
+        const stateEl            = this.filterState?.el;
 
-        if (tahunEl)       tahunEl.style.display       = showExtended    ? '' : 'none';
-        if (dateWrap)      dateWrap.style.display       = showExtended    ? '' : 'none';
-        if (kategoriEl)    kategoriEl.style.display     = showKategori    ? '' : 'none';
-        if (subKategoriEl) subKategoriEl.style.display  = showSubKategori ? '' : 'none';
-        if (stateEl)       stateEl.style.display        = showState       ? '' : 'none';
+        if (jenisLpEl)       jenisLpEl.style.display          = showJenisLP       ? '' : 'none';
+        if (tahunEl)         tahunEl.style.display             = showExtended      ? '' : 'none';
+        if (dateWrap)        dateWrap.style.display            = showExtended      ? '' : 'none';
+        if (kategoriEl)      kategoriEl.style.display          = showKategori      ? '' : 'none';
+        if (kategoriSumurEl) kategoriSumurEl.style.display     = showKategoriSumur ? '' : 'none';
+        if (subKategoriEl)   subKategoriEl.style.display       = showSubKategori   ? '' : 'none';
+        if (stateEl)         stateEl.style.display             = showState         ? '' : 'none';
 
         const modeChanged = mode !== this._filterMode;
         this._filterMode = mode;
 
         if (modeChanged) {
             // Reset & repopulate hanya saat mode berganti
-            if (kategoriEl)    { kategoriEl.value = ''; }
+            if (jenisLpEl)       { jenisLpEl.value = ''; }
+            if (kategoriEl)      { kategoriEl.value = ''; }
+            if (kategoriSumurEl) { kategoriSumurEl.value = ''; }
             if (subKategoriEl) {
                 subKategoriEl.innerHTML = '<option value="">Semua Sub Kategori</option>';
                 subKategoriEl.value = '';
             }
             if (stateEl) { stateEl.value = ''; }
-            if (showKategori) await this._populateKategori(mode);
-            if (showState)    await this._populateState(mode);
+            if (showKategori)      await this._populateKategori(mode);
+            if (showKategoriSumur) await this._populateKategoriSumur();
+            if (showState)         await this._populateState(mode);
         }
     }
 
@@ -356,6 +384,7 @@ export class DashboardMap extends Component {
             lalin:    [{ value: 'PROSES', label: 'Proses' }, { value: 'SELESAI', label: 'Selesai' }],
             kam:      [{ value: 'PROSES', label: 'Proses' }, { value: 'SELESAI', label: 'Selesai' }],
             lokasi:   [{ value: 'AKTIF', label: 'Aktif' }, { value: 'NON AKTIF', label: 'Non Aktif' }],
+            sumur:    [{ value: 'AKTIF', label: 'Aktif' }, { value: 'TIDAK AKTIF', label: 'Tidak Aktif' }],
         };
         (OPTIONS[mode] || []).forEach(o => {
             const opt = document.createElement('option');
@@ -363,6 +392,22 @@ export class DashboardMap extends Component {
             opt.textContent = o.label;
             el.appendChild(opt);
         });
+    }
+
+    async _populateKategoriSumur() {
+        const el = this.filterKategoriSumur?.el;
+        if (!el) return;
+        el.innerHTML = '<option value="">Semua Kategori</option>';
+        try {
+            const records = await this.orm.searchRead(
+                'petadigi.kategori_sumur_minyak', [], ['id', 'name'], { order: 'name asc' });
+            records.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.id;
+                opt.textContent = r.name;
+                el.appendChild(opt);
+            });
+        } catch (_) {}
     }
 
     async _populateKategori(mode) {
@@ -411,8 +456,8 @@ export class DashboardMap extends Component {
         const el = this.filterSummaryRef.el;
         if (!el) return;
 
-        const hasTahunFilter  = !['umum', 'lokasi'].includes(mode);
-        const hasDateFilter   = !['umum', 'lokasi'].includes(mode);
+        const hasTahunFilter  = !['umum', 'lokasi', 'sumur'].includes(mode);
+        const hasDateFilter   = !['umum', 'lokasi', 'sumur'].includes(mode);
 
         const chip = (icon, text) =>
             `<span class="petadigi-filter-summary-chip"><i class="fa ${icon}"></i>${text}</span>`;
@@ -548,6 +593,7 @@ export class DashboardMap extends Component {
     // KPI CARDS — dinamis per mode
     // ─────────────────────────────────────────────
     async _updateKpiCards(mode) {
+        const myVersion = this._modeVersion;
         const row = this.kpiRowRef.el;
         if (!row) return;
         row.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:#bbb;font-size:12px;padding:8px 0;">Memuat data...</div>`;
@@ -565,9 +611,11 @@ export class DashboardMap extends Component {
             ...(dateFrom ? [['tanggal_kejadian', '>=', dateFrom + ' 00:00:00']] : []),
             ...(dateTo   ? [['tanggal_kejadian', '<=', dateTo   + ' 23:59:59']] : []),
         ];
+        const jenisLpValue  = this.filterJenisLP?.el?.value          || '';
         const kabf = kabupatenId   ? [['kabupaten_id',   '=', kabupatenId]]   : [];
         const kf  = kategoriId    ? [['kategori_id',    '=', kategoriId]]    : [];
         const sf  = subKategoriId ? [['sub_kategori_id','=', subKategoriId]] : [];
+        const jlpf = jenisLpValue  ? [['jenis_lp',       '=', jenisLpValue]]  : [];
         // state field berbeda: kriminal pakai status_perkara, lainnya pakai state
         const stk = stateValue ? [['status_perkara', '=', stateValue]] : [];
         const sts = stateValue ? [['state',          '=', stateValue]] : [];
@@ -582,7 +630,7 @@ export class DashboardMap extends Component {
             let cards = [];
 
             if (mode === 'kriminal') {
-                const d = [...tf, ...df, ...kabf, ...kf, ...sf, ...stk, ...drillDomain];
+                const d = [...tf, ...df, ...kabf, ...jlpf, ...kf, ...sf, ...stk, ...drillDomain];
                 const [total, proses, selesai] = await Promise.all([
                     this.orm.searchCount('petadigi.kriminalitas', d),
                     this.orm.searchCount('petadigi.kriminalitas', [...d, ['status_perkara','=','PROSES']]),
@@ -663,8 +711,24 @@ export class DashboardMap extends Component {
                     { icon: 'fa-times-circle',color: '#c0392b', value: total-aktif, label: 'Non Aktif' },
                     { icon: 'fa-map-marker',  color: '#8e44ad', value: total,       label: 'Total Terdaftar' },
                 ];
+            } else if (mode === 'sumur') {
+                // sumur_minyak tidak punya sumber_dokumen_id & tanggal_kejadian
+                const sumurSts = stateValue ? [['state', '=', stateValue]] : [];
+                const sumurBase = [...kabf, ...sumurSts, ...drillDomain];
+                const [total, aktif, lengkap] = await Promise.all([
+                    this.orm.searchCount('petadigi.sumur_minyak', sumurBase),
+                    this.orm.searchCount('petadigi.sumur_minyak', [...sumurBase, ['state','=','AKTIF']]),
+                    this.orm.searchCount('petadigi.sumur_minyak', [...sumurBase, ['is_data_lengkap','=',true]]),
+                ]);
+                cards = [
+                    { icon: 'fa-database',    color: '#A04000', value: total,        label: 'Total Sumur' },
+                    { icon: 'fa-check-circle',color: '#27ae60', value: aktif,        label: 'Sumur Aktif' },
+                    { icon: 'fa-times-circle',color: '#7F8C8D', value: total - aktif,label: 'Tidak Aktif' },
+                    { icon: 'fa-tint',        color: '#CA6F1E', value: lengkap,      label: 'Data Lengkap' },
+                ];
             }
 
+            if (this._modeVersion !== myVersion) return;
             row.innerHTML = cards.map(c => `
                 <div class="petadigi-kpi-card">
                     <div class="petadigi-kpi-icon" style="color:${c.color};">
@@ -678,6 +742,7 @@ export class DashboardMap extends Component {
             `).join('');
 
         } catch (e) {
+            if (this._modeVersion !== myVersion) return;
             row.innerHTML = '';
             console.error('KPI load error:', e);
         }
@@ -693,11 +758,13 @@ export class DashboardMap extends Component {
             updateBencanaCharts(this, mode),
             updateLalinCharts(this, mode),
             updateLokasiCharts(this, mode),
+            updateSumurCharts(this, mode),
             updateKriminalTable(this, mode),
             updateKamTable(this, mode),
             updateBencanaTable(this, mode),
             updateLalinTable(this, mode),
             updateLokasiTable(this, mode),
+            updateSumurTable(this, mode),
         ]);
     }
     _disposeCharts() {
@@ -706,6 +773,7 @@ export class DashboardMap extends Component {
         disposeBencanaCharts(this);
         disposeLalinCharts(this);
         disposeLokasiCharts(this);
+        disposeSumurCharts(this);
     }
 
     // ─────────────────────────────────────────────
@@ -770,6 +838,7 @@ export class DashboardMap extends Component {
         removeBencanaLegend(this);
         removeLalinLegend(this);
         removeLokasiLegend(this);
+        removeSumurLegend(this);
         removeLokasiOverlay(this);
     }
 

@@ -11,6 +11,7 @@ class SumberDokumen(models.Model):
         ('LALU LINTAS', 'Lalu Lintas'),
         ('LOKASI PENTING', 'Lokasi Penting'),
         ('KASUS MENONJOL', 'Kasus Menonjol'),
+        ('SUMUR MINYAK', 'Sumur Minyak'),
     ], string="Tipe Sumber", required=True)
     tahun = fields.Selection(
         [(str(t), str(t)) for t in range(2020, 2031)],

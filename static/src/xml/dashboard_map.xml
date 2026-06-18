@@ -40,6 +40,10 @@
                         <i class="fa fa-map-marker"/>
                         <span>Lokasi Penting</span>
                     </a>
+                    <a class="petadigi-nav-item" data-mode="sumur" t-on-click="onNavClick">
+                        <i class="fa fa-tint"/>
+                        <span>Sumur Minyak</span>
+                    </a>
                 </nav>
             </div>
 
@@ -53,6 +57,11 @@
                     </div>
                     <div class="petadigi-filter-box">
                         <i class="fa fa-filter"/>
+                        <select class="petadigi-select" t-ref="filterJenisLP" t-on-change="onFilterChange">
+                            <option value="">Semua Jenis LP</option>
+                            <option value="LP A">LP A</option>
+                            <option value="LP B">LP B</option>
+                        </select>
                         <select class="petadigi-select" t-ref="filterKategori" t-on-change="onKategoriChange">
                             <option value="">Semua Kategori</option>
                         </select>
@@ -64,6 +73,9 @@
                         </select>
                         <select class="petadigi-select" t-ref="filterKabupaten" t-on-change="onFilterChange">
                             <option value="">Semua Kabupaten</option>
+                        </select>
+                        <select class="petadigi-select" t-ref="filterKategoriSumur" t-on-change="onFilterChange">
+                            <option value="">Semua Kategori</option>
                         </select>
                         <select class="petadigi-select" t-ref="filterState" t-on-change="onFilterChange">
                             <option value="">Semua Status</option>
@@ -200,6 +212,22 @@
                     </div>
                 </div>
 
+                <!-- CHART SUMUR ROW — hanya untuk mode sumur -->
+                <div class="petadigi-chart-row" t-ref="chartSumurRow">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-bar-chart"/> Grafik Total Sumur Minyak per Kabupaten
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartSumurBar"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-pie-chart"/> Kategori Sumur Minyak
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartSumurDonut"/>
+                    </div>
+                </div>
+
                 <!-- CHART ROW 1 — di bawah map, hanya untuk mode kriminal -->
                 <div class="petadigi-chart-row" t-ref="chartRow">
                     <div class="petadigi-chart-card">
@@ -317,6 +345,14 @@
                     <div class="petadigi-data-table-card">
                         <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Lokasi Penting</div>
                         <div t-ref="tableLokasiBody"/>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE SUMUR MINYAK -->
+                <div class="petadigi-chart-row" t-ref="tableSumurRow">
+                    <div class="petadigi-data-table-card">
+                        <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Sumur Minyak</div>
+                        <div t-ref="tableSumurBody"/>
                     </div>
                 </div>
 

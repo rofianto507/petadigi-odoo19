@@ -62,6 +62,13 @@
             action="action_petadigi_lokasi_penting"
             groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="5"/>
+        <menuitem
+            id="menu_sumur_minyak"
+            name="Sumur Minyak"
+            parent="menu_petadigi_maps"
+            action="action_petadigi_sumur_minyak"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            sequence="6"/>
 
         <!-- Cooling System: tidak untuk subdit -->
         <menuitem
@@ -184,6 +191,13 @@
             action="action_petadigi_kategori_lokasi"
             groups="petadigi.group_admin"
             sequence="120"/>
+        <menuitem
+            id="menu_config_kategori_sumur_minyak"
+            name="Kategori Sumur Minyak"
+            parent="menu_petadigi_configuration"
+            action="action_petadigi_kategori_sumur_minyak"
+            groups="petadigi.group_admin"
+            sequence="125"/>
         <menuitem
             id="menu_config_jenis_jalan"
             name="Jenis Jalan"

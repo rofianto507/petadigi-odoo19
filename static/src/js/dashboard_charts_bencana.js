@@ -97,12 +97,12 @@ export function disposeBencanaCharts(ctx) {
 }
 
 export async function updateBencanaCharts(ctx, mode) {
+    const ver = ctx._modeVersion;
     const row = ctx.chartBencanaRowRef?.el;
     if (!row) return;
 
     if (mode !== 'bencana') {
-        row.style.display = 'none';
-        disposeBencanaCharts(ctx);
+        if (ctx.currentMode !== 'bencana') { row.style.display = 'none'; disposeBencanaCharts(ctx); }
         return;
     }
     row.style.display = 'flex';
@@ -148,6 +148,7 @@ export async function updateBencanaCharts(ctx, mode) {
         });
         const kabList = allKabupaten.map(k => ({ name: k.name, val: kabCountMap[k.id] || 0 }));
         kabList.sort((a, b) => b.val - a.val);
+        if (ctx._modeVersion !== ver) return;
         _renderBencanaBarChart(ctx, kabList.map(k => k.name), kabList.map(k => k.val));
 
         // Donut — per kategori
@@ -180,11 +181,12 @@ export async function updateBencanaCharts(ctx, mode) {
 const PAGE_SIZE = 20;
 
 export async function updateBencanaTable(ctx, mode, page) {
+    const ver    = ctx._modeVersion;
     const rowEl  = ctx.tableBencanaRowRef?.el;
     const bodyEl = ctx.tableBencanaBodyRef?.el;
     if (!rowEl) return;
 
-    if (mode !== 'bencana') { rowEl.style.display = 'none'; return; }
+    if (mode !== 'bencana') { if (ctx.currentMode !== 'bencana') rowEl.style.display = 'none'; return; }
     rowEl.style.display = 'flex';
 
     ctx._bencanaTablePage = (page !== undefined) ? page : 1;
@@ -245,6 +247,7 @@ export async function updateBencanaTable(ctx, mode, page) {
                 </tr>`;
         }).join('');
 
+        if (ctx._modeVersion !== ver) return;
         bodyEl.innerHTML = `
             <div class="petadigi-table-toolbar">
                 <span class="petadigi-table-info">
