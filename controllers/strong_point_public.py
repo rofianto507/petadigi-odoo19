@@ -1,10 +1,35 @@
 from odoo import http
 from odoo.http import request
+from datetime import datetime, timedelta
 import json
 import base64
 import logging
 
 _logger = logging.getLogger(__name__)
+
+_WIB_OFFSET = timedelta(hours=7)
+
+
+def _today_utc_range_wib():
+    """Return (start, end) UTC naive datetime strings for 'today' in WIB (UTC+7)."""
+    now_wib   = datetime.utcnow() + _WIB_OFFSET
+    today_wib = now_wib.date()
+    wib_start = datetime(today_wib.year, today_wib.month, today_wib.day, 0, 0, 0)
+    wib_end   = datetime(today_wib.year, today_wib.month, today_wib.day, 23, 59, 59)
+    utc_start = (wib_start - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+    utc_end   = (wib_end   - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+    return utc_start, utc_end
+
+
+def _wib_to_utc(dt_str):
+    """Convert naive WIB datetime string to UTC datetime string for Odoo storage."""
+    if not dt_str:
+        return dt_str
+    try:
+        dt = datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')
+        return (dt - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+    except (ValueError, TypeError):
+        return dt_str
 
 
 class StrongPointPublicController(http.Controller):
@@ -127,15 +152,54 @@ class StrongPointPublicController(http.Controller):
         SP   = request.env['petadigi.strong_point'].sudo()
         base = ([('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
+
+        # Total keseluruhan
         total    = SP.search_count(base)
-        proses   = SP.search_count(base + [('state', '=', 'PROSES')])
-        selesai  = SP.search_count(base + [('state', '=', 'SELESAI')])
         groups   = SP.read_group(base, ['personel_count:sum'], [])
         personel = groups[0]['personel_count'] if groups else 0
+
+        # Hari ini (boundary dalam WIB, disimpan sebagai UTC di DB)
+        utc_start, utc_end = _today_utc_range_wib()
+        today_dom      = base + [('tanggal_mulai', '>=', utc_start),
+                                  ('tanggal_mulai', '<=', utc_end)]
+        total_today    = SP.search_count(today_dom)
+        groups_today   = SP.read_group(today_dom, ['personel_count:sum'], [])
+        personel_today = groups_today[0]['personel_count'] if groups_today else 0
+
         return {
-            'strong_point': {'total': total, 'proses': proses, 'selesai': selesai, 'personel': personel},
+            'strong_point': {
+                'total': total, 'personel': personel,
+                'today': total_today, 'personel_today': personel_today,
+            },
             'patroli': {'total': 0, 'aktif': 0},
         }
+
+    # ── API: Weekly chart data ────────────────────────────────────────────────
+
+    @http.route('/petadigi/api/weekly', type='jsonrpc', auth='public', csrf=False)
+    def api_weekly(self, **kwargs):
+        user = self._auth_check()
+        if not user:
+            return {'error': 'unauthorized'}
+        SP   = request.env['petadigi.strong_point'].sudo()
+        base = ([('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
+                else [('polres_id', '=', user.polres_id.id)])
+
+        now_wib    = datetime.utcnow() + _WIB_OFFSET
+        today_wib  = now_wib.date()
+        day_names  = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min']
+        days = []
+        for i in range(6, -1, -1):
+            d        = today_wib - timedelta(days=i)
+            wib_s    = datetime(d.year, d.month, d.day, 0, 0, 0)
+            wib_e    = datetime(d.year, d.month, d.day, 23, 59, 59)
+            utc_s    = (wib_s - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+            utc_e    = (wib_e - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+            dom      = base + [('tanggal_mulai', '>=', utc_s),
+                                ('tanggal_mulai', '<=', utc_e)]
+            count    = SP.search_count(dom)
+            days.append({'label': day_names[d.weekday()], 'date': str(d), 'count': count})
+        return {'days': days}
 
     # ── API: Lokasi & Wilayah ─────────────────────────────────────────────────
 
@@ -175,13 +239,17 @@ class StrongPointPublicController(http.Controller):
     # ── API: List records ────────────────────────────────────────────────────
 
     @http.route('/petadigi/api/list', type='jsonrpc', auth='public', csrf=False)
-    def api_list(self, offset=0, limit=20, **kwargs):
+    def api_list(self, offset=0, limit=20, filter=None, **kwargs):
         user = self._auth_check()
         if not user:
             return []
         SP   = request.env['petadigi.strong_point'].sudo()
         base = ([('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
+        if filter == 'today':
+            utc_start, utc_end = _today_utc_range_wib()
+            base = base + [('tanggal_mulai', '>=', utc_start),
+                           ('tanggal_mulai', '<=', utc_end)]
         records = SP.search_read(
             base,
             ['id', 'code', 'state', 'lokasi_nama', 'tanggal_mulai', 'personel_count'],
@@ -209,7 +277,7 @@ class StrongPointPublicController(http.Controller):
                 'kabupaten_id':  int(kwargs['kabupaten_id']) if kwargs.get('kabupaten_id') else False,
                 'kecamatan_id':  int(kwargs['kecamatan_id']) if kwargs.get('kecamatan_id') else False,
                 'desa_id':       int(kwargs['desa_id'])      if kwargs.get('desa_id')      else False,
-                'tanggal_mulai': kwargs.get('tanggal_mulai') or False,
+                'tanggal_mulai': _wib_to_utc(kwargs.get('tanggal_mulai')) or False,
                 'latitude':      float(kwargs['latitude'])   if kwargs.get('latitude')     else 0.0,
                 'longitude':     float(kwargs['longitude'])  if kwargs.get('longitude')    else 0.0,
                 'keterangan':    kwargs.get('keterangan')    or '',
@@ -391,8 +459,8 @@ class StrongPointPublicController(http.Controller):
             return {'error': 'unauthorized'}
         try:
             rec.with_user(user.id).write({
-                'state':          'SELESAI',
-                'tanggal_selesai': tanggal_selesai,
+                'state':           'SELESAI',
+                'tanggal_selesai': _wib_to_utc(tanggal_selesai),
             })
             return {'success': True}
         except Exception as e:

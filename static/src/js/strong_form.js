@@ -59,23 +59,36 @@
         return name.trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('').toUpperCase();
     }
 
-    // ── KPI Card HTML ────────────────────────────────────────────────────────
-    function kpiCard(value, label, icon, color, bg, full) {
-        var cls = 'sp-kpi-card' + (full ? ' sp-kpi-full' : '');
-        return '<div class="' + cls + '" style="--kpi-color:' + color + ';--kpi-bg:' + bg + '">'
-            + '<div class="sp-kpi-icon"><i class="fa ' + icon + '"></i></div>'
-            + '<div class="sp-kpi-text">'
-            +   '<div class="sp-kpi-value">' + value + '</div>'
-            +   '<div class="sp-kpi-label">' + label + '</div>'
+    // ── Number formatter (thousand separator) ───────────────────────────────
+    function _fmtNum(n) {
+        return String(n || 0).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
+    // ── Navigate to Strong tab with filter ──────────────────────────────────
+    function _navigateToStrongWithFilter(filter) {
+        var alreadyRendered = _sp.rendered;
+        _sp.listFilter = filter;
+        switchTab('strong');
+        if (alreadyRendered) _showRecordList();
+    }
+
+    // ── KPI Card HTML (side-by-side, vertical layout) ────────────────────────
+    function kpiCard2(spCount, personelCount, title, icon, color, filter) {
+        return '<div class="sp-kpi2-card" data-filter="' + (filter || '') + '" style="--kpi2-color:' + color + '">'
+            + '<div class="sp-kpi2-header">'
+            +   '<i class="fa ' + icon + '"></i>' + title
+            +   '<i class="fa fa-chevron-right sp-kpi2-arrow"></i>'
             + '</div>'
+            + '<div class="sp-kpi2-val">' + _fmtNum(spCount) + '</div>'
+            + '<div class="sp-kpi2-lbl"><i class="fa fa-users"></i> ' + _fmtNum(personelCount) + ' Personel</div>'
             + '</div>';
     }
 
-    function kpiSkeleton(full) {
-        var cls = 'sp-kpi-card sp-kpi-skeleton' + (full ? ' sp-kpi-full' : '');
-        return '<div class="' + cls + '">'
-            + '<div class="sp-kpi-icon" style="background:#e8e4f2;border:none;"></div>'
-            + '<div class="sp-kpi-text"><div class="sp-kpi-value">000</div><div class="sp-kpi-label">Loading</div></div>'
+    function kpiSkeleton2() {
+        return '<div class="sp-kpi2-card sp-kpi2-skeleton">'
+            + '<div class="sp-kpi2-header sp-kpi2-skel-line" style="width:75%;height:12px;"></div>'
+            + '<div class="sp-kpi2-val sp-kpi2-skel-line" style="width:55px;margin-top:12px;"></div>'
+            + '<div class="sp-kpi2-lbl sp-kpi2-skel-line" style="width:80px;margin-top:8px;height:12px;"></div>'
             + '</div>';
     }
 
@@ -93,23 +106,43 @@
         var greet = hour < 11 ? 'Selamat Pagi' : hour < 15 ? 'Selamat Siang' : hour < 18 ? 'Selamat Sore' : 'Selamat Malam';
         var greetIcon = hour < 11 ? 'fa-sun-o' : hour < 18 ? 'fa-sun-o' : 'fa-moon-o';
 
+        var initials  = getInitials(ctx.user_name || '?');
+        var avatarHtml = '<div class="sp-greeting-avatar">'
+            + '<span class="sp-greeting-av-initials">' + initials + '</span>'
+            + (ctx.user_id
+                ? '<img class="sp-greeting-av-img" src="/web/image/res.users/' + ctx.user_id + '/image_128" alt="">'
+                : '')
+            + '</div>';
+
         homeEl.innerHTML = ''
             + '<div class="sp-greeting">'
             +   '<i class="fa ' + greetIcon + ' sp-greeting-icon"></i>'
-            +   '<div>'
+            +   '<div class="sp-greeting-text-wrap">'
             +     '<div class="sp-greeting-text">' + greet + '!</div>'
             +     '<div class="sp-greeting-name">' + _esc(ctx.user_name || '') + '</div>'
             +   '</div>'
+            +   avatarHtml
             + '</div>'
-            + '<div class="sp-kpi-section-title"><i class="fa fa-map-pin"></i> Strong Point</div>'
-            + '<div class="sp-kpi-grid" id="kpi-sp">'
-            +   kpiSkeleton() + kpiSkeleton() + kpiSkeleton() + kpiSkeleton(true)
+            + '<div class="sp-kpi-section">'
+            +   '<div class="sp-kpi-section-title"><i class="fa fa-map-pin"></i> Strong Point</div>'
+            +   '<div class="sp-kpi2-grid" id="kpi-sp">'
+            +     kpiSkeleton2() + kpiSkeleton2()
+            +   '</div>'
+            +   '<div class="sp-chart-card">'
+            +     '<div class="sp-chart-header">'
+            +       '<i class="fa fa-bar-chart"></i>Aktivitas 7 Hari Terakhir'
+            +       '<i class="fa fa-chevron-right sp-kpi2-arrow"></i>'
+            +     '</div>'
+            +     '<div id="sp-weekly-chart" class="sp-chart-canvas"></div>'
+            +   '</div>'
             + '</div>'
-            + '<div class="sp-kpi-section-title"><i class="fa fa-car"></i> Patroli</div>'
-            + '<div class="sp-coming-soon">'
-            +   '<i class="fa fa-clock-o"></i>'
-            +   '<div class="sp-coming-soon-title">Fitur Patroli</div>'
-            +   '<div class="sp-coming-soon-sub">Segera hadir. Sistem pencatatan patroli wilayah hukum.</div>'
+            + '<div class="sp-kpi-section">'
+            +   '<div class="sp-kpi-section-title"><i class="fa fa-car"></i> Patroli</div>'
+            +   '<div class="sp-coming-soon">'
+            +     '<i class="fa fa-clock-o"></i>'
+            +     '<div class="sp-coming-soon-title">Fitur Patroli</div>'
+            +     '<div class="sp-coming-soon-sub">Segera hadir. Sistem pencatatan patroli wilayah hukum.</div>'
+            +   '</div>'
             + '</div>';
 
         rpc('/petadigi/api/kpi', {}).then(function (data) {
@@ -117,14 +150,76 @@
             var el = document.getElementById('kpi-sp');
             if (!el) return;
             el.innerHTML =
-                kpiCard(sp.total || 0,    'Total Strong Point', 'fa-map-pin',      '#71639e', '#ede9f6')
-              + kpiCard(sp.proses || 0,   'Sedang Proses',      'fa-spinner',      '#e67e22', '#fff3e0')
-              + kpiCard(sp.selesai || 0,  'Selesai',            'fa-check-circle', '#27ae60', '#e6f4ea')
-              + kpiCard(sp.personel || 0, 'Total Personel',     'fa-users',        '#2980b9', '#ebf5fb', true);
+                kpiCard2(sp.today || 0,  sp.personel_today || 0, 'SP Hari Ini',    'fa-calendar-o', '#71639e', 'today')
+              + kpiCard2(sp.total || 0,  sp.personel || 0,       'SP Keseluruhan', 'fa-map-pin',    '#2980b9', 'all');
+            el.querySelectorAll('.sp-kpi2-card').forEach(function (card) {
+                card.addEventListener('click', function () {
+                    _navigateToStrongWithFilter(card.dataset.filter);
+                });
+            });
         }).catch(function () {
             var el = document.getElementById('kpi-sp');
-            if (el) el.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#b3261e;font-size:13px;padding:12px;"><i class="fa fa-exclamation-triangle"></i> Gagal memuat data</div>';
+            if (el) el.innerHTML = '<div style="text-align:center;color:#b3261e;font-size:13px;padding:12px;"><i class="fa fa-exclamation-triangle"></i> Gagal memuat data</div>';
         });
+
+        // ── Weekly bar chart ─────────────────────────────────────────────────
+        rpc('/petadigi/api/weekly', {}).then(function (data) {
+            var days   = (data && data.days) || [];
+            var el     = document.getElementById('sp-weekly-chart');
+            if (!el || typeof echarts === 'undefined' || !days.length) return;
+
+            var labels = days.map(function (d) { return d.label; });
+            var counts = days.map(function (d) { return d.count; });
+            // @ts-ignore — echarts loaded as global from script tag
+            var chart = echarts.init(el, null, { renderer: 'canvas' });
+            chart.setOption({
+                grid: { left: 6, right: 6, top: 14, bottom: 0, containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    data: labels,
+                    axisLabel: { fontSize: 11, color: '#9e97b8' },
+                    axisTick:  { show: false },
+                    axisLine:  { show: false },
+                },
+                yAxis: {
+                    type: 'value',
+                    minInterval: 1,
+                    max: function (v) { return Math.ceil(v.max * 1.25) || 5; },
+                    splitLine: { lineStyle: { color: '#f0eef8', type: 'dashed' } },
+                    axisLabel: { fontSize: 10, color: '#b3acc8' },
+                },
+                series: [{
+                    type: 'bar',
+                    data: counts.map(function (v, i) {
+                        var isToday = (i === 6);
+                        return {
+                            value: v,
+                            itemStyle: {
+                                color: isToday ? '#71639e' : '#c4bedd',
+                                borderRadius: [4, 4, 0, 0],
+                            },
+                        };
+                    }),
+                    barMaxWidth: 36,
+                    label: {
+                        show: true,
+                        position: 'top',
+                        fontSize: 10,
+                        color: '#71639e',
+                        formatter: function (p) { return p.value > 0 ? p.value : ''; },
+                    },
+                }],
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: '#3d3461',
+                    borderWidth: 0,
+                    textStyle: { color: '#fff', fontSize: 12 },
+                    formatter: function (p) {
+                        return '<b>' + p[0].name + '</b>: ' + p[0].value + ' SP';
+                    },
+                },
+            });
+        }).catch(function () {});
     }
 
     // ════════════════════════════════════════════════════════════════════════
@@ -143,6 +238,7 @@
         listLoading:  false,
         listDone:     false,
         listObserver: null, // IntersectionObserver for infinite scroll
+        listFilter:   null, // 'today' | 'all' | null
     };
 
     // ── Distance helpers ─────────────────────────────────────────────────────
@@ -243,7 +339,7 @@
     function _loadRecordPage(rv, initial) {
         if (_sp.listLoading || _sp.listDone) return;
         _sp.listLoading = true;
-        rpc('/petadigi/api/list', { offset: _sp.listOffset, limit: _sp.listPerPage })
+        rpc('/petadigi/api/list', { offset: _sp.listOffset, limit: _sp.listPerPage, filter: _sp.listFilter || null })
             .then(function (records) {
                 _sp.listLoading = false;
                 records = records || [];
@@ -311,22 +407,35 @@
     }
 
     function _buildRecordList(rv, records) {
+        var filterBadge = _sp.listFilter === 'today'
+            ? ' <button class="sp-filter-badge" id="sp-filter-clear">'
+              + '<i class="fa fa-calendar-o"></i> Hari Ini'
+              + '<i class="fa fa-times sp-filter-badge-x"></i>'
+              + '</button>'
+            : '';
         if (!records.length) {
-            rv.innerHTML = '<div class="sp-records-empty">'
+            rv.innerHTML = '<div class="sp-records-header">'
+                + '<span class="sp-records-title"><i class="fa fa-map-pin"></i> Strong Point' + filterBadge + '</span>'
+                + '</div>'
+                + '<div class="sp-records-empty" style="margin-top:24px">'
                 + '<i class="fa fa-map-pin"></i>'
-                + '<div class="sp-records-empty-title">Belum ada Strong Point</div>'
-                + '<div class="sp-records-empty-sub">Tap tombol <b>+</b> untuk menambah data baru</div>'
+                + '<div class="sp-records-empty-title">' + (_sp.listFilter === 'today' ? 'Tidak ada SP hari ini' : 'Belum ada Strong Point') + '</div>'
+                + '<div class="sp-records-empty-sub">' + (_sp.listFilter === 'today' ? 'Belum ada data strong point untuk hari ini' : 'Tap tombol <b>+</b> untuk menambah data baru') + '</div>'
                 + '</div>';
+            var cb = rv.querySelector('#sp-filter-clear');
+            if (cb) cb.addEventListener('click', function () { _sp.listFilter = null; _showRecordList(); });
             return;
         }
         var html = '<div class="sp-records-header">'
-            + '<span class="sp-records-title"><i class="fa fa-map-pin"></i> Strong Point</span>'
+            + '<span class="sp-records-title"><i class="fa fa-map-pin"></i> Strong Point' + filterBadge + '</span>'
             + '<span class="sp-records-count" id="sp-records-count">' + _sp.listOffset + (_sp.listDone ? '' : '+') + '</span>'
             + '</div>'
             + '<div class="sp-record-list">';
         records.forEach(function (r) { html += _recordItemHtml(r); });
         html += '</div>';
         rv.innerHTML = html;
+        var clearBtn = rv.querySelector('#sp-filter-clear');
+        if (clearBtn) clearBtn.addEventListener('click', function () { _sp.listFilter = null; _showRecordList(); });
         rv.querySelectorAll('.sp-record-item').forEach(function (btn) { _wireRecordClick(btn, rv); });
         if (!_sp.listDone) _setupListSentinel(rv);
     }
