@@ -28,6 +28,7 @@ PetaDigi adalah modul Odoo yang menggabungkan:
 - **Drill-down interaktif**: Kabupaten → Kecamatan → Desa/Kelurahan
 - **Cooling System**: Monitoring kegiatan lapangan polisi via form publik (QR code / link) + dashboard monitoring
 - **Sumur Minyak**: Pendataan sumur minyak masyarakat via form publik lapangan + dashboard peta
+- **Strong Point Mobile**: SPA mobile-first untuk pencatatan strong point lapangan polisi — auth session, CRUD data, upload foto, manajemen personel; akses `/petadigi`
 
 Pengguna utama: **Kepolisian Resort (Polres)** dan **Kepolisian Sektor (Polsek)** di Indonesia.
 
@@ -53,7 +54,8 @@ petadigi/
 ├── controllers/
 │   ├── __init__.py
 │   ├── giat_public.py         # Public form controller Cooling System
-│   └── sumur_public.py        # Public form controller Sumur Minyak
+│   ├── sumur_public.py        # Public form controller Sumur Minyak
+│   └── strong_point_public.py # Mobile SPA controller Strong Point (/petadigi/*)
 ├── wizard/
 │   ├── import_lp_wizard.py
 │   ├── tindak_lanjut_wizard.py
@@ -76,6 +78,7 @@ petadigi/
         │   ├── login.css
         │   ├── giat_form.css           # Tema biru (Cooling System)
         │   ├── sumur_form.css          # Tema amber/oranye (Sumur Minyak)
+        │   ├── strong_form.css         # Tema ungu/purple (Strong Point Mobile)
         │   └── ...
         └── xml/
             ├── dashboard_map.xml
@@ -298,7 +301,165 @@ petadigi.subdit                   petadigi.sub_status_perkara
 
 ---
 
-## 7. Dashboard Peta — Arsitektur JS
+## 7. Strong Point Mobile Web Client — Arsitektur
+
+### URL & Entry Point
+- **App**: `GET /petadigi` → redirect ke `/petadigi/form` (jika auth) atau `/petadigi/login`
+- **Login**: `GET/POST /petadigi/login` — session auth Odoo + cek `user.polres_id`
+- **App Shell**: `GET /petadigi/form` — render `petadigi.template_strong_form` (auth wajib)
+- **Logout**: `GET /petadigi/logout`
+
+### Template
+- File: `views/strong_point_login_template.xml`
+- Template login: `petadigi.template_strong_login`
+- Template app: `petadigi.template_strong_form`
+- **Standalone HTML** (tidak pakai Odoo master layout) — load sendiri CSS/JS/Leaflet
+- Cache busting: `?v=YYYYMMDD` di URL CSS dan JS — **harus di-bump setiap ada perubahan file**
+
+### Controller (`controllers/strong_point_public.py`)
+- Class: `StrongPointPublicController`
+- Auth helper: `_auth_check()` — cek `user.polres_id`, return None jika public/tanpa polres
+- Access check: `_check_record_access(user, record_id)` — validasi ownership polres
+
+**API endpoints** (semua `type='jsonrpc'`):
+| Endpoint | Fungsi |
+|---|---|
+| `POST /petadigi/api/kpi` | KPI: total, proses, selesai, jumlah personel |
+| `POST /petadigi/api/lokasi` | List lokasi SP aktif (filtered by polres/polsek) |
+| `POST /petadigi/api/kecamatan` | Cascading by `kabupaten_id` |
+| `POST /petadigi/api/desa` | Cascading by `kecamatan_id` |
+| `POST /petadigi/api/list` | List SP records — **paginated**: `offset=0, limit=20` |
+| `POST /petadigi/api/submit` | Create SP record baru, return `{code, record_id}` |
+| `POST /petadigi/api/record` | Detail 1 record: info + personel + `foto_src` (base64 data URL) |
+| `POST /petadigi/api/personel_add` | Tambah personel ke SP |
+| `POST /petadigi/api/personel_remove` | Hapus personel |
+| `POST /petadigi/api/upload_foto` | Upload foto base64 → field `foto` (Binary attachment) |
+| `POST /petadigi/api/set_selesai` | Set state=SELESAI + `tanggal_selesai` |
+| `GET /petadigi/foto/<id>` | Serve foto binary langsung (HTTP, bukan JSON) |
+
+**Foto display (KRITIKAL)**:
+```python
+# api_record — build foto_src sebagai data URL
+att = request.env['ir.attachment'].sudo().search([
+    ('res_model', '=', 'petadigi.strong_point'),
+    ('res_id',    '=', rec.id),
+    ('res_field', '=', 'foto'),
+], limit=1)
+if att and att.datas:
+    datas = att.datas
+    if isinstance(datas, bytes):
+        datas = datas.decode('ascii')
+    datas = datas.replace('\n', '').replace('\r', '').strip()  # strip MIME line breaks!
+    mime = att.mimetype or 'image/jpeg'
+    if not mime.startswith('image/'):
+        mime = 'image/jpeg'
+    foto_src = 'data:{};base64,{}'.format(mime, datas)
+```
+> **PENTING**: Odoo menyimpan base64 dengan MIME line-break tiap 76 karakter. Wajib strip `\n\r` sebelum build data URL, jika tidak gambar tidak tampil.
+
+### Model Data Strong Point
+
+**`petadigi.strong_point`** — data strong point lapangan
+- `code` (auto-sequence, readonly)
+- `state`: `PROSES` / `SELESAI`
+- `polres_id`, `polsek_id`
+- `lokasi_id` → `petadigi.lokasi_strong_point`, `lokasi_nama` (related/computed)
+- `kabupaten_id`, `kecamatan_id`, `desa_id`
+- `latitude`, `longitude` (Float 10,6)
+- `tanggal_mulai`, `tanggal_selesai` (Datetime)
+- `keterangan` (Text)
+- `foto` (Binary, `attachment=True`), `foto_filename` (Char)
+- `personel_ids` (One2many → `petadigi.personel`)
+- `personel_count` (Integer, computed)
+
+**`petadigi.lokasi_strong_point`** — master lokasi strong point
+- `nama`, `code`
+- `polres_id`, `polsek_id`
+- `lat`, `lng` (koordinat GPS)
+- `state`: `aktif` / `non_aktif`
+
+**`petadigi.personel`** — data personel yang ditugaskan
+- `strong_point_id` (Many2one, ondelete='cascade')
+- `nama` (Char, UPPERCASE), `pangkat` (Char, UPPERCASE)
+- `nama_lengkap` (Char, computed: `"{pangkat} {nama}"` atau hanya `nama`)
+
+### JS SPA (`static/src/js/strong_form.js`)
+- **Pattern**: IIFE `(function() { 'use strict'; ... })()`  — bukan OWL
+- **rpc()**: `fetch` async helper dengan JSON-RPC 2.0
+- **State object** `_sp`:
+  ```js
+  var _sp = {
+      rendered: false, userPos: null, lokasiList: [], selected: null,
+      map: null, marker: null,
+      listOffset: 0, listPerPage: 20, listLoading: false,
+      listDone: false, listObserver: null,  // infinite scroll pagination
+      detailId: null,
+  };
+  ```
+
+**Tab navigasi**: Beranda (KPI cards SP + Patroli coming soon), Strong Point, Patroli (coming soon), Profil
+
+**Alur Strong Point tab**:
+1. `_showRecordList()` — load 20 pertama, infinite scroll (IntersectionObserver sentinel)
+2. FAB (+) → `_openLokasiPicker()` — list lokasi sorted by GPS distance (Haversine)
+3. Pilih lokasi → `_openFormView()` — isi data SP baru, submit
+4. Submit sukses → `_openDetail(recordId)` — detail view
+5. Klik record di list → `_openDetail(recordId)`
+
+**Sub-page navigation**:
+- `_hideAppbar()` / `_showAppbar()` — toggle class `sp-subpage` pada `#sp-app`
+- Sub-page `.sp-subpage`: sembunyikan `.sp-appbar` DAN `.sp-bottom-nav`
+- FAB: `_showFab()` / `_hideFab()` — hanya tampil di record list
+- Back button → `_showRecordList()` (reload data)
+
+**Foto di Detail View**:
+```js
+// Insert <img> via createElement (BUKAN lewat innerHTML — base64 besar bisa corrupt)
+if (data.has_foto && data.foto_src) {
+    var wrap = document.getElementById('sp-foto-wrap');
+    if (wrap) {
+        var img = document.createElement('img');
+        img.className = 'sp-foto-img';
+        img.src = data.foto_src;  // set SETELAH createElement
+        wrap.insertBefore(img, wrap.firstChild);
+    }
+}
+```
+
+**Input personel**: nama + pangkat selalu `.toUpperCase()` sebelum submit + CSS `text-transform: uppercase` + `autocapitalize="characters"`
+
+### CSS (`static/src/css/strong_form.css`)
+- Tema: CSS variable `--sp-primary: #6c3483` (ungu/purple)
+- Shell layout (KRITIKAL untuk sticky topbar):
+  ```css
+  .sp-shell     { height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+  .sp-tab.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .sp-page-body { flex: 1; min-height: 0; overflow-y: auto; }
+  ```
+  > Tanpa `height: 100dvh` + `min-height: 0`, scroll terjadi di document level → `position: sticky` tidak bekerja.
+- Sub-page topbar: `.sp-form-topbar { position: sticky; top: 0; z-index: 20; }`
+- FAB tablet/wide: `@media (min-width: 512px) { .sp-fab { right: calc(50% - 224px); } }` — align ke kanan konten bukan ke kanan layar
+- Infinite scroll sentinel: `.sp-list-sentinel` (spinner + text "Memuat...")
+- `.sp-foto-preview` — **harus TIDAK `display: none`** (ada CSS bug lama, sudah dicomment)
+
+### ModSecurity
+Jika deploy ke VPS dengan nginx ModSecurity, tambahkan location block:
+```nginx
+location ~ ^/petadigi/ {
+    modsecurity off;
+    proxy_pass http://odoo19;
+    proxy_redirect off;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+}
+```
+> Diperlukan karena upload foto base64 di JSON body diblokir ModSecurity (sama dengan `/giat/` dan `/sumur/`).
+
+---
+
+## 8. Dashboard Peta — Arsitektur JS
 
 ### Komponen Utama (`dashboard_map.js`)
 - Owl component, register ke `registry.category("actions")` dengan key `petadigi_dashboard_map`
@@ -521,6 +682,9 @@ clearImage() {
 | `kabupaten_map_widget.js` | Odoo field widget polygon GeoJSON editor |
 | `giat_form.js` | Standalone OWL app form publik petugas lapangan (tema biru) |
 | `sumur_form.js` | Standalone OWL app form publik input sumur lapangan (tema amber) |
+| `strong_form.js` | IIFE SPA mobile Strong Point `/petadigi` — auth, list, form, detail, foto, personel (tema ungu) |
+| `dashboard_layer_strong_point.js` | Layer peta Strong Point (backend dashboard) |
+| `dashboard_charts_strong_point.js` | Charts Strong Point (backend dashboard) |
 
 ---
 
@@ -750,6 +914,105 @@ export class DashboardMap extends Component {
 
 ---
 
+## 20. View Enhancements (Update 2026-06-19)
+
+### Calendar View & Pivot View
+
+Semua model utama sudah mendapat view tambahan. Pola standar yang digunakan:
+
+**Calendar View** (model dengan `tanggal_kejadian` / `tanggal`):
+```xml
+<calendar string="Kalender ..." date_start="tanggal_kejadian"
+          color="state" mode="month" quick_create="False">
+    <field name="field1"/>
+    <field name="state" filters="1" invisible="1"/>  <!-- legend filter -->
+</calendar>
+```
+- `quick_create="False"` — wajib karena semua model punya required fields
+- `color` = field Many2one atau Selection untuk color coding
+- `filters="1" invisible="1"` — tampilkan legend di panel kanan kalender
+
+**Pivot View** (semua model):
+```xml
+<pivot string="Analisis ..." disable_linking="False">
+    <field name="kategori_id" type="row"/>
+    <field name="state" type="col"/>
+    <!-- JANGAN tambahkan <field name="id" type="measure"/> -->
+    <!-- Odoo 19 error: "No aggregate function for measure id" -->
+    <!-- Biarkan Count default dari framework -->
+</pivot>
+```
+> **PENTING**: Jangan gunakan `<field name="id" type="measure"/>` di pivot Odoo 17+/19. Ini menyebabkan error `No aggregate function has been provided for the measure 'id'`. Cukup hapus baris measure, Odoo menampilkan Count secara default.
+
+**`aggregator=False` pada Float koordinat**:
+```python
+latitude  = fields.Float('Latitude',  digits=(10, 6), tracking=True, aggregator=False)
+longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
+```
+> Tanpa `aggregator=False`, Latitude dan Longitude muncul sebagai measures di pivot/graph view — tidak relevan. **Wajib ditambahkan ke semua model yang punya lat/lon.**
+
+### Status Calendar + Pivot per Model
+
+| Model | Calendar | Pivot | Date field | Color field |
+|---|---|---|---|---|
+| `petadigi.kriminalitas` | ✅ | ✅ | `tanggal_kejadian` | `status_perkara` |
+| `petadigi.kasus_menonjol` | ✅ | ✅ | `tanggal_kejadian` | `state` |
+| `petadigi.bencana` | ✅ | ✅ | `tanggal_kejadian` | `state` |
+| `petadigi.lalu_lintas` | ✅ | ✅ | `tanggal_kejadian` | `state` |
+| `petadigi.lokasi_penting` | ❌ (no date) | ✅ | — | — |
+| `petadigi.sumur_minyak` | ❌ (no date) | ✅ | — | — |
+| `petadigi.hasil_giat` | ✅ | ✅ | `tanggal` | `jenis_laporan_id` |
+
+### Filter Tahun & Waktu di Search View
+
+**Model dengan `tahun` (Selection field, string '2026')** — kriminalitas, kasus_menonjol, bencana, lalu_lintas:
+```xml
+<filter string="Tahun Ini" name="filter_tahun_sekarang"
+    domain="[('tahun', '=', context_today().year)]"/>
+<filter string="2025" name="filter_tahun_2025" domain="[('tahun', '=', '2025')]"/>
+<filter string="2024" name="filter_tahun_2024" domain="[('tahun', '=', '2024')]"/>
+<filter string="2023" name="filter_tahun_2023" domain="[('tahun', '=', '2023')]"/>
+```
+> **PENTING**: Gunakan `context_today().year` (integer), BUKAN `str(context_today().year)`. Domain dievaluasi di JS — fungsi `str()` tidak tersedia. Odoo ORM otomatis coerce integer ke string untuk Selection field.
+
+Default filter aktif di action via context:
+```xml
+<field name="context">{'search_default_filter_tahun_sekarang': 1}</field>
+```
+
+**Model `hasil_giat`** (field `tanggal` Datetime, bukan Selection) — filter waktu relatif:
+```xml
+<filter string="Hari Ini" name="filter_today"
+    domain="[('tanggal','&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+             ('tanggal','&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+<filter string="Minggu Ini" name="filter_this_week"
+    domain="[('tanggal','&gt;=', (context_today() - relativedelta(days=context_today().weekday())).strftime('%Y-%m-%d 00:00:00')),
+             ('tanggal','&lt;=', (context_today() - relativedelta(days=context_today().weekday()) + relativedelta(days=6)).strftime('%Y-%m-%d 23:59:59'))]"/>
+<filter string="Bulan Ini" name="filter_this_month"
+    domain="[('tanggal','&gt;=', context_today().replace(day=1).strftime('%Y-%m-%d 00:00:00')),
+             ('tanggal','&lt;=', (context_today().replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).strftime('%Y-%m-%d 23:59:59'))]"/>
+<filter string="Tahun Ini" name="filter_this_year"
+    domain="[('tanggal','&gt;=', context_today().replace(month=1, day=1).strftime('%Y-%m-%d 00:00:00')),
+             ('tanggal','&lt;=', context_today().replace(month=12, day=31).strftime('%Y-%m-%d 23:59:59'))]"/>
+```
+> `relativedelta` tersedia di JS domain evaluator Odoo 17+/19. `hasil_giat` tidak punya default filter aktif (by design).
+
+### Action view_mode Update Pattern
+
+Saat menambah view baru, update `view_mode` dan `view_ids` di action:
+```xml
+<field name="view_mode">list,form,graph,pivot,calendar</field>
+<field name="view_ids" eval="[(5, 0, 0),
+    (0, 0, {'view_mode': 'list',     'view_id': ref('view_..._list')}),
+    (0, 0, {'view_mode': 'form',     'view_id': ref('view_..._form')}),
+    (0, 0, {'view_mode': 'graph',    'view_id': ref('view_..._graph')}),
+    (0, 0, {'view_mode': 'pivot',    'view_id': ref('view_..._pivot')}),
+    (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_..._calendar')}),
+]"/>
+```
+
+---
+
 ## 20. Security — ModSecurity (Nginx)
 
 ### Struktur Config
@@ -785,6 +1048,40 @@ EOF
 sudo nginx -t && sudo systemctl reload nginx
 ```
 > ID harus unik dan increment (10001, 10002, 10003, dst).
+
+### Public Form dengan Upload Foto — Wajib `modsecurity off`
+
+**Root cause**: ModSecurity memblokir request body yang mengandung base64 (foto) karena dianggap serangan. Nginx mengembalikan **HTTP 400** (bukan 413) sebelum request sampai ke Odoo.
+
+**Fix**: Tambahkan location block khusus di `/etc/nginx/sites-available/odoo.conf` dengan `modsecurity off`:
+
+```nginx
+# Disable ModSecurity untuk giat public form (ada base64 foto)
+location ~ ^/giat/ {
+    modsecurity off;
+    proxy_pass http://odoo19;
+    proxy_redirect off;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+}
+
+# Disable ModSecurity untuk sumur public form (ada base64 foto)
+location ~ ^/sumur/ {
+    modsecurity off;
+    proxy_pass http://odoo19;
+    proxy_redirect off;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto https;
+}
+```
+
+> **ATURAN**: Setiap kali menambah public form baru yang kirim foto (base64 di JSON body), **wajib tambahkan location block** dengan `modsecurity off` di nginx config, lalu `sudo nginx -t && sudo systemctl reload nginx`.
+
+> **TROUBLESHOOTING nginx -t**: Jika muncul `Permission denied` untuk `/run/nginx.pid` padahal `syntax is ok`, jalankan ulang dengan `sudo nginx -t`. Itu bukan syntax error — hanya permission untuk baca PID file.
 
 ---
 
@@ -849,14 +1146,35 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 **Infrastruktur**
 - CSP-compliant: nol inline script/style di halaman publik
 - ModSecurity exceptions: `res.config.settings` (id:10001) + `change.password` (id:10002)
+- ModSecurity `off` per-location untuk `/giat/` dan `/sumur/` (base64 foto)
 - Pembatasan menu: Apps hanya group_system, user menu dikurangi
 - Manajemen user: CSV import + SQL fix group
+
+**View Enhancements (2026-06-19)**
+- Calendar + Pivot view untuk: kriminalitas, kasus_menonjol, bencana, lalu_lintas, hasil_giat
+- Pivot view (tanpa calendar) untuk: lokasi_penting, sumur_minyak
+- Filter tahun (Tahun Ini + 2025/2024/2023) dengan default aktif untuk: kriminalitas, kasus_menonjol, bencana, lalu_lintas
+- Filter waktu relatif hasil_giat: Hari Ini, Minggu Ini, Bulan Ini, Tahun Ini (tanpa default)
+- `aggregator=False` pada lat/lon semua model agar tidak muncul di pivot measures
+- Filter **Jenis LP** di dashboard map kriminalitas: select di XML + `useRef` + visibility + domain di map.js, layer_kriminal.js, charts_kriminal.js — semua selesai ✅
+
+**Strong Point Mobile Web Client (2026-06-23)**
+- SPA mobile `/petadigi` — login session Odoo, tab navigasi (Beranda/Strong Point/Patroli/Profil)
+- Record list SP dengan infinite scroll (IntersectionObserver, 20/halaman)
+- FAB (+) → lokasi picker (GPS Haversine sort) → form tambah → detail view
+- Detail view: info, personel (CRUD, nama/pangkat UPPERCASE), dokumentasi foto, set selesai
+- Foto upload base64 → `ir.attachment` → tampil sebagai data URL (strip MIME newlines)
+- Sticky header sub-pages: shell `height: 100dvh` + tab `flex: 1; min-height: 0` → scroll di page-body
+- FAB align tablet: `right: calc(50% - 224px)` untuk layar lebar
+- Badge state rata kanan di list item
 
 ### Potensial Berikutnya
 - Export/report Monitoring Giat ke PDF/Excel
 - Notifikasi real-time kasus baru
 - Grafik trend tahunan untuk mode bencana dan sumur minyak
+- Dashboard backend Strong Point (choropleth / marker di peta utama)
+- Tab Patroli di mobile app
 
 ---
 
-*Dokumen diperbarui: 2026-06-18*
+*Dokumen diperbarui: 2026-06-23*

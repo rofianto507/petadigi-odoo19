@@ -49,11 +49,27 @@
             <field name="number_next">1</field>
             <field name="number_increment">1</field>
         </record>
+        <record id="seq_petadigi_strong_point" model="ir.sequence">
+            <field name="name">Kode Strong Point</field>
+            <field name="code">petadigi.strong_point.sequence</field>
+            <field name="prefix">SPT</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
         <record id="seq_petadigi_sumur_minyak" model="ir.sequence">
             <field name="name">Kode Sumur Minyak</field>
             <field name="code">petadigi.sumur_minyak.sequence</field>
             <field name="prefix">SMM</field>
             <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
+        <record id="seq_petadigi_lokasi_strong_point" model="ir.sequence">
+            <field name="name">Kode Lokasi Strong Point</field>
+            <field name="code">petadigi.lokasi_strong_point.sequence</field>
+            <field name="prefix">LSP</field>
+            <field name="padding">4</field>
             <field name="number_next">1</field>
             <field name="number_increment">1</field>
         </record>

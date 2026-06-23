@@ -20,9 +20,12 @@ from . import kasus_menonjol
 from . import tindak_lanjut
 from . import bencana
 from . import lalu_lintas
+from . import strong_point
 from . import lokasi_penting
 from . import kategori_sumur_minyak
 from . import sumur_minyak
 from . import jenis_laporan
 from . import hasil_giat
+from . import lokasi_strong_point
+from . import personel
 from . import res_users

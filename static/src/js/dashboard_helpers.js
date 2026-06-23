@@ -4,22 +4,35 @@
 // DATE FORMAT
 // ─────────────────────────────────────────────────────────────────────────────
 
-const _BULAN = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+const _BULAN_SINGKAT = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
 
-/**
- * Format tanggal dari database (UTC) → "30 Jun 2026" (local timezone).
- * Menerima "YYYY-MM-DD" maupun "YYYY-MM-DD HH:MM:SS".
- */
-export function fmtTanggal(s) {
-    if (!s) return '-';
-    // Tambahkan waktu + Z agar browser parsing sebagai UTC
+function _parseUtc(s) {
+    if (!s) return null;
     const iso = s.trim().length <= 10
         ? `${s}T00:00:00Z`
         : `${s.replace(' ', 'T')}Z`;
     const d = new Date(iso);
-    if (isNaN(d.getTime())) return s;
-    // getDate/getMonth/getFullYear menggunakan local timezone otomatis
-    return `${d.getDate()} ${_BULAN[d.getMonth()]} ${d.getFullYear()}`;
+    return isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Format tanggal dari database (UTC) → "30 Jun 2026" (local timezone).
+ */
+export function fmtTanggal(s) {
+    const d = _parseUtc(s);
+    if (!d) return s || '-';
+    return `${d.getDate()} ${_BULAN_SINGKAT[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/**
+ * Format tanggal + jam dari database (UTC) → "21 Juni 2026 14:45" (local timezone).
+ */
+export function fmtTanggalJam(s) {
+    const d = _parseUtc(s);
+    if (!d) return s || '-';
+    const hh  = String(d.getHours()).padStart(2, '0');
+    const mm  = String(d.getMinutes()).padStart(2, '0');
+    return `${d.getDate()} ${_BULAN_SINGKAT[d.getMonth()]} ${d.getFullYear()} ${hh}:${mm}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

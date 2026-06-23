@@ -83,6 +83,8 @@ TEKNOLOGI:
         'views/kasus_menonjol_views.xml',
         'views/bencana_views.xml',
         'views/lalu_lintas_views.xml',
+        'views/strong_point_views.xml',
+        'views/lokasi_strong_point_views.xml',
         'views/lokasi_penting_views.xml',
         'views/kategori_sumur_minyak_views.xml',
         'views/sumur_minyak_views.xml',
@@ -91,6 +93,7 @@ TEKNOLOGI:
         'views/hasil_giat_views.xml',
         'views/giat_form_template.xml',
         'views/sumur_form_template.xml',
+        'views/strong_point_login_template.xml',
         'views/monitoring_giat_views.xml',
         'views/res_users_views.xml',
         'views/menu.xml',
@@ -102,6 +105,7 @@ TEKNOLOGI:
         ],
         'web.assets_backend': [
             'petadigi/static/lib/leaflet/leaflet.css',
+            'petadigi/static/src/css/map_widget.css',
             'petadigi/static/lib/leaflet/leaflet.js',
             'petadigi/static/lib/leaflet-markercluster/MarkerCluster.css',
             'petadigi/static/lib/leaflet-markercluster/MarkerCluster.Default.css',
@@ -137,6 +141,8 @@ TEKNOLOGI:
             'petadigi/static/src/js/dashboard_charts_lokasi.js',
             'petadigi/static/src/js/dashboard_layer_sumur_minyak.js',
             'petadigi/static/src/js/dashboard_charts_sumur_minyak.js',
+            'petadigi/static/src/js/dashboard_layer_strong_point.js',
+            'petadigi/static/src/js/dashboard_charts_strong_point.js',
             'petadigi/static/src/js/dashboard_map.js',
             # Monitoring Giat dashboard
             'petadigi/static/src/css/dashboard_monitoring_giat.css',

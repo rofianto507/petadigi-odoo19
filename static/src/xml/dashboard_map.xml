@@ -36,6 +36,10 @@
                         <i class="fa fa-car"/>
                         <span>Peta Lalu Lintas</span>
                     </a>
+                    <a class="petadigi-nav-item" data-mode="strong" t-on-click="onNavClick">
+                        <i class="fa fa-map-pin"/>
+                        <span>Peta Strong Point</span>
+                    </a>
                     <a class="petadigi-nav-item" data-mode="lokasi" t-on-click="onNavClick">
                         <i class="fa fa-map-marker"/>
                         <span>Lokasi Penting</span>
@@ -196,6 +200,22 @@
                     </div>
                 </div>
 
+                <!-- CHART STRONG ROW — hanya untuk mode strong -->
+                <div class="petadigi-chart-row" t-ref="chartStrongRow">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-bar-chart"/> Grafik Total Strong Point per Polres
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartStrongBar"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-line-chart"/> Strong Point per Bulan
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartStrongTrend"/>
+                    </div>
+                </div>
+
                 <!-- CHART LOKASI ROW — hanya untuk mode lokasi -->
                 <div class="petadigi-chart-row" t-ref="chartLokasiRow">
                     <div class="petadigi-chart-card">
@@ -337,6 +357,14 @@
                     <div class="petadigi-data-table-card">
                         <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Lalu Lintas</div>
                         <div t-ref="tableLalinBody"/>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE STRONG POINT -->
+                <div class="petadigi-chart-row" t-ref="tableStrongRow">
+                    <div class="petadigi-data-table-card">
+                        <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Strong Point</div>
+                        <div t-ref="tableStrongBody"/>
                     </div>
                 </div>
 

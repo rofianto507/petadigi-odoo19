@@ -77,3 +77,12 @@ access_sumur_minyak_admin,sumur_minyak admin,model_petadigi_sumur_minyak,petadig
 access_sumur_minyak_polres,sumur_minyak polres,model_petadigi_sumur_minyak,petadigi.group_polres,1,1,1,1
 access_sumur_minyak_polsek,sumur_minyak polsek,model_petadigi_sumur_minyak,petadigi.group_polsek,1,1,1,1
 access_sumur_minyak_subdit,sumur_minyak subdit read,model_petadigi_sumur_minyak,petadigi.group_subdit,1,0,0,0
+access_strong_point_admin,strong_point admin,model_petadigi_strong_point,petadigi.group_admin,1,1,1,1
+access_strong_point_polres,strong_point polres,model_petadigi_strong_point,petadigi.group_polres,1,1,1,1
+access_strong_point_polsek,strong_point polsek,model_petadigi_strong_point,petadigi.group_polsek,1,1,1,1
+access_lokasi_strong_point_admin,lokasi_strong_point admin,model_petadigi_lokasi_strong_point,petadigi.group_admin,1,1,1,1
+access_lokasi_strong_point_polres,lokasi_strong_point polres,model_petadigi_lokasi_strong_point,petadigi.group_polres,1,0,0,0
+access_lokasi_strong_point_polsek,lokasi_strong_point polsek,model_petadigi_lokasi_strong_point,petadigi.group_polsek,1,0,0,0
+access_personel_admin,personel admin,model_petadigi_personel,petadigi.group_admin,1,1,1,1
+access_personel_polres,personel polres,model_petadigi_personel,petadigi.group_polres,1,1,1,1
+access_personel_polsek,personel polsek,model_petadigi_personel,petadigi.group_polsek,1,1,1,1

@@ -1,0 +1,257 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         LOGIN PAGE — PetaDigi Mobile
+         URL: /petadigi/login
+         ════════════════════════════════════════════════════════ -->
+    <template id="template_strong_login" name="PetaDigi – Login">
+        <html lang="id">
+            <head>
+                <meta charset="UTF-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+                <meta name="theme-color" content="#71639e"/>
+                <meta name="mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+                <title>PetaDigi – Polda Sumsel</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap"/>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/strong_form.css?v=20260623c"/>
+            </head>
+            <body>
+
+                <div class="sp-login-root">
+
+                    <!-- Brand Header dengan kurva bawah -->
+                    <div class="sp-login-header">
+                        <div class="sp-login-logo">
+                            <i class="fa fa-map-marker"/>
+                        </div>
+                        <div class="sp-login-app-name">PetaDigi Mobile</div>
+                        <div class="sp-login-app-sub">Polda Sumatera Selatan</div>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="sp-login-body">
+
+                        <!-- Login Card -->
+                        <div class="sp-login-card">
+                            <div class="sp-login-card-heading">Selamat Datang</div>
+                            <div class="sp-login-card-sub">Masuk dengan akun yang telah diberikan</div>
+
+                            <!-- Error Banners -->
+                            <t t-if="error == 'invalid'">
+                                <div class="sp-alert sp-alert--error">
+                                    <i class="fa fa-exclamation-circle sp-alert-icon"/>
+                                    <span>Username atau password tidak sesuai. Periksa kembali dan coba lagi.</span>
+                                </div>
+                            </t>
+                            <t t-if="error == 'unauthorized'">
+                                <div class="sp-alert sp-alert--warning">
+                                    <i class="fa fa-ban sp-alert-icon"/>
+                                    <span>Akun ini tidak memiliki akses ke aplikasi. Hubungi administrator.</span>
+                                </div>
+                            </t>
+
+                            <!-- Form -->
+                            <form id="sp-login-form" method="POST" action="/petadigi/login" autocomplete="on">
+                                <input type="hidden" name="redirect" t-att-value="redirect"/>
+
+                                <div class="sp-field">
+                                    <label class="sp-label" for="login">Username</label>
+                                    <div class="sp-input-wrap">
+                                        <i class="fa fa-user sp-input-icon"/>
+                                        <input
+                                            id="login"
+                                            name="login"
+                                            type="text"
+                                            class="sp-input"
+                                            placeholder="Masukkan username atau email"
+                                            autocomplete="username"
+                                            autofocus="autofocus"
+                                            required="required"/>
+                                    </div>
+                                </div>
+
+                                <div class="sp-field">
+                                    <label class="sp-label" for="password">Password</label>
+                                    <div class="sp-input-wrap">
+                                        <i class="fa fa-lock sp-input-icon"/>
+                                        <input
+                                            id="password"
+                                            name="password"
+                                            type="password"
+                                            class="sp-input sp-input-pass"
+                                            placeholder="Masukkan password"
+                                            autocomplete="current-password"
+                                            required="required"/>
+                                        <button type="button" class="sp-pass-toggle" id="sp-pass-toggle" title="Tampilkan password">
+                                            <i class="fa fa-eye" id="sp-pass-icon"/>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="sp-btn-primary" id="sp-login-btn">
+                                    <i class="fa fa-sign-in"/>
+                                    <span id="sp-login-label">Masuk</span>
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Footer note -->
+                        <div class="sp-login-foot-note">
+                            <i class="fa fa-shield"/>
+                            Akses terbatas — khusus personel yang berwenang
+                        </div>
+
+                    </div>
+                </div>
+
+                <script>
+                (function () {
+                    // Toggle show/hide password
+                    var toggleBtn = document.getElementById('sp-pass-toggle');
+                    var passInput = document.getElementById('password');
+                    var passIcon  = document.getElementById('sp-pass-icon');
+                    if (toggleBtn) {
+                        toggleBtn.addEventListener('click', function () {
+                            var isPass = passInput.type === 'password';
+                            passInput.type     = isPass ? 'text' : 'password';
+                            passIcon.className = isPass ? 'fa fa-eye-slash' : 'fa fa-eye';
+                        });
+                    }
+
+                    // Loading state saat submit
+                    var form     = document.getElementById('sp-login-form');
+                    var loginBtn = document.getElementById('sp-login-btn');
+                    var loginLbl = document.getElementById('sp-login-label');
+                    if (form) {
+                        form.addEventListener('submit', function () {
+                            loginBtn.disabled  = true;
+                            loginBtn.innerHTML = '<span class="sp-spinner"></span><span>Memeriksa...</span>';
+                        });
+                    }
+
+                    // Jika ada error, fokus ke field username
+                    var params = new URLSearchParams(window.location.search);
+                    if (params.get('error')) {
+                        var loginField = document.getElementById('login');
+                        if (loginField) loginField.focus();
+                    }
+                })();
+                </script>
+
+            </body>
+        </html>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         APP SHELL — PetaDigi Mobile
+         URL: /petadigi/form
+         ════════════════════════════════════════════════════════ -->
+    <template id="template_strong_form" name="PetaDigi – Mobile App">
+        <html lang="id">
+            <head>
+                <meta charset="UTF-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+                <meta name="theme-color" content="#71639e"/>
+                <meta name="mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-capable" content="yes"/>
+                <title>PetaDigi Mobile</title>
+                <link rel="preconnect" href="https://fonts.googleapis.com"/>
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap"/>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+                <link rel="stylesheet" type="text/css" href="/petadigi/static/lib/leaflet/leaflet.css"/>
+                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/strong_form.css?v=20260623c"/>
+            </head>
+            <body>
+
+                <div class="sp-shell" id="sp-app" t-att-data-init="init_data">
+
+                    <!-- ── App Bar ── -->
+                    <div class="sp-appbar">
+                        <div class="sp-appbar-logo">
+                            <i class="fa fa-map-marker"/>
+                        </div>
+                        <div class="sp-appbar-content">
+                            <div class="sp-appbar-title">PetaDigi Mobile</div>
+                            <div class="sp-appbar-sub">Polda Sumatera Selatan</div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab: Beranda ── -->
+                    <div class="sp-tab" id="tab-home">
+                        <div class="sp-page-body" id="home-content">
+                            <!-- Diisi oleh JS -->
+                            <div style="display:flex;flex-direction:column;align-items:center;padding:40px 0;gap:12px;color:#9e9bb8;">
+                                <i class="fa fa-spinner fa-spin" style="font-size:28px;"/>
+                                <span style="font-size:13px;">Memuat dashboard...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab: Strong Point ── -->
+                    <div class="sp-tab" id="tab-strong">
+                        <div class="sp-page-body" id="strong-content">
+                            <div style="display:flex;flex-direction:column;align-items:center;padding:40px 0;gap:12px;color:#9e9bb8;">
+                                <i class="fa fa-map-pin" style="font-size:28px;"/>
+                                <span style="font-size:13px;">Form Strong Point</span>
+                                <span style="font-size:12px;opacity:.7;">Segera tersedia</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab: Patroli ── -->
+                    <div class="sp-tab" id="tab-patroli">
+                        <div class="sp-page-body">
+                            <div class="sp-coming-soon" style="margin-top:24px;">
+                                <i class="fa fa-car"/>
+                                <div class="sp-coming-soon-title">Fitur Patroli</div>
+                                <div class="sp-coming-soon-sub">Sistem pencatatan patroli wilayah sedang dalam pengembangan.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tab: Profil ── -->
+                    <div class="sp-tab" id="tab-profil">
+                        <div class="sp-page-body" id="profil-content">
+                            <!-- Diisi oleh JS -->
+                        </div>
+                    </div>
+
+                    <!-- ── Bottom Navigation ── -->
+                    <nav class="sp-bottom-nav">
+                        <button class="sp-nav-item active" data-tab="home">
+                            <div class="sp-nav-icon-wrap"><i class="fa fa-home"/></div>
+                            <span>Beranda</span>
+                        </button>
+                        <button class="sp-nav-item" data-tab="strong">
+                            <div class="sp-nav-icon-wrap"><i class="fa fa-map-pin"/></div>
+                            <span>Strong Point</span>
+                        </button>
+                        <button class="sp-nav-item" data-tab="patroli">
+                            <div class="sp-nav-icon-wrap"><i class="fa fa-car"/></div>
+                            <span>Patroli</span>
+                        </button>
+                        <button class="sp-nav-item" data-tab="profil">
+                            <div class="sp-nav-icon-wrap"><i class="fa fa-user-circle"/></div>
+                            <span>Profil</span>
+                        </button>
+                    </nav>
+
+                </div>
+
+                <!-- Toast notification -->
+                <div class="sp-toast" id="sp-toast"></div>
+
+                <script type="text/javascript" src="/petadigi/static/lib/leaflet/leaflet.js"/>
+                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/strong_form.js?v=20260623c"/>
+
+            </body>
+        </html>
+    </template>
+
+</odoo>
