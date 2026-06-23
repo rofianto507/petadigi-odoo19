@@ -387,6 +387,29 @@
         <field name="perm_unlink" eval="True"/>
     </record>
 
+    <!-- ─── Lokasi Strong Point ─────────────────────────── -->
+    <record id="rule_lokasi_strong_point_polres" model="ir.rule">
+        <field name="name">Lokasi Strong Point: akses polres</field>
+        <field name="model_id" ref="model_petadigi_lokasi_strong_point"/>
+        <field name="domain_force">[('polres_id', '=', user.polres_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polres'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <record id="rule_lokasi_strong_point_polsek" model="ir.rule">
+        <field name="name">Lokasi Strong Point: akses polsek</field>
+        <field name="model_id" ref="model_petadigi_lokasi_strong_point"/>
+        <field name="domain_force">[('polsek_id', '=', user.polsek_id.id)]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_polsek'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
     <!-- ─── Hasil Giat ────────────────────────────────────── -->
     <record id="rule_hasil_giat_polres" model="ir.rule">
         <field name="name">Hasil Giat: akses polres</field>

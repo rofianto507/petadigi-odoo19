@@ -69,7 +69,7 @@ export function removeKriminalLegend(ctx) {
 function _getActiveFilters(ctx) {
     return {
         tahun:        ctx.filterTahun?.el?.value        || '',
-        kabupatenId:  ctx.filterKabupaten?.el?.value    ? parseInt(ctx.filterKabupaten.el.value)    : null,
+        polresId:     ctx._polresFilterId,
         dateFrom:     ctx.activeDateFrom                 || '',
         dateTo:       ctx.activeDateTo                   || '',
         jenisLp:      ctx.filterJenisLP?.el?.value      || '',
@@ -244,7 +244,7 @@ export async function loadModeKriminal(ctx) {
     ctx.currentLevel = 'kabupaten';
 
     const filters = _getActiveFilters(ctx);
-    const baseDomain = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
+    const baseDomain = filters.polresId ? [['kabupaten_id.polres_id', '=', filters.polresId]] : [];
 
     try {
         const groups = await ctx.orm.call(
@@ -468,7 +468,6 @@ export async function drillDownKriminalKecamatan(ctx, kabProps, kabLayer, filter
         // Sinkronkan dropdown kabupaten + KPI + grafik ke scope kabupaten yang dipilih
         ctx.drillKabupatenId = kabProps.id;
         ctx.drillKecamatanId = null;
-        if (ctx.filterKabupaten?.el) ctx.filterKabupaten.el.value = String(kabProps.id);
         ctx._updateFilterSummary(ctx.currentMode);
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
@@ -679,7 +678,6 @@ function _addKriminalBackButton(ctx, targetLevel, backCtx) {
                     ctx.kecamatanLabelGroup.clearLayers();
                     ctx.drillKabupatenId = null;
                     ctx.drillKecamatanId = null;
-                    if (ctx.filterKabupaten?.el) ctx.filterKabupaten.el.value = '';
                     ctx._updateBreadcrumb(`<i class="fa fa-exclamation-triangle"></i> Peta Kriminal`);
                     ctx._updateFilterSummary(ctx.currentMode);
                     await loadModeKriminal(ctx);

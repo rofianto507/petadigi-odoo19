@@ -107,12 +107,12 @@
             groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="2"/>
 
-        <!-- Configuration: admin saja -->
+        <!-- Configuration: admin + polres + polsek (masing2 hanya lihat menu yang sesuai haknya) -->
         <menuitem
             id="menu_petadigi_configuration"
             name="Configuration"
             parent="menu_petadigi_root"
-            groups="petadigi.group_admin"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="99"/>
         <menuitem
             id="menu_config_polres"
@@ -245,7 +245,7 @@
             name="Lokasi Strong Point"
             parent="menu_petadigi_configuration"
             action="action_petadigi_lokasi_strong_point"
-            groups="petadigi.group_admin"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="180"/>
     </data>
 </odoo>

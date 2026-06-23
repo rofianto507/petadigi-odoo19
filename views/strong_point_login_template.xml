@@ -18,7 +18,7 @@
                 <link rel="preconnect" href="https://fonts.googleapis.com"/>
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
                 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap"/>
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+                <link rel="stylesheet" href="/petadigi/static/lib/fontawesome/css/font-awesome.css"/>
                 <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/strong_form.css?v=20260623c"/>
             </head>
             <body>
@@ -163,7 +163,7 @@
                 <title>PetaDigi Mobile</title>
                 <link rel="preconnect" href="https://fonts.googleapis.com"/>
                 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap"/>
-                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"/>
+                <link rel="stylesheet" href="/petadigi/static/lib/fontawesome/css/font-awesome.css"/>
                 <link rel="stylesheet" type="text/css" href="/petadigi/static/lib/leaflet/leaflet.css"/>
                 <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/strong_form.css?v=20260623c"/>
             </head>

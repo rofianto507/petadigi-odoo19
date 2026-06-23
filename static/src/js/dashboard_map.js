@@ -36,7 +36,7 @@ export class DashboardMap extends Component {
         this.filterKategori         = useRef("filterKategori");
         this.filterSubKategori      = useRef("filterSubKategori");
         this.filterTahun            = useRef("filterTahun");
-        this.filterKabupaten        = useRef("filterKabupaten");
+        this.filterPolres           = useRef("filterPolres");
         this.filterState            = useRef("filterState");
         this.filterDateRange        = useRef("filterDateRange");
         this.filterDateClear        = useRef("filterDateClear");
@@ -110,6 +110,11 @@ export class DashboardMap extends Component {
         this.orm    = useService("orm");
         this.action = useService("action");
 
+        this._userPolresId   = null;
+        this._userPolresName = null;
+        this._isPolsekUser   = false;
+        this._isPolresUser   = false;
+
         this.sidebarOpen    = true;
         this.currentMode    = 'umum';
         this.currentLevel   = 'kabupaten';
@@ -171,6 +176,26 @@ export class DashboardMap extends Component {
         };
 
         onMounted(async () => {
+            // Role-based polres filter: cek group dan ambil polres_id via ORM
+            try {
+                const [isPolsek, isPolresBase, isAdmin, isSubdit] = await Promise.all([
+                    this.orm.call('res.users', 'has_group', ['petadigi.group_polsek']),
+                    this.orm.call('res.users', 'has_group', ['petadigi.group_polres']),
+                    this.orm.call('res.users', 'has_group', ['petadigi.group_admin']),
+                    this.orm.call('res.users', 'has_group', ['petadigi.group_subdit']),
+                ]);
+                this._isPolsekUser = !!isPolsek;
+                this._isPolresUser = !!isPolresBase && !isAdmin && !isSubdit;
+                if (this._isPolsekUser || this._isPolresUser) {
+                    const uid = odoo?.session_info?.uid;
+                    if (uid) {
+                        const ud = await this.orm.read('res.users', [uid], ['polres_id']);
+                        this._userPolresId   = ud[0]?.polres_id?.[0] || null;
+                        this._userPolresName = ud[0]?.polres_id?.[1] || null;
+                    }
+                }
+            } catch (_) {}
+
             await initFilters(this);
             this._initFlatpickr();
             await this._updateFilterVisibility('umum');
@@ -184,6 +209,13 @@ export class DashboardMap extends Component {
             this._updateSumberDokumenInfo('umum');
             this._updateCharts('umum');
         });
+    }
+
+    // Getter: ID polres yang aktif sebagai filter (handle semua role)
+    get _polresFilterId() {
+        if (this._isPolsekUser) return this._userPolresId || null;
+        const v = this.filterPolres?.el?.value;
+        return v ? parseInt(v) : null;
     }
 
     // ─────────────────────────────────────────────
@@ -360,6 +392,8 @@ export class DashboardMap extends Component {
         const subKategoriEl      = this.filterSubKategori?.el;
         const stateEl            = this.filterState?.el;
 
+        const showPolres = mode === 'kriminal' && !this._isPolsekUser;
+        const polresEl   = this.filterPolres?.el;
         if (jenisLpEl)       jenisLpEl.style.display          = showJenisLP       ? '' : 'none';
         if (tahunEl)         tahunEl.style.display             = showTahun         ? '' : 'none';
         if (dateWrap)        dateWrap.style.display            = showDateRange     ? '' : 'none';
@@ -367,6 +401,7 @@ export class DashboardMap extends Component {
         if (kategoriSumurEl) kategoriSumurEl.style.display     = showKategoriSumur ? '' : 'none';
         if (subKategoriEl)   subKategoriEl.style.display       = showSubKategori   ? '' : 'none';
         if (stateEl)         stateEl.style.display             = showState         ? '' : 'none';
+        if (polresEl)        polresEl.style.display            = showPolres        ? '' : 'none';
 
         const modeChanged = mode !== this._filterMode;
         this._filterMode = mode;
@@ -486,12 +521,18 @@ export class DashboardMap extends Component {
             chips.push(chip('fa-file-text-o', tahun ? `Sumber dokumen tahun ${tahun}` : 'Semua tahun'));
         }
 
-        // Kabupaten
-        const kabEl = this.filterKabupaten?.el;
-        const kabName = (kabEl && kabEl.value)
-            ? kabEl.options[kabEl.selectedIndex]?.text || 'Semua Kabupaten'
-            : 'Semua Kabupaten';
-        chips.push(chip('fa-building', kabName));
+        // Polres — hanya tampil di mode kriminal
+        if (mode === 'kriminal') {
+            if (!this._isPolsekUser) {
+                const polresEl   = this.filterPolres?.el;
+                const polresName = (polresEl && polresEl.value)
+                    ? polresEl.options[polresEl.selectedIndex]?.text || 'Semua Polres'
+                    : 'Semua Polres';
+                chips.push(chip('fa-shield', polresName));
+            } else if (this._userPolresId) {
+                chips.push(chip('fa-shield', this._userPolresName || 'Polres'));
+            }
+        }
 
         // Kategori
         if (mode !== 'umum') {
@@ -615,7 +656,7 @@ export class DashboardMap extends Component {
         const tahun         = this.filterTahun?.el?.value         || '';
         const dateFrom      = this.activeDateFrom                   || '';
         const dateTo        = this.activeDateTo                     || '';
-        const kabupatenId   = parseInt(this.filterKabupaten?.el?.value)    || null;
+        const polresId      = this._polresFilterId;
         const kategoriId    = parseInt(this.filterKategori?.el?.value)     || null;
         const subKategoriId = parseInt(this.filterSubKategori?.el?.value)  || null;
         const stateValue    = this.filterState?.el?.value          || '';
@@ -626,7 +667,7 @@ export class DashboardMap extends Component {
             ...(dateTo   ? [['tanggal_kejadian', '<=', dateTo   + ' 23:59:59']] : []),
         ];
         const jenisLpValue  = this.filterJenisLP?.el?.value          || '';
-        const kabf = kabupatenId   ? [['kabupaten_id',   '=', kabupatenId]]   : [];
+        const polresf = polresId ? [['kabupaten_id.polres_id', '=', polresId]] : [];
         const kf  = kategoriId    ? [['kategori_id',    '=', kategoriId]]    : [];
         const sf  = subKategoriId ? [['sub_kategori_id','=', subKategoriId]] : [];
         const jlpf = jenisLpValue  ? [['jenis_lp',       '=', jenisLpValue]]  : [];
@@ -644,7 +685,7 @@ export class DashboardMap extends Component {
             let cards = [];
 
             if (mode === 'kriminal') {
-                const d = [...tf, ...df, ...kabf, ...jlpf, ...kf, ...sf, ...stk, ...drillDomain];
+                const d = [...tf, ...df, ...polresf, ...jlpf, ...kf, ...sf, ...stk, ...drillDomain];
                 const [total, proses, selesai] = await Promise.all([
                     this.orm.searchCount('petadigi.kriminalitas', d),
                     this.orm.searchCount('petadigi.kriminalitas', [...d, ['status_perkara','=','PROSES']]),
@@ -672,7 +713,7 @@ export class DashboardMap extends Component {
                     { icon: 'fa-shield',   color: '#c0392b', value: polres, label: 'Total Polres' },
                 ];
             } else if (mode === 'bencana') {
-                const d = [...tf, ...df, ...kabf, ...kf, ...sts, ...drillDomain];
+                const d = [...tf, ...df, ...kf, ...sts, ...drillDomain];
                 const [total, aktif, nonAktif] = await Promise.all([
                     this.orm.searchCount('petadigi.bencana', d),
                     this.orm.searchCount('petadigi.bencana', [...d, ['state','=','AKTIF']]),
@@ -686,7 +727,7 @@ export class DashboardMap extends Component {
                     { icon: 'fa-percent',     color: '#8e44ad', value: persen + '%', label: 'Persentase Tertangani' },
                 ];
             } else if (mode === 'lalin') {
-                const d = [...tf, ...df, ...kabf, ...kf, ...sts, ...drillDomain];
+                const d = [...tf, ...df, ...kf, ...sts, ...drillDomain];
                 const [total, proses, selesai] = await Promise.all([
                     this.orm.searchCount('petadigi.lalu_lintas', d),
                     this.orm.searchCount('petadigi.lalu_lintas', [...d, ['state','=','PROSES']]),
@@ -700,7 +741,7 @@ export class DashboardMap extends Component {
                     { icon: 'fa-percent',     color: '#1a6b9a', value: persen + '%', label: 'Persentase Selesai' },
                 ];
             } else if (mode === 'kam') {
-                const d = [...tf, ...df, ...kabf, ...kf, ...sts, ...drillDomain];
+                const d = [...tf, ...df, ...kf, ...sts, ...drillDomain];
                 const [total, proses, selesai] = await Promise.all([
                     this.orm.searchCount('petadigi.kasus_menonjol', d),
                     this.orm.searchCount('petadigi.kasus_menonjol', [...d, ['state','=','PROSES']]),
@@ -728,7 +769,7 @@ export class DashboardMap extends Component {
             } else if (mode === 'sumur') {
                 // sumur_minyak tidak punya sumber_dokumen_id & tanggal_kejadian
                 const sumurSts = stateValue ? [['state', '=', stateValue]] : [];
-                const sumurBase = [...kabf, ...sumurSts, ...drillDomain];
+                const sumurBase = [...sumurSts, ...drillDomain];
                 const [total, aktif, lengkap] = await Promise.all([
                     this.orm.searchCount('petadigi.sumur_minyak', sumurBase),
                     this.orm.searchCount('petadigi.sumur_minyak', [...sumurBase, ['state','=','AKTIF']]),
@@ -745,7 +786,7 @@ export class DashboardMap extends Component {
                     ...(dateFrom ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']] : []),
                     ...(dateTo   ? [['tanggal_mulai', '<=', dateTo   + ' 23:59:59']] : []),
                 ];
-                const d = [...kabf, ...df_s, ...drillDomain];
+                const d = [...df_s, ...drillDomain];
                 const [total, proses, lokasiGroups, personelGroups] = await Promise.all([
                     this.orm.searchCount('petadigi.strong_point', d),
                     this.orm.searchCount('petadigi.strong_point', [...d, ['state','=','PROSES']]),

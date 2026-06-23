@@ -580,7 +580,7 @@ export async function updateKriminalCharts(ctx, mode) {
     const jenisLp       = ctx.filterJenisLP?.el?.value        || '';
     const kategoriId    = parseInt(ctx.filterKategori?.el?.value)     || null;
     const subKategoriId = parseInt(ctx.filterSubKategori?.el?.value)  || null;
-    const kabupatenId   = parseInt(ctx.filterKabupaten?.el?.value)    || null;
+    const polresId      = ctx._polresFilterId;
     const stateValue    = ctx.filterState?.el?.value          || '';
 
     const drillDomain = ctx.drillKecamatanId
@@ -591,7 +591,7 @@ export async function updateKriminalCharts(ctx, mode) {
 
     const baseDomain = [
         ...drillDomain,
-        ...(kabupatenId   ? [['kabupaten_id',            '=',  kabupatenId]]                    : []),
+        ...(polresId      ? [['kabupaten_id.polres_id',  '=',  polresId]]                       : []),
         ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
         ...(tahun         ? [['sumber_dokumen_id.tahun', '=',  tahun]]                          : []),
         ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
@@ -602,14 +602,14 @@ export async function updateKriminalCharts(ctx, mode) {
     ];
     const donutDomain = [...baseDomain];
 
-    // Domain untuk perbandingan tahunan — pakai kategori/subkat/kabupaten tapi tahun dikelola sendiri
+    // Domain untuk perbandingan tahunan — pakai kategori/subkat/polres tapi tahun dikelola sendiri
     const selectedYear  = tahun ? parseInt(tahun) : new Date().getFullYear();
     const prevYear      = selectedYear - 1;
     const yearlyBase    = [
         ...drillDomain,
-        ...(kategoriId    ? [['kategori_id',    '=', kategoriId]]    : []),
-        ...(subKategoriId ? [['sub_kategori_id', '=', subKategoriId]] : []),
-        ...(kabupatenId   ? [['kabupaten_id',    '=', kabupatenId]]   : []),
+        ...(kategoriId    ? [['kategori_id',             '=', kategoriId]]                     : []),
+        ...(subKategoriId ? [['sub_kategori_id',         '=', subKategoriId]]                  : []),
+        ...(polresId      ? [['kabupaten_id.polres_id',  '=', polresId]]                       : []),
     ];
     const currentYrDom  = [...yearlyBase, ['sumber_dokumen_id.tahun', '=', String(selectedYear)]];
     const prevYrDom     = [...yearlyBase, ['sumber_dokumen_id.tahun', '=', String(prevYear)]];
@@ -661,9 +661,9 @@ export async function updateKriminalCharts(ctx, mode) {
             value: g.__count || 0,
         }));
 
-        // Update donut title dengan nama kabupaten terpilih
-        const kabEl   = ctx.filterKabupaten?.el;
-        const wilayah = kabEl?.value ? (kabEl.options[kabEl.selectedIndex]?.text || 'Semua Wilayah') : 'Semua Wilayah';
+        // Update donut title dengan nama polres terpilih
+        const polresEl = ctx.filterPolres?.el;
+        const wilayah  = polresEl?.value ? (polresEl.options[polresEl.selectedIndex]?.text || 'Semua Wilayah') : 'Semua Wilayah';
         const titleEl = ctx.chartDonutTitleRef?.el;
         if (titleEl) {
             titleEl.innerHTML = `<i class="fa fa-pie-chart"></i> Grafik Kriminalitas Berdasarkan Kategori (${wilayah})`;
@@ -751,7 +751,7 @@ export async function updateKriminalTable(ctx, mode, page) {
     const jenisLp       = ctx.filterJenisLP?.el?.value        || '';
     const kategoriId    = parseInt(ctx.filterKategori?.el?.value)    || null;
     const subKategoriId = parseInt(ctx.filterSubKategori?.el?.value) || null;
-    const kabupatenId   = parseInt(ctx.filterKabupaten?.el?.value)   || null;
+    const polresId      = ctx._polresFilterId;
     const stateValue    = ctx.filterState?.el?.value          || '';
 
     const drillDomain = ctx.drillKecamatanId
@@ -762,7 +762,7 @@ export async function updateKriminalTable(ctx, mode, page) {
 
     const domain = [
         ...drillDomain,
-        ...(kabupatenId   ? [['kabupaten_id',            '=',  kabupatenId]]                    : []),
+        ...(polresId      ? [['kabupaten_id.polres_id',  '=',  polresId]]                       : []),
         ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
         ...(tahun         ? [['sumber_dokumen_id.tahun', '=',  tahun]]                          : []),
         ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),

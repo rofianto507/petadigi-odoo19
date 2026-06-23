@@ -75,8 +75,8 @@
                         <select class="petadigi-select" t-ref="filterTahun" t-on-change="onFilterChange">
                             <option value="">Semua Tahun</option>
                         </select>
-                        <select class="petadigi-select" t-ref="filterKabupaten" t-on-change="onFilterChange">
-                            <option value="">Semua Kabupaten</option>
+                        <select class="petadigi-select" t-ref="filterPolres" t-on-change="onFilterChange">
+                            <option value="">Semua Polres</option>
                         </select>
                         <select class="petadigi-select" t-ref="filterKategoriSumur" t-on-change="onFilterChange">
                             <option value="">Semua Kategori</option>

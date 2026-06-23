@@ -42,6 +42,18 @@ class LokasiStrongPoint(models.Model):
             'context': {'default_lokasi_id': self.id},
         }
 
+    @api.model
+    def default_get(self, fields_list):
+        defaults = super().default_get(fields_list)
+        user = self.env.user
+        is_admin = user.has_group('petadigi.group_admin') or user.has_group('petadigi.group_subdit')
+        if not is_admin:
+            if user.polres_id and 'polres_id' in fields_list:
+                defaults['polres_id'] = user.polres_id.id
+            if user.polsek_id and 'polsek_id' in fields_list:
+                defaults['polsek_id'] = user.polsek_id.id
+        return defaults
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:

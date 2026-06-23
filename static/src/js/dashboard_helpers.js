@@ -40,7 +40,7 @@ export function fmtTanggalJam(s) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Isi dropdown filter Tahun & Kabupaten.
+ * Isi dropdown filter Tahun & Polres.
  * @param {DashboardMap} ctx - instance komponen utama
  */
 export async function initFilters(ctx) {
@@ -73,18 +73,25 @@ export async function initFilters(ctx) {
         } catch (_) {}
     }
 
-    // Dropdown Kabupaten
-    const kabEl = ctx.filterKabupaten.el;
-    if (kabEl) {
+    // Dropdown Polres — dengan logika berbasis role
+    const polresEl = ctx.filterPolres?.el;
+    if (polresEl && !ctx._isPolsekUser) {
         try {
-            const kabs = await ctx.orm.searchRead('petadigi.kabupaten', [], ['id', 'name']);
-            kabs.forEach(k => {
+            const polresList = await ctx.orm.searchRead(
+                'petadigi.polres', [], ['id', 'name'], { order: 'name asc' });
+            polresList.forEach(p => {
                 const opt = document.createElement('option');
-                opt.value = k.id;
-                opt.textContent = k.name;
-                kabEl.appendChild(opt);
+                opt.value = p.id;
+                opt.textContent = p.name;
+                polresEl.appendChild(opt);
             });
         } catch (_) {}
+
+        // Polres user: lock ke polres milik user, admin/subdit: default semua
+        if (ctx._isPolresUser && ctx._userPolresId) {
+            polresEl.value    = String(ctx._userPolresId);
+            polresEl.disabled = true;
+        }
     }
 }
 
