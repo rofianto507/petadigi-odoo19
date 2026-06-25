@@ -160,12 +160,19 @@
                 <meta name="theme-color" content="#71639e"/>
                 <meta name="mobile-web-app-capable" content="yes"/>
                 <meta name="apple-mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+                <meta name="apple-mobile-web-app-title" content="PetaDigi"/>
                 <title>PetaDigi Mobile</title>
+                <!-- PWA manifest & icons -->
+                <link rel="manifest" href="/petadigi/manifest.json"/>
+                <link rel="apple-touch-icon" href="/petadigi/static/img/icons/icon-192.png"/>
+                <link rel="apple-touch-icon" sizes="152x152" href="/petadigi/static/img/icons/icon-152.png"/>
+                <link rel="icon" type="image/png" sizes="192x192" href="/petadigi/static/img/icons/icon-192.png"/>
                 <link rel="preconnect" href="https://fonts.googleapis.com"/>
                 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap"/>
                 <link rel="stylesheet" href="/petadigi/static/lib/fontawesome/css/font-awesome.css"/>
                 <link rel="stylesheet" type="text/css" href="/petadigi/static/lib/leaflet/leaflet.css"/>
-                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/strong_form.css?v=20260623c"/>
+                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/strong_form.css?v=20260624a"/>
             </head>
             <body>
 
@@ -250,6 +257,14 @@
                 <script type="text/javascript" src="/petadigi/static/lib/leaflet/leaflet.js"/>
                 <script type="text/javascript" src="/petadigi/static/lib/echart/echarts.min.js"/>
                 <script type="text/javascript" t-attf-src="/petadigi/static/src/js/strong_form.js?v=20260624a"/>
+                <script>
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', function () {
+                        navigator.serviceWorker.register('/petadigi/sw.js', { scope: '/petadigi/' })
+                            .catch(function () {});
+                    });
+                }
+                </script>
 
             </body>
         </html>

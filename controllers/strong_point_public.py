@@ -93,6 +93,82 @@ class StrongPointPublicController(http.Controller):
 
     # ── Routes ───────────────────────────────────────────────────────────────
 
+    # ── PWA: Manifest & Service Worker ───────────────────────────────────────
+
+    @http.route('/petadigi/manifest.json', type='http', auth='public', csrf=False, website=False)
+    def pwa_manifest(self, **kwargs):
+        manifest = {
+            "name": "PetaDigi Mobile",
+            "short_name": "PetaDigi",
+            "description": "Sistem Pemetaan Digital - Polri",
+            "start_url": "/petadigi/form",
+            "scope": "/petadigi/",
+            "display": "standalone",
+            "orientation": "portrait-primary",
+            "background_color": "#71639e",
+            "theme_color": "#71639e",
+            "lang": "id",
+            "icons": [
+                {"src": "/petadigi/static/img/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png"},
+                {"src": "/petadigi/static/img/icons/icon-96.png",  "sizes": "96x96",   "type": "image/png"},
+                {"src": "/petadigi/static/img/icons/icon-128.png", "sizes": "128x128", "type": "image/png"},
+                {"src": "/petadigi/static/img/icons/icon-144.png", "sizes": "144x144", "type": "image/png"},
+                {"src": "/petadigi/static/img/icons/icon-152.png", "sizes": "152x152", "type": "image/png"},
+                {"src": "/petadigi/static/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/petadigi/static/img/icons/icon-384.png", "sizes": "384x384", "type": "image/png"},
+                {"src": "/petadigi/static/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+            ],
+        }
+        return request.make_response(
+            json.dumps(manifest),
+            headers=[
+                ('Content-Type', 'application/manifest+json'),
+                ('Cache-Control', 'public, max-age=86400'),
+            ],
+        )
+
+    @http.route('/petadigi/sw.js', type='http', auth='public', csrf=False, website=False)
+    def pwa_service_worker(self, **kwargs):
+        sw = """
+const CACHE = 'petadigi-v1';
+const SHELL = [
+  '/petadigi/static/lib/fontawesome/css/font-awesome.css',
+  '/petadigi/static/lib/leaflet/leaflet.css',
+  '/petadigi/static/lib/leaflet/leaflet.js',
+  '/petadigi/static/lib/echart/echarts.min.js',
+];
+
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL).catch(() => {})));
+});
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    ).then(() => clients.claim())
+  );
+});
+self.addEventListener('fetch', e => {
+  const url = new URL(e.request.url);
+  // Cache-first for static assets; network-first for API / HTML
+  if (SHELL.some(s => url.pathname === s)) {
+    e.respondWith(
+      caches.match(e.request).then(r => r || fetch(e.request))
+    );
+  }
+  // everything else: network only (Odoo session / API must stay fresh)
+});
+"""
+        return request.make_response(
+            sw,
+            headers=[
+                ('Content-Type', 'application/javascript'),
+                ('Service-Worker-Allowed', '/petadigi/'),
+                ('Cache-Control', 'no-cache'),
+            ],
+        )
+
     @http.route('/petadigi', type='http', auth='public', csrf=False, website=False)
     def strong_index(self, **kwargs):
         if self._auth_check():
