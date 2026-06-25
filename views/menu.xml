@@ -63,6 +63,13 @@
             groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
             sequence="5"/>
         <menuitem
+            id="menu_patroli"
+            name="Patroli"
+            parent="menu_petadigi_maps"
+            action="action_petadigi_patroli"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            sequence="5"/>
+        <menuitem
             id="menu_lokasi_penting"
             name="Lokasi Penting"
             parent="menu_petadigi_maps"

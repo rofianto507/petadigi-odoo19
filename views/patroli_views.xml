@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- LIST VIEW -->
+        <record id="view_petadigi_patroli_list" model="ir.ui.view">
+            <field name="name">patroli.list.petadigi</field>
+            <field name="model">petadigi.patroli</field>
+            <field name="arch" type="xml">
+                <list string="Patroli">
+                    <field name="code"/>
+                    <field name="tanggal_mulai"/>
+                    <field name="tanggal_selesai"/>
+                    <field name="polres_id"/>
+                    <field name="polsek_id"/>
+                    <field name="kabupaten_id"/>
+                    <field name="kecamatan_id"/>
+                    <field name="desa_id"/>
+                    <field name="state" widget="badge"
+                        decoration-warning="state == 'PROSES'"
+                        decoration-success="state == 'SELESAI'"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- SEARCH VIEW -->
+        <record id="view_petadigi_patroli_search" model="ir.ui.view">
+            <field name="name">patroli.search.petadigi</field>
+            <field name="model">petadigi.patroli</field>
+            <field name="arch" type="xml">
+                <search string="Cari Patroli">
+                    <field name="code"/>
+                    <field name="polres_id"/>
+                    <field name="polsek_id"/>
+                    <field name="kabupaten_id"/>
+                    <field name="kecamatan_id"/>
+                    <separator/>
+                    <filter string="PROSES" name="filter_proses" domain="[('state','=','PROSES')]"/>
+                    <filter string="SELESAI" name="filter_selesai" domain="[('state','=','SELESAI')]"/>
+                    <separator/>
+                    <filter string="Hari Ini" name="filter_today"
+                        domain="[('tanggal_mulai','&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal_mulai','&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="Minggu Ini" name="filter_this_week"
+                        domain="[('tanggal_mulai','&gt;=', (context_today() - relativedelta(days=context_today().weekday())).strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal_mulai','&lt;=', (context_today() - relativedelta(days=context_today().weekday()) + relativedelta(days=6)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="Bulan Ini" name="filter_this_month"
+                        domain="[('tanggal_mulai','&gt;=', context_today().replace(day=1).strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal_mulai','&lt;=', (context_today().replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="Tahun Ini" name="filter_this_year"
+                        domain="[('tanggal_mulai','&gt;=', context_today().replace(month=1, day=1).strftime('%Y-%m-%d 00:00:00')),
+                                 ('tanggal_mulai','&lt;=', context_today().replace(month=12, day=31).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <group>
+                        <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>
+                        <filter string="Polsek" name="groupby_polsek" context="{'group_by': 'polsek_id'}"/>
+                        <filter string="Kabupaten" name="groupby_kabupaten" context="{'group_by': 'kabupaten_id'}"/>
+                        <filter string="Status" name="groupby_state" context="{'group_by': 'state'}"/>
+                        <filter string="Tanggal" name="groupby_tanggal" context="{'group_by': 'tanggal_mulai:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- FORM VIEW -->
+        <record id="view_petadigi_patroli_form" model="ir.ui.view">
+            <field name="name">patroli.form.petadigi</field>
+            <field name="model">petadigi.patroli</field>
+            <field name="arch" type="xml">
+                <form string="Patroli">
+                    <header>
+                        <button name="action_set_selesai" string="Selesai" type="object"
+                            class="btn-success" invisible="state == 'SELESAI'"/>
+                        <button name="action_set_proses" string="Kembalikan ke Proses" type="object"
+                            class="btn-secondary" invisible="state == 'PROSES'"/>
+                        <field name="state" widget="statusbar"
+                            statusbar_visible="PROSES,SELESAI"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_personel" type="object"
+                                    class="oe_stat_button" icon="fa-users">
+                                <field name="personel_count" widget="statinfo" string="Personel"/>
+                            </button>
+                            <button name="action_view_lokasi" type="object"
+                                    class="oe_stat_button" icon="fa-map-marker">
+                                <field name="lokasi_count" widget="statinfo" string="Lokasi"/>
+                            </button>
+                        </div>
+                        <div class="oe_title">
+                            <h1><field name="code" readonly="1"/></h1>
+                        </div>
+                        <group>
+                            <group string="WILAYAH">
+                                <!-- Admin: bebas pilih semua -->
+                                <field name="polres_id"
+                                    groups="petadigi.group_admin"/>
+                                <field name="polsek_id"
+                                    groups="petadigi.group_admin"
+                                    domain="[('polres_id', '=', polres_id)]"/>
+                                <field name="kabupaten_id"
+                                    groups="petadigi.group_admin"
+                                    domain="[('polres_id', '=', polres_id)]"/>
+                                <!-- Polres: polres terkunci, polsek & kabupaten bebas di polresnya -->
+                                <field name="polres_id"
+                                    groups="petadigi.group_polres"
+                                    readonly="1"/>
+                                <field name="polsek_id"
+                                    groups="petadigi.group_polres"
+                                    domain="[('polres_id', '=', polres_id)]"/>
+                                <field name="kabupaten_id"
+                                    groups="petadigi.group_polres"
+                                    domain="[('polres_id', '=', polres_id)]"/>
+                                <!-- Polsek: polres + polsek terkunci -->
+                                <field name="polres_id"
+                                    groups="petadigi.group_polsek"
+                                    readonly="1"/>
+                                <field name="polsek_id"
+                                    groups="petadigi.group_polsek"
+                                    readonly="1"/>
+                                <field name="kabupaten_id"
+                                    groups="petadigi.group_polsek"
+                                    domain="[('polres_id', '=', polres_id)]"/>
+                                <!-- Kecamatan & Desa: semua grup -->
+                                <field name="kecamatan_id"
+                                    domain="[('kabupaten_id', '=', kabupaten_id)]"/>
+                                <field name="desa_id"
+                                    domain="[('kecamatan_id', '=', kecamatan_id)]"/>
+                            </group>
+                            <group string="PELAKSANAAN">
+                                <field name="tanggal_mulai"/>
+                                <field name="tanggal_selesai"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Personel" name="personel">
+                                <field name="personel_ids">
+                                    <list editable="bottom">
+                                        <field name="nama" required="1"/>
+                                        <field name="pangkat"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Lokasi Patroli" name="lokasi">
+                                <field name="lokasi_ids">
+                                    <list>
+                                        <field name="tanggal"/>
+                                        <field name="latitude"/>
+                                        <field name="longitude"/>
+                                        <field name="catatan"/>
+                                    </list>
+                                </field>
+                            </page>
+                            <page string="Keterangan">
+                                <field name="keterangan" placeholder="Keterangan tambahan..."/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- GRAPH VIEW -->
+        <record id="view_petadigi_patroli_graph" model="ir.ui.view">
+            <field name="name">patroli.graph.petadigi</field>
+            <field name="model">petadigi.patroli</field>
+            <field name="arch" type="xml">
+                <graph string="Grafik Patroli" type="bar">
+                    <field name="polres_id"/>
+                    <field name="state"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- PIVOT VIEW -->
+        <record id="view_petadigi_patroli_pivot" model="ir.ui.view">
+            <field name="name">patroli.pivot.petadigi</field>
+            <field name="model">petadigi.patroli</field>
+            <field name="arch" type="xml">
+                <pivot string="Analisis Patroli" disable_linking="False">
+                    <field name="polres_id" type="row"/>
+                    <field name="kabupaten_id" type="row"/>
+                    <field name="state" type="col"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- CALENDAR VIEW -->
+        <record id="view_petadigi_patroli_calendar" model="ir.ui.view">
+            <field name="name">patroli.calendar.petadigi</field>
+            <field name="model">petadigi.patroli</field>
+            <field name="arch" type="xml">
+                <calendar string="Kalender Patroli"
+                          date_start="tanggal_mulai"
+                          date_stop="tanggal_selesai"
+                          color="state"
+                          mode="month"
+                          quick_create="False">
+                    <field name="polres_id"/>
+                    <field name="polsek_id"/>
+                    <field name="state" filters="1" invisible="1"/>
+                </calendar>
+            </field>
+        </record>
+
+        <!-- ── LOKASI PATROLI VIEWS ── -->
+
+        <!-- LOKASI PATROLI LIST VIEW -->
+        <record id="view_petadigi_lokasi_patroli_list" model="ir.ui.view">
+            <field name="name">lokasi_patroli.list.petadigi</field>
+            <field name="model">petadigi.lokasi_patroli</field>
+            <field name="arch" type="xml">
+                <list string="Lokasi Patroli">
+                    <field name="tanggal"/>
+                    <field name="latitude"/>
+                    <field name="longitude"/>
+                    <field name="catatan"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- LOKASI PATROLI FORM VIEW -->
+        <record id="view_petadigi_lokasi_patroli_form" model="ir.ui.view">
+            <field name="name">lokasi_patroli.form.petadigi</field>
+            <field name="model">petadigi.lokasi_patroli</field>
+            <field name="arch" type="xml">
+                <form string="Lokasi Patroli">
+                    <sheet>
+                        <group>
+                            <field name="tanggal"/>
+                            <field name="patroli_id" readonly="1"/>
+                        </group>
+
+                        <div>
+                            <field name="latitude" widget="latlong_map_picker"
+                                class="latlong-mappicker-wrapper"
+                                nolabel="1"/>
+                        </div>
+
+                        <group>
+                            <field name="latitude" string="Latitude"/>
+                            <field name="longitude" string="Longitude"/>
+                        </group>
+
+                        <group>
+                            <field name="foto" widget="image_popup" nolabel="1"/>
+                        </group>
+
+                        <group>
+                            <field name="catatan" placeholder="Catatan lokasi..."/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION -->
+        <record id="action_petadigi_patroli" model="ir.actions.act_window">
+            <field name="name">Patroli</field>
+            <field name="res_model">petadigi.patroli</field>
+            <field name="view_mode">list,form,graph,pivot,calendar</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'list',     'view_id': ref('view_petadigi_patroli_list')}),
+                (0, 0, {'view_mode': 'form',     'view_id': ref('view_petadigi_patroli_form')}),
+                (0, 0, {'view_mode': 'graph',    'view_id': ref('view_petadigi_patroli_graph')}),
+                (0, 0, {'view_mode': 'pivot',    'view_id': ref('view_petadigi_patroli_pivot')}),
+                (0, 0, {'view_mode': 'calendar', 'view_id': ref('view_petadigi_patroli_calendar')}),
+            ]"/>
+            <field name="search_view_id" ref="petadigi.view_petadigi_patroli_search"/>
+        </record>
+    </data>
+</odoo>

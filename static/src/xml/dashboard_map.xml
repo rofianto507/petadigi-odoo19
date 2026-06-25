@@ -40,6 +40,10 @@
                         <i class="fa fa-map-pin"/>
                         <span>Peta Strong Point</span>
                     </a>
+                    <a class="petadigi-nav-item" data-mode="patroli" t-on-click="onNavClick">
+                        <i class="fa fa-car"/>
+                        <span>Peta Patroli</span>
+                    </a>
                     <a class="petadigi-nav-item" data-mode="lokasi" t-on-click="onNavClick">
                         <i class="fa fa-map-marker"/>
                         <span>Lokasi Penting</span>
@@ -216,6 +220,22 @@
                     </div>
                 </div>
 
+                <!-- CHART PATROLI ROW — hanya untuk mode patroli -->
+                <div class="petadigi-chart-row" t-ref="chartPatroliRow">
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-bar-chart"/> Grafik Total Patroli per Polres
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartPatroliBar"/>
+                    </div>
+                    <div class="petadigi-chart-card">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-line-chart"/> Patroli dan Titik Lokasi per Bulan
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartPatroliTrend"/>
+                    </div>
+                </div>
+
                 <!-- CHART LOKASI ROW — hanya untuk mode lokasi -->
                 <div class="petadigi-chart-row" t-ref="chartLokasiRow">
                     <div class="petadigi-chart-card">
@@ -365,6 +385,14 @@
                     <div class="petadigi-data-table-card">
                         <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Strong Point</div>
                         <div t-ref="tableStrongBody"/>
+                    </div>
+                </div>
+
+                <!-- DATA TABLE PATROLI -->
+                <div class="petadigi-chart-row" t-ref="tablePatroliRow">
+                    <div class="petadigi-data-table-card">
+                        <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Patroli</div>
+                        <div t-ref="tablePatroliBody"/>
                     </div>
                 </div>
 

@@ -73,5 +73,13 @@
             <field name="number_next">1</field>
             <field name="number_increment">1</field>
         </record>
+        <record id="seq_petadigi_patroli" model="ir.sequence">
+            <field name="name">Kode Patroli</field>
+            <field name="code">petadigi.patroli.sequence</field>
+            <field name="prefix">PTL</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+        </record>
     </data>
 </odoo>

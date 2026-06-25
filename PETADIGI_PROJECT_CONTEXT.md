@@ -28,7 +28,8 @@ PetaDigi adalah modul Odoo yang menggabungkan:
 - **Drill-down interaktif**: Kabupaten → Kecamatan → Desa/Kelurahan
 - **Cooling System**: Monitoring kegiatan lapangan polisi via form publik (QR code / link) + dashboard monitoring
 - **Sumur Minyak**: Pendataan sumur minyak masyarakat via form publik lapangan + dashboard peta
-- **Strong Point Mobile**: SPA mobile-first untuk pencatatan strong point lapangan polisi — auth session, CRUD data, upload foto, manajemen personel; akses `/petadigi`
+- **Strong Point Mobile**: SPA mobile-first untuk pencatatan strong point lapangan polisi — auth session, CRUD data, upload foto, manajemen personel, KPI cards, weekly chart ECharts, avatar user, PWA installable; akses `/petadigi`
+- **Patroli**: model backend CRUD patroli wilayah (code PTL-xxxxx, polres/polsek, wilayah, tanggal, state) + model personel patroli; menu di bawah Strong Point
 
 Pengguna utama: **Kepolisian Resort (Polres)** dan **Kepolisian Sektor (Polsek)** di Indonesia.
 
@@ -40,9 +41,11 @@ Pengguna utama: **Kepolisian Resort (Polres)** dan **Kepolisian Sektor (Polsek)*
 petadigi/
 ├── __manifest__.py
 ├── __init__.py
-├── models/                    # 27 model data
+├── models/                    # 29 model data
 │   ├── kategori_sumur_minyak.py  # State/token/URL/QR (upgrade dari model sederhana)
 │   ├── sumur_minyak.py
+│   ├── patroli.py                # Model patroli wilayah (PTL00001)
+│   ├── personel_patroli.py       # Personel terkait patroli (One2many)
 │   └── ...
 ├── views/
 │   ├── menu_restrictions.xml  # Batasi menu "Apps" hanya group_system
@@ -50,7 +53,8 @@ petadigi/
 │   ├── sumur_minyak_views.xml
 │   ├── giat_form_template.xml
 │   ├── sumur_form_template.xml  # Template publik input sumur lapangan
-│   └── ...                    # 30+ file XML views
+│   ├── patroli_views.xml        # List/form/search/graph/pivot/calendar + action
+│   └── ...                    # 32+ file XML views
 ├── controllers/
 │   ├── __init__.py
 │   ├── giat_public.py         # Public form controller Cooling System
@@ -321,21 +325,44 @@ petadigi.subdit                   petadigi.sub_status_perkara
 - Auth helper: `_auth_check()` — cek `user.polres_id`, return None jika public/tanpa polres
 - Access check: `_check_record_access(user, record_id)` — validasi ownership polres
 
+**Timezone helpers** (module-level di controller):
+```python
+_WIB_OFFSET = timedelta(hours=7)
+
+def _today_utc_range_wib():
+    now_wib   = datetime.utcnow() + _WIB_OFFSET
+    today_wib = now_wib.date()
+    wib_start = datetime(today_wib.year, today_wib.month, today_wib.day, 0, 0, 0)
+    wib_end   = datetime(today_wib.year, today_wib.month, today_wib.day, 23, 59, 59)
+    utc_start = (wib_start - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+    utc_end   = (wib_end   - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+    return utc_start, utc_end
+
+def _wib_to_utc(dt_str):
+    # datetime-local HTML input returns WIB → must subtract 7h before Odoo write
+    dt = datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')
+    return (dt - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+```
+> Odoo menyimpan Datetime dalam UTC. Semua input dari mobile (`datetime-local`) adalah WIB, jadi perlu `_wib_to_utc()` sebelum write. Filter "hari ini" harus pakai `_today_utc_range_wib()` agar benar saat tengah malam WIB.
+
 **API endpoints** (semua `type='jsonrpc'`):
 | Endpoint | Fungsi |
 |---|---|
-| `POST /petadigi/api/kpi` | KPI: total, proses, selesai, jumlah personel |
+| `POST /petadigi/api/kpi` | KPI: `total`, `personel`, `today`, `personel_today` |
 | `POST /petadigi/api/lokasi` | List lokasi SP aktif (filtered by polres/polsek) |
 | `POST /petadigi/api/kecamatan` | Cascading by `kabupaten_id` |
 | `POST /petadigi/api/desa` | Cascading by `kecamatan_id` |
-| `POST /petadigi/api/list` | List SP records — **paginated**: `offset=0, limit=20` |
-| `POST /petadigi/api/submit` | Create SP record baru, return `{code, record_id}` |
+| `POST /petadigi/api/list` | List SP records — paginated (offset/limit=20), terima `filter='today'` untuk filter WIB hari ini |
+| `POST /petadigi/api/submit` | Create SP record baru, `tanggal_mulai` di-`_wib_to_utc()` |
 | `POST /petadigi/api/record` | Detail 1 record: info + personel + `foto_src` (base64 data URL) |
 | `POST /petadigi/api/personel_add` | Tambah personel ke SP |
 | `POST /petadigi/api/personel_remove` | Hapus personel |
 | `POST /petadigi/api/upload_foto` | Upload foto base64 → field `foto` (Binary attachment) |
-| `POST /petadigi/api/set_selesai` | Set state=SELESAI + `tanggal_selesai` |
+| `POST /petadigi/api/set_selesai` | Set state=SELESAI + `tanggal_selesai` (`_wib_to_utc()`) |
+| `POST /petadigi/api/weekly` | Last 7 days SP count (WIB buckets) — `{days: [{label, date, count}]}` |
 | `GET /petadigi/foto/<id>` | Serve foto binary langsung (HTTP, bukan JSON) |
+| `GET /petadigi/manifest.json` | PWA manifest (Content-Type: application/manifest+json) |
+| `GET /petadigi/sw.js` | PWA service worker (cache static assets, network pass-through API) |
 
 **Foto display (KRITIKAL)**:
 ```python
@@ -383,6 +410,31 @@ if att and att.datas:
 - `nama` (Char, UPPERCASE), `pangkat` (Char, UPPERCASE)
 - `nama_lengkap` (Char, computed: `"{pangkat} {nama}"` atau hanya `nama`)
 
+### Model Patroli
+
+**`petadigi.patroli`** — data patroli wilayah
+- `code` (auto-sequence readonly, prefix `PTL`, padding 5 → PTL00001)
+- `polres_id` (required), `polsek_id` (opsional, domain filtered)
+- `kabupaten_id`, `kecamatan_id`, `desa_id` (cascading domain)
+- `tanggal_mulai` (Datetime, required, default now), `tanggal_selesai` (Datetime)
+- `personel_ids` (One2many → `petadigi.personel_patroli`), `personel_count` (Integer, computed stored)
+- `keterangan` (Text), `state`: `PROSES` / `SELESAI`
+- Methods: `action_set_selesai`, `action_set_proses`, `action_view_personel`, `default_get` (pre-fill dari user login)
+- Sequence code: `petadigi.patroli.sequence`
+
+**`petadigi.personel_patroli`** — personel terkait patroli
+- `patroli_id` (Many2one, required, ondelete='cascade')
+- `nama` (Char, required), `pangkat` (Char)
+- `nama_lengkap` (Char, computed stored: `"{pangkat} {nama}"`)
+
+**View Patroli** (`views/patroli_views.xml`):
+- List: code, tanggal, polres/polsek, kabupaten/kecamatan/desa, state badge
+- Form: smart button Personel, header state (PROSES→SELESAI), group Wilayah (role-aware readonly) + Pelaksanaan, notebook tab Personel editable inline + tab Keterangan
+- Search: filter status, Hari Ini/Minggu/Bulan/Tahun, groupby polres/polsek/kabupaten/status/bulan
+- Graph, Pivot, Calendar (date_start=`tanggal_mulai`, color=`state`)
+
+**Menu**: Maps → Patroli (di bawah Strong Point, sequence 5)
+
 ### JS SPA (`static/src/js/strong_form.js`)
 - **Pattern**: IIFE `(function() { 'use strict'; ... })()`  — bukan OWL
 - **rpc()**: `fetch` async helper dengan JSON-RPC 2.0
@@ -394,10 +446,11 @@ if att and att.datas:
       listOffset: 0, listPerPage: 20, listLoading: false,
       listDone: false, listObserver: null,  // infinite scroll pagination
       detailId: null,
+      listFilter: null,  // 'today' atau null (diset saat klik KPI card)
   };
   ```
 
-**Tab navigasi**: Beranda (KPI cards SP + Patroli coming soon), Strong Point, Patroli (coming soon), Profil
+**Tab navigasi**: Beranda (KPI cards + weekly chart + greeting avatar), Strong Point, Patroli (coming soon), Profil
 
 **Alur Strong Point tab**:
 1. `_showRecordList()` — load 20 pertama, infinite scroll (IntersectionObserver sentinel)
@@ -428,6 +481,33 @@ if (data.has_foto && data.foto_src) {
 
 **Input personel**: nama + pangkat selalu `.toUpperCase()` sebelum submit + CSS `text-transform: uppercase` + `autocapitalize="characters"`
 
+**KPI Cards (Beranda)**:
+- 2 card side-by-side (2-column grid `.sp-kpi2-grid`)
+- "SP Hari Ini" — `today` + `personel_today`; klik → masuk tab Strong Point dengan `listFilter = 'today'`
+- "SP Keseluruhan" — `total` + `personel`; klik → masuk tab Strong Point tanpa filter
+- Filter badge muncul di header record list ketika `listFilter === 'today'`, ada tombol ✕ untuk clear
+- `_navigateToStrongWithFilter(filter)` — set `_sp.listFilter`, call `switchTab('strong')`, panggil `_showRecordList()` jika tab sudah rendered
+
+**Weekly Bar Chart (Beranda)**:
+- ECharts bar card full-width di bawah KPI cards
+- Data dari `POST /petadigi/api/weekly` → `{days: [{label, date, count}]}`
+- Warna: bar hari ini `#71639e` (ungu gelap), bar lainnya `#c4bedd` (ungu muda)
+- ECharts diakses sebagai global script (`typeof echarts === 'undefined'` guard)
+
+**User Avatar (Greeting)**:
+- Avatar circular 44×44 di kanan nama user
+- Initials fallback (huruf pertama nama) selalu dirender
+- `<img>` di-overlay absolut di atas initials — jika foto load, tutupi initials
+- URL foto: `/web/image/res.users/{id}/image_128`
+
+**PWA (Progressive Web App)**:
+- Manifest: `GET /petadigi/manifest.json` (Content-Type: `application/manifest+json`)
+- Service Worker: `GET /petadigi/sw.js` — cache-first untuk static assets (fontawesome, leaflet, echarts), network pass-through untuk API/session Odoo
+- Icons: `static/img/icons/` — 8 ukuran (72, 96, 128, 144, 152, 192, 384, 512 px), dihasilkan dari icon.png via Pillow
+- Template tags: `<link rel="manifest">`, apple-touch-icon, `apple-mobile-web-app-title`, `apple-mobile-web-app-status-bar-style`
+- SW registration inline sebelum `</body>` di template_strong_form
+- Installable Android: Chrome "Add to Home Screen"; iOS: Safari Share → Add to Home Screen
+
 ### CSS (`static/src/css/strong_form.css`)
 - Tema: CSS variable `--sp-primary: #6c3483` (ungu/purple)
 - Shell layout (KRITIKAL untuk sticky topbar):
@@ -441,6 +521,12 @@ if (data.has_foto && data.foto_src) {
 - FAB tablet/wide: `@media (min-width: 512px) { .sp-fab { right: calc(50% - 224px); } }` — align ke kanan konten bukan ke kanan layar
 - Infinite scroll sentinel: `.sp-list-sentinel` (spinner + text "Memuat...")
 - `.sp-foto-preview` — **harus TIDAK `display: none`** (ada CSS bug lama, sudah dicomment)
+- `.sp-kpi-section { display: flex; flex-direction: column; gap: 8px; }` — wrapper judul + konten; tanpa ini `gap: 20px` dari `.sp-page-body` buat jarak judul-konten terlalu besar
+- `.sp-kpi2-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }` — 2 card sejajar
+- `.sp-greeting-avatar` — avatar 44×44 circular, initials + img overlay
+- `.sp-greeting-av-img { position: absolute; inset: 0; object-fit: cover; }` — overlay foto di atas initials
+- `.sp-chart-card / .sp-chart-canvas { height: 150px; }` — weekly bar chart
+- `.sp-filter-badge` — pill badge di header record list saat filter aktif
 
 ### ModSecurity
 Jika deploy ke VPS dengan nginx ModSecurity, tambahkan location block:
@@ -1168,13 +1254,28 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - FAB align tablet: `right: calc(50% - 224px)` untuk layar lebar
 - Badge state rata kanan di list item
 
+**Strong Point Mobile — Update (2026-06-25)**
+- KPI cards beranda: 2 card sejajar ("SP Hari Ini" + "SP Keseluruhan"), klik → filter list Strong Point
+- Filter badge di record list dengan tombol ✕ untuk clear filter
+- Timezone audit: `_today_utc_range_wib()` untuk filter "hari ini" yang benar di WIB; `_wib_to_utc()` untuk input datetime dari mobile
+- Section spacing fix: wrapper `.sp-kpi-section` agar jarak judul-konten tidak terlalu besar
+- Weekly bar chart (ECharts, 7 hari ke belakang, highlight hari ini ungu gelap)
+- User avatar circular di greeting (initials fallback + foto overlay)
+- PWA setup: manifest.json, service worker, icons 72–512px di `static/img/icons/`
+
+**Patroli Backend (2026-06-25)**
+- Model `petadigi.patroli`: code PTL00001, polres/polsek, wilayah, tanggal mulai/selesai, state PROSES/SELESAI, keterangan
+- Model `petadigi.personel_patroli`: nama, pangkat, nama_lengkap (computed), patroli_id
+- Views lengkap: list, form (smart button + tab personel inline), search (filter + groupby), graph, pivot, calendar
+- Sequence PTL + security CSV + menu Maps → Patroli
+
 ### Potensial Berikutnya
 - Export/report Monitoring Giat ke PDF/Excel
 - Notifikasi real-time kasus baru
 - Grafik trend tahunan untuk mode bencana dan sumur minyak
 - Dashboard backend Strong Point (choropleth / marker di peta utama)
-- Tab Patroli di mobile app
+- Tab Patroli di mobile app (form pencatatan patroli via `/petadigi`)
 
 ---
 
-*Dokumen diperbarui: 2026-06-23*
+*Dokumen diperbarui: 2026-06-25*

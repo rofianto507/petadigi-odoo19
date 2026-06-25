@@ -1,27 +1,27 @@
 /** @odoo-module **/
 
-import { LALIN_COLORS, getLalinColor } from './dashboard_layer_lalin';
+import { KRIMINAL_COLORS, getKriminalColor } from './dashboard_layer_kriminal';
 
 /**
- * Peta Strong Point — Arsiran Lalu Lintas + Titik Konsentrasi Tugas Lapangan
+ * Peta Patroli — Arsiran Kriminalitas + Titik Lokasi Kegiatan Patroli
  *
- * Choropleth per kabupaten/kecamatan/desa berdasarkan jumlah kejadian lalu lintas,
- * dipadukan dengan marker titik-titik strong point yang telah dilakukan.
- * Pimpinan dapat membandingkan kerawanan lalin dengan sebaran strong point.
+ * Choropleth per kabupaten/kecamatan/desa berdasarkan jumlah kriminalitas,
+ * dipadukan dengan marker titik-titik lokasi patroli yang telah dilakukan.
+ * Pimpinan dapat membandingkan kerawanan kriminal dengan sebaran patroli.
  */
 
-// ── Legend ───────────────────────────────────────────────────────────────────
-function _addStrongLegend(ctx) {
-    removeStrongLegend(ctx);
-    const StrongLegend = L.Control.extend({
+// ── Legend ────────────────────────────────────────────────────────────────────
+function _addPatroliLegend(ctx) {
+    removePatroliLegend(ctx);
+    const PatroliLegend = L.Control.extend({
         onAdd() {
-            const div = L.DomUtil.create('div', 'petadigi-legend petadigi-legend--strong');
+            const div = L.DomUtil.create('div', 'petadigi-legend petadigi-legend--patroli');
             div.innerHTML = `
                 <div class="petadigi-legend-title">
-                    <i class="fa fa-car"></i> Arsiran Lalu Lintas
+                    <i class="fa fa-exclamation-triangle"></i> Arsiran Kriminalitas
                 </div>
                 <ul class="petadigi-legend-list">
-                    ${LALIN_COLORS.map(t => `
+                    ${KRIMINAL_COLORS.map(t => `
                         <li>
                             <span class="petadigi-legend-swatch" style="background:${t.color};"></span>
                             <span class="petadigi-legend-label">${t.label}</span>
@@ -29,16 +29,16 @@ function _addStrongLegend(ctx) {
                     `).join('')}
                 </ul>
                 <div class="petadigi-legend-title" style="margin-top:8px;">
-                    <i class="fa fa-map-pin"></i> Strong Point
+                    <i class="fa fa-car" style="color:#27ae60;"></i> Kegiatan Patroli
                 </div>
                 <ul class="petadigi-legend-list">
                     <li>
-                        <span class="petadigi-legend-swatch" style="background:#e67e22;border-radius:50%;"></span>
-                        <span class="petadigi-legend-label">Proses</span>
+                        <span class="petadigi-legend-swatch" style="background:#27ae60;border-radius:50%;"></span>
+                        <span class="petadigi-legend-label">Titik Lokasi Patroli</span>
                     </li>
                     <li>
-                        <span class="petadigi-legend-swatch" style="background:#27ae60;border-radius:50%;"></span>
-                        <span class="petadigi-legend-label">Selesai</span>
+                        <span class="petadigi-legend-swatch" style="background:transparent;border:2px dashed #1e8449;border-radius:0;height:2px;margin-top:6px;"></span>
+                        <span class="petadigi-legend-label">Rute Patroli</span>
                     </li>
                 </ul>`;
             L.DomEvent.disableClickPropagation(div);
@@ -47,15 +47,16 @@ function _addStrongLegend(ctx) {
         },
         onRemove() {}
     });
-    ctx._strongLegend = new StrongLegend({ position: 'bottomright' });
-    ctx._strongLegend.addTo(ctx.map);
+    ctx._patroliLegend = new PatroliLegend({ position: 'bottomright' });
+    ctx._patroliLegend.addTo(ctx.map);
 }
 
-export function removeStrongLegend(ctx) {
-    if (ctx._strongLegend) { ctx._strongLegend.remove(); ctx._strongLegend = null; }
+export function removePatroliLegend(ctx) {
+    if (ctx._patroliLegend) { ctx._patroliLegend.remove(); ctx._patroliLegend = null; }
+    if (ctx._patroliPolylineLayer) { ctx._patroliPolylineLayer.clearLayers(); ctx._patroliPolylineLayer.remove(); ctx._patroliPolylineLayer = null; }
 }
 
-// ── Helpers filter ────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function _getActiveFilters(ctx) {
     return {
         kabupatenId: ctx.filterKabupaten?.el?.value ? parseInt(ctx.filterKabupaten.el.value) : null,
@@ -65,18 +66,29 @@ function _getActiveFilters(ctx) {
     };
 }
 
-function _buildStrongDomain(filters, extraDomain = []) {
-    const domain = [...extraDomain];
+function _buildPatroliDomain(filters, geoConditions = []) {
+    const domain = [...geoConditions];
     if (filters.stateValue) domain.push(['state',         '=',  filters.stateValue]);
     if (filters.dateFrom)   domain.push(['tanggal_mulai', '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)     domain.push(['tanggal_mulai', '<=', filters.dateTo   + ' 23:59:59']);
     return domain;
 }
 
-function _buildLalinDomain(filters, extraDomain = []) {
-    const domain = [...extraDomain];
+function _buildKriminalDomain(filters, geoConditions = []) {
+    const domain = [...geoConditions];
     if (filters.dateFrom) domain.push(['tanggal_kejadian', '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)   domain.push(['tanggal_kejadian', '<=', filters.dateTo   + ' 23:59:59']);
+    return domain;
+}
+
+function _buildLokasiDomain(filters, geoConditions = []) {
+    const domain = [['latitude', '!=', 0], ['longitude', '!=', 0]];
+    if (filters.stateValue) domain.push(['patroli_id.state',         '=',  filters.stateValue]);
+    if (filters.dateFrom)   domain.push(['patroli_id.tanggal_mulai', '>=', filters.dateFrom + ' 00:00:00']);
+    if (filters.dateTo)     domain.push(['patroli_id.tanggal_mulai', '<=', filters.dateTo   + ' 23:59:59']);
+    for (const cond of geoConditions) {
+        domain.push([`patroli_id.${cond[0]}`, cond[1], cond[2]]);
+    }
     return domain;
 }
 
@@ -99,29 +111,38 @@ function _fmtNum(n) {
     return (n || 0).toLocaleString('id-ID');
 }
 
-// ── Markers ───────────────────────────────────────────────────────────────────
-async function _loadStrongMarkers(ctx, domain) {
+// ── Markers + Rute (dari lokasi_patroli) ─────────────────────────────────────
+async function _loadPatroliMarkers(ctx, filters, geoConditions = []) {
     ctx.markerLayerGroup.clearLayers();
+    if (ctx._patroliPolylineLayer) {
+        ctx._patroliPolylineLayer.clearLayers();
+    } else {
+        // Gunakan custom pane agar rute selalu di atas arsiran choropleth (overlayPane z-index 400)
+        if (!ctx.map.getPane('patroliRoutePane')) {
+            const pane = ctx.map.createPane('patroliRoutePane');
+            pane.style.zIndex = 401;
+            pane.style.pointerEvents = 'none';
+        }
+        ctx._patroliPolylineLayer = L.layerGroup().addTo(ctx.map);
+    }
 
+    const domain  = _buildLokasiDomain(filters, geoConditions);
     const records = await ctx.orm.searchRead(
-        'petadigi.strong_point',
-        [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
-        ['id', 'code', 'polres_id', 'polsek_id', 'kabupaten_id', 'lokasi_id',
-         'tanggal_mulai', 'tanggal_selesai', 'personel_count', 'state', 'latitude', 'longitude'],
+        'petadigi.lokasi_patroli',
+        domain,
+        ['id', 'patroli_id', 'tanggal', 'latitude', 'longitude', 'catatan'],
         { limit: 2000 }
     );
 
     records.forEach(r => {
-        const color  = r.state === 'SELESAI' ? '#27ae60' : '#e67e22';
-        const polres = Array.isArray(r.polres_id)    ? r.polres_id[1]    : '-';
-        const polsek = Array.isArray(r.polsek_id)    ? r.polsek_id[1]    : '-';
-        const kab    = Array.isArray(r.kabupaten_id) ? r.kabupaten_id[1] : '-';
-        const lokasi = Array.isArray(r.lokasi_id)    ? r.lokasi_id[1]    : '-';
+        const patroli   = Array.isArray(r.patroli_id) ? r.patroli_id[1] : '-';
+        const patroliId = Array.isArray(r.patroli_id) ? r.patroli_id[0] : null;
+        const color     = '#27ae60';
 
         const icon = L.divIcon({
             className: '',
             html: `<div class="petadigi-bencana-marker" style="border-color:${color};">
-                       <i class="fa fa-map-pin" style="color:${color};"></i>
+                       <i class="fa fa-map-marker" style="color:${color};"></i>
                    </div>`,
             iconSize:   [24, 24],
             iconAnchor: [12, 12],
@@ -131,75 +152,119 @@ async function _loadStrongMarkers(ctx, domain) {
         marker.bindPopup(`
             <div class="petadigi-popup">
                 <div class="petadigi-popup-header" style="background:${color};">
-                    <i class="fa fa-map-pin"></i>
-                    <strong>${r.code}</strong>
+                    <i class="fa fa-map-marker"></i>
+                    <strong>Titik Lokasi Patroli</strong>
+                </div>
+                <div id="patroli-foto-wrap-${r.id}" class="mg-popup-foto">
+                    <div class="mg-popup-foto-spinner">
+                        <i class="fa fa-circle-o-notch fa-spin"></i>
+                    </div>
                 </div>
                 <div class="petadigi-popup-body">
                     <table>
-                        <tr><td><i class="fa fa-shield"></i> Polres</td><td><strong>${polres}</strong></td></tr>
-                        <tr><td><i class="fa fa-building"></i> Polsek</td><td><strong>${polsek}</strong></td></tr>
-                        <tr><td><i class="fa fa-map"></i> Kabupaten</td><td><strong>${kab}</strong></td></tr>
-                        <tr><td><i class="fa fa-map-pin"></i> Lokasi</td><td><strong>${lokasi}</strong></td></tr>
-                        <tr><td><i class="fa fa-calendar"></i> Mulai</td><td><strong>${_fmtDt(r.tanggal_mulai)}</strong></td></tr>
-                        <tr><td><i class="fa fa-calendar-check-o"></i> Selesai</td><td><strong>${_fmtDt(r.tanggal_selesai)}</strong></td></tr>
-                        <tr><td><i class="fa fa-users"></i> Personel</td><td><strong>${r.personel_count || 0}</strong></td></tr>
-                        <tr><td><i class="fa fa-flag"></i> Status</td><td><strong style="color:${color};">${r.state}</strong></td></tr>
+                        <tr><td><i class="fa fa-car"></i> Patroli</td><td><strong>${patroli}</strong></td></tr>
+                        <tr><td><i class="fa fa-calendar"></i> Tanggal</td><td><strong>${_fmtDt(r.tanggal)}</strong></td></tr>
+                        <tr><td><i class="fa fa-map-pin"></i> Lat/Lng</td><td><strong>${r.latitude.toFixed(5)}, ${r.longitude.toFixed(5)}</strong></td></tr>
+                        <tr><td><i class="fa fa-sticky-note-o"></i> Catatan</td><td><strong>${r.catatan || '-'}</strong></td></tr>
                     </table>
                 </div>
+                ${patroliId ? `
                 <div class="petadigi-popup-footer">
-                    <button class="petadigi-btn-detail" style="background:${color};" id="btn-detail-strong-${r.id}">
-                        <i class="fa fa-external-link"></i> Lihat Detail
+                    <button class="petadigi-btn-detail" style="background:${color};" id="btn-detail-patroli-${r.id}">
+                        <i class="fa fa-external-link"></i> Lihat Detail Patroli
                     </button>
-                </div>
+                </div>` : ''}
             </div>
-        `, { maxWidth: 300, className: 'petadigi-leaflet-popup' });
+        `, { maxWidth: 320, className: 'petadigi-leaflet-popup' });
 
         marker.on('popupopen', () => {
             setTimeout(() => {
-                const btn = document.getElementById(`btn-detail-strong-${r.id}`);
-                if (btn) btn.addEventListener('click', () => ctx.action.doAction({
-                    type: 'ir.actions.act_window',
-                    res_model: 'petadigi.strong_point',
-                    res_id: r.id,
-                    views: [[false, 'form']],
-                    target: 'current',
-                }));
+                const wrap = document.getElementById(`patroli-foto-wrap-${r.id}`);
+                if (wrap) {
+                    const img = document.createElement('img');
+                    img.className = 'mg-popup-foto-img';
+                    img.alt = 'Foto Dokumentasi';
+                    const spinner = wrap.querySelector('.mg-popup-foto-spinner');
+                    img.onload = () => {
+                        if (img.naturalWidth > 1) {
+                            wrap.appendChild(img);
+                            img.style.display = 'block';
+                            if (spinner) spinner.style.display = 'none';
+                        } else {
+                            wrap.style.display = 'none';
+                        }
+                    };
+                    img.onerror = () => { wrap.style.display = 'none'; };
+                    img.src = `/web/image/petadigi.lokasi_patroli/${r.id}/foto`;
+                }
+                if (patroliId) {
+                    const btn = document.getElementById(`btn-detail-patroli-${r.id}`);
+                    if (btn) btn.addEventListener('click', () => ctx.action.doAction({
+                        type: 'ir.actions.act_window',
+                        res_model: 'petadigi.patroli',
+                        res_id: patroliId,
+                        views: [[false, 'form']],
+                        target: 'current',
+                    }));
+                }
             }, 0);
         });
 
         ctx.markerLayerGroup.addLayer(marker);
+    });
+
+    // ── Rute polyline per patroli_id, urut tanggal ────────────────────────────
+    const routeMap = {};
+    records.forEach(r => {
+        const pid = Array.isArray(r.patroli_id) ? r.patroli_id[0] : null;
+        if (!pid) return;
+        if (!routeMap[pid]) routeMap[pid] = [];
+        routeMap[pid].push(r);
+    });
+
+    Object.values(routeMap).forEach(group => {
+        if (group.length < 2) return;
+        group.sort((a, b) => (a.tanggal || '').localeCompare(b.tanggal || ''));
+        const latlngs = group.map(r => [r.latitude, r.longitude]);
+        L.polyline(latlngs, {
+            color:     '#1e8449',
+            weight:    2.5,
+            opacity:   0.85,
+            dashArray: '8, 5',
+            pane:      'patroliRoutePane',
+        }).addTo(ctx._patroliPolylineLayer);
     });
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // LEVEL 1 — KABUPATEN
 // ════════════════════════════════════════════════════════════════════════════
-export async function loadModeStrong(ctx) {
+export async function loadModePatroli(ctx) {
     const ver = ctx._modeVersion;
-    _addStrongLegend(ctx);
+    _addPatroliLegend(ctx);
     ctx.currentLevel = 'kabupaten';
 
-    const filters  = _getActiveFilters(ctx);
-    const geoBase  = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
+    const filters = _getActiveFilters(ctx);
+    const geoBase = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
 
     try {
-        // Choropleth berdasarkan jumlah kejadian lalu lintas
-        const lalinGroups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
+        // Choropleth berdasarkan jumlah kriminalitas
+        const krimGroups = await ctx.orm.call(
+            'petadigi.kriminalitas',
             'read_group',
-            [_buildLalinDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+            [_buildKriminalDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
             { lazy: false }
         );
-        const lalinMap = _buildCountMap(lalinGroups, 'kabupaten_id');
+        const krimMap = _buildCountMap(krimGroups, 'kabupaten_id');
 
-        // Info jumlah strong point untuk popup
-        const spGroups = await ctx.orm.call(
-            'petadigi.strong_point',
+        // Info jumlah patroli untuk popup
+        const ptGroups = await ctx.orm.call(
+            'petadigi.patroli',
             'read_group',
-            [_buildStrongDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+            [_buildPatroliDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
             { lazy: false }
         );
-        const spMap = _buildCountMap(spGroups, 'kabupaten_id');
+        const ptMap = _buildCountMap(ptGroups, 'kabupaten_id');
 
         const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
         const records   = await ctx.orm.searchRead(
@@ -212,17 +277,17 @@ export async function loadModeStrong(ctx) {
             .filter(r => r.geometry)
             .map(r => {
                 try {
-                    const jumlah_lalin  = lalinMap[r.id] || 0;
-                    const jumlah_strong = spMap[r.id]    || 0;
+                    const jumlah_kriminal = krimMap[r.id] || 0;
+                    const jumlah_patroli  = ptMap[r.id]   || 0;
                     return {
                         type: 'Feature',
                         geometry: JSON.parse(r.geometry),
                         properties: {
                             id: r.id, code: r.code, name: r.name, type: r.type,
                             jumlah_kecamatan: r.kecamatan_ids ? r.kecamatan_ids.length : 0,
-                            jumlah_lalin,
-                            jumlah_strong,
-                            color: getLalinColor(jumlah_lalin),
+                            jumlah_kriminal,
+                            jumlah_patroli,
+                            color: getKriminalColor(jumlah_kriminal),
                         }
                     };
                 } catch (e) {
@@ -251,48 +316,48 @@ export async function loadModeStrong(ctx) {
 
                 layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
                 layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.55 }); });
-                layer.on('click',     e  => _showStrongKabupatenPopup(ctx, e, props, layer, filters));
+                layer.on('click',     e  => _showPatroliKabupatenPopup(ctx, e, props, layer, filters));
             }
         });
 
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadStrongMarkers(ctx, _buildStrongDomain(filters, geoBase));
+        await _loadPatroliMarkers(ctx, filters, geoBase);
     } catch (error) {
-        console.error('Gagal memuat data strong point:', error);
+        console.error('Gagal memuat data patroli:', error);
     }
 }
 
-// ── Popup Kabupaten ──────────────────────────────────────────────────────────
-function _showStrongKabupatenPopup(ctx, e, props, layer, filters) {
-    const tipeLabel  = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
-    const lalinColor = props.color === '#abebc6' ? '#27ae60' : props.color;
-    const lalinLabel = props.jumlah_lalin > 0
-        ? `<strong style="color:${lalinColor};">${_fmtNum(props.jumlah_lalin)} Kejadian</strong>`
-        : `<strong style="color:#999;">Tidak Ada Kejadian</strong>`;
-    const spLabel = props.jumlah_strong > 0
-        ? `<strong style="color:#1a6b9a;">${_fmtNum(props.jumlah_strong)} Strong Point</strong>`
-        : `<strong style="color:#999;">Belum Ada Strong Point</strong>`;
+// ── Popup Kabupaten ───────────────────────────────────────────────────────────
+function _showPatroliKabupatenPopup(ctx, e, props, layer, filters) {
+    const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+    const krimColor = props.color === '#abebc6' ? '#27ae60' : props.color;
+    const krimLabel = props.jumlah_kriminal > 0
+        ? `<strong style="color:${krimColor};">${_fmtNum(props.jumlah_kriminal)} Kasus</strong>`
+        : `<strong style="color:#999;">Tidak Ada Kasus</strong>`;
+    const ptLabel = props.jumlah_patroli > 0
+        ? `<strong style="color:#1e8449;">${_fmtNum(props.jumlah_patroli)} Kegiatan</strong>`
+        : `<strong style="color:#999;">Belum Ada Patroli</strong>`;
 
     const popup = L.popup({ maxWidth: 280, className: 'petadigi-leaflet-popup' })
         .setLatLng(e.latlng)
         .setContent(`
             <div class="petadigi-popup">
                 <div class="petadigi-popup-header" style="background:#2c3e50;">
-                    <i class="fa fa-map-pin"></i>
+                    <i class="fa fa-car"></i>
                     <strong>${tipeLabel} ${props.name}</strong>
                 </div>
                 <div class="petadigi-popup-body">
                     <table>
                         <tr><td><i class="fa fa-barcode"></i> Kode</td><td><strong>${props.code}</strong></td></tr>
                         <tr><td><i class="fa fa-list"></i> Kecamatan</td><td><strong>${props.jumlah_kecamatan} Kecamatan</strong></td></tr>
-                        <tr><td><i class="fa fa-car" style="color:#e74c3c;"></i> Lalu Lintas</td><td>${lalinLabel}</td></tr>
-                        <tr><td><i class="fa fa-map-pin" style="color:#1a6b9a;"></i> Strong Point</td><td>${spLabel}</td></tr>
+                        <tr><td><i class="fa fa-exclamation-triangle" style="color:#e74c3c;"></i> Kriminalitas</td><td>${krimLabel}</td></tr>
+                        <tr><td><i class="fa fa-car" style="color:#27ae60;"></i> Patroli</td><td>${ptLabel}</td></tr>
                     </table>
                 </div>
                 <div class="petadigi-popup-footer">
-                    <button class="petadigi-btn-detail" style="background:#2c3e50;" id="btn-strong-kec-${props.id}">
+                    <button class="petadigi-btn-detail" style="background:#2c3e50;" id="btn-patroli-kec-${props.id}">
                         <i class="fa fa-search-plus"></i> Lihat Detail Kecamatan
                     </button>
                 </div>
@@ -301,13 +366,13 @@ function _showStrongKabupatenPopup(ctx, e, props, layer, filters) {
 
     popup.once('add', () => {
         setTimeout(() => {
-            const btn = document.getElementById(`btn-strong-kec-${props.id}`);
+            const btn = document.getElementById(`btn-patroli-kec-${props.id}`);
             if (btn) {
                 btn.addEventListener('click', () => {
                     ctx.map.closePopup();
-                    ctx._updateBreadcrumb(`<i class="fa fa-map-pin"></i> Peta Strong Point`);
-                    ctx._appendBreadcrumb(`<i class="fa fa-map-pin"></i> ${tipeLabel} ${props.name}`);
-                    drillDownStrongKecamatan(ctx, props, layer, filters);
+                    ctx._updateBreadcrumb(`<i class="fa fa-car"></i> Peta Patroli`);
+                    ctx._appendBreadcrumb(`<i class="fa fa-car"></i> ${tipeLabel} ${props.name}`);
+                    drillDownPatroliKecamatan(ctx, props, layer, filters);
                 });
             }
         }, 0);
@@ -319,7 +384,7 @@ function _showStrongKabupatenPopup(ctx, e, props, layer, filters) {
 // ════════════════════════════════════════════════════════════════════════════
 // LEVEL 2 — KECAMATAN
 // ════════════════════════════════════════════════════════════════════════════
-export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters) {
+export async function drillDownPatroliKecamatan(ctx, kabProps, kabLayer, filters) {
     ctx.currentLevel = 'kecamatan';
     ctx.kabupatenLayerGroup.clearLayers();
     ctx.kabupatenLabelGroup.clearLayers();
@@ -331,21 +396,21 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
     try {
         const geoKab = [['kabupaten_id', '=', kabProps.id]];
 
-        const lalinGroups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
+        const krimGroups = await ctx.orm.call(
+            'petadigi.kriminalitas',
             'read_group',
-            [_buildLalinDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
+            [_buildKriminalDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
             { lazy: false }
         );
-        const lalinMap = _buildCountMap(lalinGroups, 'kecamatan_id');
+        const krimMap = _buildCountMap(krimGroups, 'kecamatan_id');
 
-        const spGroups = await ctx.orm.call(
-            'petadigi.strong_point',
+        const ptGroups = await ctx.orm.call(
+            'petadigi.patroli',
             'read_group',
-            [_buildStrongDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
+            [_buildPatroliDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
             { lazy: false }
         );
-        const spMap = _buildCountMap(spGroups, 'kecamatan_id');
+        const ptMap = _buildCountMap(ptGroups, 'kecamatan_id');
 
         const records = await ctx.orm.searchRead(
             'petadigi.kecamatan',
@@ -357,17 +422,17 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
             .filter(r => r.geometry)
             .map(r => {
                 try {
-                    const jumlah_lalin  = lalinMap[r.id] || 0;
-                    const jumlah_strong = spMap[r.id]    || 0;
+                    const jumlah_kriminal = krimMap[r.id] || 0;
+                    const jumlah_patroli  = ptMap[r.id]   || 0;
                     return {
                         type: 'Feature',
                         geometry: JSON.parse(r.geometry),
                         properties: {
                             id: r.id, code: r.code, name: r.name,
                             jumlah_desa: r.desa_ids ? r.desa_ids.length : 0,
-                            jumlah_lalin,
-                            jumlah_strong,
-                            color: getLalinColor(jumlah_lalin),
+                            jumlah_kriminal,
+                            jumlah_patroli,
+                            color: getKriminalColor(jumlah_kriminal),
                         }
                     };
                 } catch (e) {
@@ -378,7 +443,7 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
             .filter(Boolean);
 
         if (!features.length) {
-            await loadModeStrong(ctx);
+            await loadModePatroli(ctx);
             return;
         }
 
@@ -399,13 +464,13 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
 
                 layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
                 layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
-                layer.on('click',     e  => _showStrongKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer));
+                layer.on('click',     e  => _showPatroliKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer));
             }
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadStrongMarkers(ctx, _buildStrongDomain(filters, geoKab));
-        _addStrongBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
+        await _loadPatroliMarkers(ctx, filters, geoKab);
+        _addPatroliBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         ctx.drillKabupatenId = kabProps.id;
         ctx.drillKecamatanId = null;
@@ -414,19 +479,19 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
     } catch (error) {
-        console.error('Gagal memuat data kecamatan strong point:', error);
+        console.error('Gagal memuat data kecamatan patroli:', error);
     }
 }
 
-// ── Popup Kecamatan ──────────────────────────────────────────────────────────
-function _showStrongKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer) {
-    const lalinColor = props.color === '#abebc6' ? '#27ae60' : props.color;
-    const lalinLabel = props.jumlah_lalin > 0
-        ? `<strong style="color:${lalinColor};">${_fmtNum(props.jumlah_lalin)} Kejadian</strong>`
-        : `<strong style="color:#999;">Tidak Ada Kejadian</strong>`;
-    const spLabel = props.jumlah_strong > 0
-        ? `<strong style="color:#1a6b9a;">${_fmtNum(props.jumlah_strong)} Strong Point</strong>`
-        : `<strong style="color:#999;">Belum Ada Strong Point</strong>`;
+// ── Popup Kecamatan ───────────────────────────────────────────────────────────
+function _showPatroliKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer) {
+    const krimColor = props.color === '#abebc6' ? '#27ae60' : props.color;
+    const krimLabel = props.jumlah_kriminal > 0
+        ? `<strong style="color:${krimColor};">${_fmtNum(props.jumlah_kriminal)} Kasus</strong>`
+        : `<strong style="color:#999;">Tidak Ada Kasus</strong>`;
+    const ptLabel = props.jumlah_patroli > 0
+        ? `<strong style="color:#1e8449;">${_fmtNum(props.jumlah_patroli)} Kegiatan</strong>`
+        : `<strong style="color:#999;">Belum Ada Patroli</strong>`;
 
     const popup = L.popup({ maxWidth: 280, className: 'petadigi-leaflet-popup' })
         .setLatLng(e.latlng)
@@ -440,12 +505,12 @@ function _showStrongKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabL
                     <table>
                         <tr><td><i class="fa fa-barcode"></i> Kode</td><td><strong>${props.code}</strong></td></tr>
                         <tr><td><i class="fa fa-home"></i> Desa/Kel.</td><td><strong>${props.jumlah_desa} Desa/Kelurahan</strong></td></tr>
-                        <tr><td><i class="fa fa-car" style="color:#e74c3c;"></i> Lalu Lintas</td><td>${lalinLabel}</td></tr>
-                        <tr><td><i class="fa fa-map-pin" style="color:#1a6b9a;"></i> Strong Point</td><td>${spLabel}</td></tr>
+                        <tr><td><i class="fa fa-exclamation-triangle" style="color:#e74c3c;"></i> Kriminalitas</td><td>${krimLabel}</td></tr>
+                        <tr><td><i class="fa fa-car" style="color:#27ae60;"></i> Patroli</td><td>${ptLabel}</td></tr>
                     </table>
                 </div>
                 <div class="petadigi-popup-footer">
-                    <button class="petadigi-btn-detail" style="background:#2c3e50;" id="btn-strong-desa-${props.id}">
+                    <button class="petadigi-btn-detail" style="background:#2c3e50;" id="btn-patroli-desa-${props.id}">
                         <i class="fa fa-search-plus"></i> Lihat Detail Desa/Kelurahan
                     </button>
                 </div>
@@ -454,12 +519,12 @@ function _showStrongKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabL
 
     popup.once('add', () => {
         setTimeout(() => {
-            const btn = document.getElementById(`btn-strong-desa-${props.id}`);
+            const btn = document.getElementById(`btn-patroli-desa-${props.id}`);
             if (btn) {
                 btn.addEventListener('click', () => {
                     ctx.map.closePopup();
                     ctx._appendBreadcrumb(`<i class="fa fa-map"></i> Kec. ${props.name}`);
-                    drillDownStrongKelurahan(ctx, props, layer, filters, kabProps, kabLayer);
+                    drillDownPatroliKelurahan(ctx, props, layer, filters, kabProps, kabLayer);
                 });
             }
         }, 0);
@@ -471,7 +536,7 @@ function _showStrongKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabL
 // ════════════════════════════════════════════════════════════════════════════
 // LEVEL 3 — DESA/KELURAHAN
 // ════════════════════════════════════════════════════════════════════════════
-export async function drillDownStrongKelurahan(ctx, kecProps, kecLayer, filters, kabProps, kabLayer) {
+export async function drillDownPatroliKelurahan(ctx, kecProps, kecLayer, filters, kabProps, kabLayer) {
     ctx.currentLevel = 'desa';
     ctx.kecamatanLayerGroup.clearLayers();
     ctx.kecamatanLabelGroup.clearLayers();
@@ -483,21 +548,21 @@ export async function drillDownStrongKelurahan(ctx, kecProps, kecLayer, filters,
     try {
         const geoKec = [['kecamatan_id', '=', kecProps.id]];
 
-        const lalinGroups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
+        const krimGroups = await ctx.orm.call(
+            'petadigi.kriminalitas',
             'read_group',
-            [_buildLalinDomain(filters, geoKec), ['desa_id'], ['desa_id']],
+            [_buildKriminalDomain(filters, geoKec), ['desa_id'], ['desa_id']],
             { lazy: false }
         );
-        const lalinMap = _buildCountMap(lalinGroups, 'desa_id');
+        const krimMap = _buildCountMap(krimGroups, 'desa_id');
 
-        const spGroups = await ctx.orm.call(
-            'petadigi.strong_point',
+        const ptGroups = await ctx.orm.call(
+            'petadigi.patroli',
             'read_group',
-            [_buildStrongDomain(filters, geoKec), ['desa_id'], ['desa_id']],
+            [_buildPatroliDomain(filters, geoKec), ['desa_id'], ['desa_id']],
             { lazy: false }
         );
-        const spMap = _buildCountMap(spGroups, 'desa_id');
+        const ptMap = _buildCountMap(ptGroups, 'desa_id');
 
         const records = await ctx.orm.searchRead(
             'petadigi.desa',
@@ -509,16 +574,16 @@ export async function drillDownStrongKelurahan(ctx, kecProps, kecLayer, filters,
             .filter(r => r.geometry)
             .map(r => {
                 try {
-                    const jumlah_lalin  = lalinMap[r.id] || 0;
-                    const jumlah_strong = spMap[r.id]    || 0;
+                    const jumlah_kriminal = krimMap[r.id] || 0;
+                    const jumlah_patroli  = ptMap[r.id]   || 0;
                     return {
                         type: 'Feature',
                         geometry: JSON.parse(r.geometry),
                         properties: {
                             id: r.id, code: r.code, name: r.name, type: r.type,
-                            jumlah_lalin,
-                            jumlah_strong,
-                            color: getLalinColor(jumlah_lalin),
+                            jumlah_kriminal,
+                            jumlah_patroli,
+                            color: getKriminalColor(jumlah_kriminal),
                         }
                     };
                 } catch (e) {
@@ -529,7 +594,7 @@ export async function drillDownStrongKelurahan(ctx, kecProps, kecLayer, filters,
             .filter(Boolean);
 
         if (!features.length) {
-            drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters);
+            drillDownPatroliKecamatan(ctx, kabProps, kabLayer, filters);
             return;
         }
 
@@ -550,32 +615,32 @@ export async function drillDownStrongKelurahan(ctx, kecProps, kecLayer, filters,
 
                 layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
                 layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
-                layer.on('click',     e  => _showStrongDesaPopup(ctx, e, props));
+                layer.on('click',     e  => _showPatroliDesaPopup(ctx, e, props));
             }
         });
 
         ctx.desaLayerGroup.addLayer(geoLayer);
-        await _loadStrongMarkers(ctx, _buildStrongDomain(filters, geoKec));
-        _addStrongBackButton(ctx, 'kecamatan', { kecProps, kecLayer, filters, kabProps, kabLayer });
+        await _loadPatroliMarkers(ctx, filters, geoKec);
+        _addPatroliBackButton(ctx, 'kecamatan', { kecProps, kecLayer, filters, kabProps, kabLayer });
 
         ctx.drillKecamatanId = kecProps.id;
         ctx._updateKpiCards(ctx.currentMode);
         ctx._updateCharts(ctx.currentMode);
     } catch (error) {
-        console.error('Gagal memuat data desa strong point:', error);
+        console.error('Gagal memuat data desa patroli:', error);
     }
 }
 
-// ── Popup Desa ───────────────────────────────────────────────────────────────
-function _showStrongDesaPopup(ctx, e, props) {
-    const tipeLabel  = props.type === 'KELURAHAN' ? 'Kelurahan' : 'Desa';
-    const lalinColor = props.color === '#abebc6' ? '#27ae60' : props.color;
-    const lalinLabel = props.jumlah_lalin > 0
-        ? `<strong style="color:${lalinColor};">${_fmtNum(props.jumlah_lalin)} Kejadian</strong>`
-        : `<strong style="color:#999;">Tidak Ada Kejadian</strong>`;
-    const spLabel = props.jumlah_strong > 0
-        ? `<strong style="color:#1a6b9a;">${_fmtNum(props.jumlah_strong)} Strong Point</strong>`
-        : `<strong style="color:#999;">Belum Ada Strong Point</strong>`;
+// ── Popup Desa ────────────────────────────────────────────────────────────────
+function _showPatroliDesaPopup(ctx, e, props) {
+    const tipeLabel = props.type === 'KELURAHAN' ? 'Kelurahan' : 'Desa';
+    const krimColor = props.color === '#abebc6' ? '#27ae60' : props.color;
+    const krimLabel = props.jumlah_kriminal > 0
+        ? `<strong style="color:${krimColor};">${_fmtNum(props.jumlah_kriminal)} Kasus</strong>`
+        : `<strong style="color:#999;">Tidak Ada Kasus</strong>`;
+    const ptLabel = props.jumlah_patroli > 0
+        ? `<strong style="color:#1e8449;">${_fmtNum(props.jumlah_patroli)} Kegiatan</strong>`
+        : `<strong style="color:#999;">Belum Ada Patroli</strong>`;
 
     L.popup({ maxWidth: 280, className: 'petadigi-leaflet-popup' })
         .setLatLng(e.latlng)
@@ -589,8 +654,8 @@ function _showStrongDesaPopup(ctx, e, props) {
                     <table>
                         <tr><td><i class="fa fa-barcode"></i> Kode</td><td><strong>${props.code}</strong></td></tr>
                         <tr><td><i class="fa fa-tag"></i> Tipe</td><td><strong>${tipeLabel}</strong></td></tr>
-                        <tr><td><i class="fa fa-car" style="color:#e74c3c;"></i> Lalu Lintas</td><td>${lalinLabel}</td></tr>
-                        <tr><td><i class="fa fa-map-pin" style="color:#1a6b9a;"></i> Strong Point</td><td>${spLabel}</td></tr>
+                        <tr><td><i class="fa fa-exclamation-triangle" style="color:#e74c3c;"></i> Kriminalitas</td><td>${krimLabel}</td></tr>
+                        <tr><td><i class="fa fa-car" style="color:#27ae60;"></i> Patroli</td><td>${ptLabel}</td></tr>
                     </table>
                 </div>
             </div>
@@ -598,8 +663,8 @@ function _showStrongDesaPopup(ctx, e, props) {
         .openOn(ctx.map);
 }
 
-// ── Back Button ──────────────────────────────────────────────────────────────
-function _addStrongBackButton(ctx, targetLevel, backCtx) {
+// ── Back Button ───────────────────────────────────────────────────────────────
+function _addPatroliBackButton(ctx, targetLevel, backCtx) {
     if (ctx.backButton) { ctx.backButton.remove(); ctx.backButton = null; }
 
     const labelMap = {
@@ -622,9 +687,9 @@ function _addStrongBackButton(ctx, targetLevel, backCtx) {
                     ctx.drillKabupatenId = null;
                     ctx.drillKecamatanId = null;
                     if (ctx.filterKabupaten?.el) ctx.filterKabupaten.el.value = '';
-                    ctx._updateBreadcrumb(`<i class="fa fa-map-pin"></i> Peta Strong Point`);
+                    ctx._updateBreadcrumb(`<i class="fa fa-car"></i> Peta Patroli`);
                     ctx._updateFilterSummary(ctx.currentMode);
-                    await loadModeStrong(ctx);
+                    await loadModePatroli(ctx);
                     ctx._updateKpiCards(ctx.currentMode);
                     ctx._updateCharts(ctx.currentMode);
                 } else if (targetLevel === 'kecamatan' && backCtx) {
@@ -636,7 +701,7 @@ function _addStrongBackButton(ctx, targetLevel, backCtx) {
                         items[items.length - 1].previousSibling?.remove();
                         items[items.length - 1].remove();
                     }
-                    await drillDownStrongKecamatan(ctx, backCtx.kabProps, backCtx.kabLayer, backCtx.filters);
+                    await drillDownPatroliKecamatan(ctx, backCtx.kabProps, backCtx.kabLayer, backCtx.filters);
                 }
             });
             return btn;

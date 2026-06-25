@@ -85,6 +85,7 @@ TEKNOLOGI:
         'views/lalu_lintas_views.xml',
         'views/strong_point_views.xml',
         'views/lokasi_strong_point_views.xml',
+        'views/patroli_views.xml',
         'views/lokasi_penting_views.xml',
         'views/kategori_sumur_minyak_views.xml',
         'views/sumur_minyak_views.xml',
@@ -143,6 +144,8 @@ TEKNOLOGI:
             'petadigi/static/src/js/dashboard_charts_sumur_minyak.js',
             'petadigi/static/src/js/dashboard_layer_strong_point.js',
             'petadigi/static/src/js/dashboard_charts_strong_point.js',
+            'petadigi/static/src/js/dashboard_layer_patroli.js',
+            'petadigi/static/src/js/dashboard_charts_patroli.js',
             'petadigi/static/src/js/dashboard_map.js',
             # Monitoring Giat dashboard
             'petadigi/static/src/css/dashboard_monitoring_giat.css',

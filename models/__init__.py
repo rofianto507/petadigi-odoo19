@@ -28,4 +28,7 @@ from . import jenis_laporan
 from . import hasil_giat
 from . import lokasi_strong_point
 from . import personel
+from . import patroli
+from . import personel_patroli
+from . import lokasi_patroli
 from . import res_users

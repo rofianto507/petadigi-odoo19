@@ -86,3 +86,12 @@ access_lokasi_strong_point_polsek,lokasi_strong_point polsek,model_petadigi_loka
 access_personel_admin,personel admin,model_petadigi_personel,petadigi.group_admin,1,1,1,1
 access_personel_polres,personel polres,model_petadigi_personel,petadigi.group_polres,1,1,1,1
 access_personel_polsek,personel polsek,model_petadigi_personel,petadigi.group_polsek,1,1,1,1
+access_patroli_admin,patroli admin,model_petadigi_patroli,petadigi.group_admin,1,1,1,1
+access_patroli_polres,patroli polres,model_petadigi_patroli,petadigi.group_polres,1,1,1,1
+access_patroli_polsek,patroli polsek,model_petadigi_patroli,petadigi.group_polsek,1,1,1,1
+access_personel_patroli_admin,personel_patroli admin,model_petadigi_personel_patroli,petadigi.group_admin,1,1,1,1
+access_personel_patroli_polres,personel_patroli polres,model_petadigi_personel_patroli,petadigi.group_polres,1,1,1,1
+access_personel_patroli_polsek,personel_patroli polsek,model_petadigi_personel_patroli,petadigi.group_polsek,1,1,1,1
+access_lokasi_patroli_admin,lokasi_patroli admin,model_petadigi_lokasi_patroli,petadigi.group_admin,1,1,1,1
+access_lokasi_patroli_polres,lokasi_patroli polres,model_petadigi_lokasi_patroli,petadigi.group_polres,1,1,1,1
+access_lokasi_patroli_polsek,lokasi_patroli polsek,model_petadigi_lokasi_patroli,petadigi.group_polsek,1,1,1,1

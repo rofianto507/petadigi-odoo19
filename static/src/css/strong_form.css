@@ -757,19 +757,43 @@ html, body {
     border-radius: 50%;
     background: rgba(255,255,255,0.05);
 }
+.sp-profile-photo-wrap {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    z-index: 1;
+}
+.sp-profile-photo-edit {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.8);
+    background: var(--sp-primary-dk);
+    color: #fff;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    transition: background .15s;
+}
+.sp-profile-photo-edit:hover { background: var(--sp-accent); }
 .sp-profile-photo {
     width: 64px; height: 64px;
     border-radius: 50%;
     border: 2.5px solid rgba(255,255,255,0.6);
     object-fit: cover;
-    flex-shrink: 0;
     background: rgba(255,255,255,0.2);
     display: flex; align-items: center; justify-content: center;
     font-size: 26px;
     font-weight: 700;
     color: #fff;
     overflow: hidden;
-    z-index: 1;
 }
 .sp-profile-photo img {
     width: 100%; height: 100%;
@@ -1502,6 +1526,15 @@ html, body {
     font-size: 14px;
 }
 .sp-info-row:last-child { border-bottom: none; }
+.sp-info-row--full {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+}
+.sp-info-row--full .sp-info-value {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
 .sp-info-label {
     flex-shrink: 0;
     width: 90px;
@@ -1660,3 +1693,298 @@ html, body {
     transition: background .15s;
 }
 .sp-btn-secondary:hover { background: var(--sp-bg); }
+
+/* ── Recent Activities ───────────────────────────────────────────────────── */
+.sp-recent-skeleton {
+    height: 52px;
+    background: linear-gradient(90deg, var(--sp-outline) 25%, var(--sp-bg) 50%, var(--sp-outline) 75%);
+    background-size: 200% 100%;
+    animation: sp-shimmer 1.4s infinite;
+    border-radius: var(--sp-radius-sm);
+    margin-bottom: 6px;
+}
+.sp-recent-empty {
+    font-size: 13px;
+    color: var(--sp-on-surf-var);
+    padding: 12px 0;
+    text-align: center;
+    font-style: italic;
+}
+.sp-recent-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    background: var(--sp-surface);
+    border: 1px solid var(--sp-outline);
+    border-radius: var(--sp-radius-sm);
+    padding: 10px 12px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: background .12s;
+}
+.sp-recent-item:last-child { margin-bottom: 0; }
+.sp-recent-item:active { background: var(--sp-bg); }
+.sp-recent-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+.sp-recent-icon--sp  { background: var(--sp-primary-lt); color: var(--sp-primary); }
+.sp-recent-icon--pt  { background: #e8f8f5;              color: #1e8449; }
+.sp-recent-body { flex: 1; min-width: 0; }
+.sp-recent-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+.sp-recent-code {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sp-on-surface);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sp-recent-meta {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    color: var(--sp-on-surf-var);
+    flex-wrap: wrap;
+}
+.sp-recent-meta span { display: flex; align-items: center; gap: 4px; }
+.sp-recent-arrow { color: var(--sp-outline); font-size: 12px; flex-shrink: 0; }
+
+/* ── Confirm Dialog ──────────────────────────────────────────────────────── */
+.sp-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+.sp-confirm-box {
+    background: var(--sp-surface);
+    border-radius: var(--sp-radius-lg);
+    padding: 24px 20px 20px;
+    max-width: 320px;
+    width: 100%;
+    box-shadow: var(--sp-shadow-lg);
+    text-align: center;
+}
+.sp-confirm-icon {
+    font-size: 32px;
+    color: var(--sp-error);
+    margin-bottom: 12px;
+}
+.sp-confirm-msg {
+    font-size: 14px;
+    color: var(--sp-on-surface);
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+.sp-confirm-actions {
+    display: flex;
+    gap: 10px;
+}
+.sp-confirm-actions .sp-btn-secondary { flex: 1; }
+.sp-btn-hapus {
+    flex: 1.4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 18px;
+    border-radius: var(--sp-radius);
+    border: none;
+    background: var(--sp-error);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+}
+.sp-btn-hapus:hover { opacity: .85; }
+
+/* ── Patroli: Tambah button in card header ───────────────────────────────── */
+.sp-btn-add-titik {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: var(--sp-radius-sm);
+    border: none;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+    flex-shrink: 0;
+}
+.sp-btn-add-titik:hover { opacity: .85; }
+
+/* ── Lokasi Detail Popup ─────────────────────────────────────────────────── */
+.sp-lokasi-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    z-index: 9998;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding: 0;
+}
+.sp-lokasi-popup {
+    background: var(--sp-surface);
+    border-radius: var(--sp-radius-lg) var(--sp-radius-lg) 0 0;
+    width: 100%;
+    max-width: 480px;
+    max-height: 92vh;
+    overflow-y: auto;
+    box-shadow: var(--sp-shadow-lg);
+    display: flex;
+    flex-direction: column;
+}
+.sp-lokasi-popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 16px 12px;
+    border-bottom: 1px solid var(--sp-outline);
+    flex-shrink: 0;
+}
+.sp-lokasi-popup-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--sp-on-surface);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sp-lokasi-popup-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--sp-bg);
+    color: var(--sp-on-surf-var);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.sp-lokasi-popup-map {
+    width: 100%;
+    height: 220px;
+    flex-shrink: 0;
+}
+.sp-lokasi-popup-body {
+    padding: 14px 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.sp-lokasi-popup-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--sp-on-surf-var);
+}
+.sp-lokasi-popup-meta div { display: flex; align-items: center; gap: 6px; }
+.sp-lokasi-popup-catatan {
+    font-size: 13px;
+    color: var(--sp-on-surface);
+    background: var(--sp-bg);
+    border-radius: var(--sp-radius-sm);
+    padding: 10px 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+}
+.sp-lokasi-popup-foto-wrap {
+    border-radius: var(--sp-radius-sm);
+    overflow: hidden;
+    background: var(--sp-bg);
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.sp-lokasi-popup-foto-spinner { color: var(--sp-on-surf-var); font-size: 22px; }
+.sp-lokasi-popup-foto-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: var(--sp-radius-sm);
+}
+
+/* ── Patroli: Titik Lokasi list item ─────────────────────────────────────── */
+.sp-titik-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--sp-surface-var);
+}
+.sp-titik-item:last-child { border-bottom: none; }
+.sp-titik-body--btn {
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+    transition: opacity .12s;
+}
+.sp-titik-body--btn:active { opacity: .65; }
+.sp-titik-num {
+    min-width: 24px;
+    width: 24px;
+    height: 24px;
+    background: var(--sp-primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+.sp-titik-body { flex: 1; min-width: 0; }
+.sp-titik-time {
+    font-size: 12px;
+    color: var(--sp-on-surf-var);
+    margin-bottom: 2px;
+}
+.sp-titik-coords {
+    font-size: 11px;
+    color: var(--sp-on-surf);
+    font-family: monospace;
+    letter-spacing: -.2px;
+}
+.sp-titik-catatan {
+    font-size: 12px;
+    color: var(--sp-on-surf-var);
+    margin-top: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

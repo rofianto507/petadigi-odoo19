@@ -242,12 +242,48 @@ self.addEventListener('fetch', e => {
         groups_today   = SP.read_group(today_dom, ['personel_count:sum'], [])
         personel_today = groups_today[0]['personel_count'] if groups_today else 0
 
+        P      = request.env['petadigi.patroli'].sudo()
+        base_p = ([('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
+                  else [('polres_id', '=', user.polres_id.id)])
+        today_domain = base_p + [('tanggal_mulai', '>=', utc_start),
+                                   ('tanggal_mulai', '<=', utc_end)]
+        total_p = P.search_count(base_p)
+        today_p = P.search_count(today_domain)
+        titik_total = sum(r['lokasi_count'] for r in P.search_read(base_p, ['lokasi_count']))
+        titik_today = sum(r['lokasi_count'] for r in P.search_read(today_domain, ['lokasi_count']))
+
+        def _fmt(dt):
+            return dt.strftime('%Y-%m-%d %H:%M:%S') if dt else ''
+
+        sp_rec = SP.search_read(base, ['id', 'code', 'state', 'tanggal_mulai', 'kecamatan_id', 'lokasi_nama'],
+                                order='tanggal_mulai desc', limit=5)
+        pt_rec = P.search_read(base_p, ['id', 'code', 'state', 'tanggal_mulai', 'kecamatan_id'],
+                               order='tanggal_mulai desc', limit=5)
+        activities = []
+        for r in sp_rec:
+            activities.append({
+                'type': 'strong_point', 'id': r['id'], 'code': r['code'], 'state': r['state'],
+                'tanggal': _fmt(r['tanggal_mulai']),
+                'lokasi': (r['kecamatan_id'][1] if r.get('kecamatan_id') else '') or (r.get('lokasi_nama') or ''),
+            })
+        for r in pt_rec:
+            activities.append({
+                'type': 'patroli', 'id': r['id'], 'code': r['code'], 'state': r['state'],
+                'tanggal': _fmt(r['tanggal_mulai']),
+                'lokasi': r['kecamatan_id'][1] if r.get('kecamatan_id') else '',
+            })
+        activities.sort(key=lambda x: x['tanggal'] or '', reverse=True)
+
         return {
             'strong_point': {
                 'total': total, 'personel': personel,
                 'today': total_today, 'personel_today': personel_today,
             },
-            'patroli': {'total': 0, 'aktif': 0},
+            'patroli': {
+                'total': total_p, 'today': today_p,
+                'titik_total': titik_total, 'titik_today': titik_today,
+            },
+            'recent': activities[:5],
         }
 
     # ── API: Weekly chart data ────────────────────────────────────────────────
@@ -418,6 +454,7 @@ self.addEventListener('fetch', e => {
             'tanggal_selesai': _fmt_dt(rec.tanggal_selesai),
             'has_foto':       bool(foto_src),
             'foto_src':       foto_src or '',
+            'keterangan':     rec.keterangan or '',
             'personel': [
                 {'id': p.id, 'nama_lengkap': p.nama_lengkap, 'pangkat': p.pangkat or ''}
                 for p in rec.personel_ids
@@ -456,6 +493,22 @@ self.addEventListener('fetch', e => {
             p.with_user(user.id).unlink()
             return {'success': True}
         except Exception as e:
+            return {'error': str(e)}
+
+    # ── API: Update foto profil ───────────────────────────────────────────────
+
+    @http.route('/petadigi/api/update_photo', type='jsonrpc', auth='public', csrf=False)
+    def api_update_photo(self, foto_data=None, **kwargs):
+        user = self._auth_check()
+        if not user or not foto_data:
+            return {'error': 'unauthorized'}
+        try:
+            if ',' in foto_data:
+                foto_data = foto_data.split(',', 1)[1]
+            request.env['res.users'].sudo().browse(user.id).write({'image_1920': foto_data})
+            return {'success': True}
+        except Exception as e:
+            _logger.error('update_photo error: %s', e, exc_info=True)
             return {'error': str(e)}
 
     # ── API: Foto ─────────────────────────────────────────────────────────────
@@ -540,4 +593,214 @@ self.addEventListener('fetch', e => {
             })
             return {'success': True}
         except Exception as e:
+            return {'error': str(e)}
+
+    # ════════════════════════════════════════════════════════════════════════
+    # PATROLI API
+    # ════════════════════════════════════════════════════════════════════════
+
+    def _check_patroli_access(self, user, record_id):
+        rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
+        if not rec.exists() or rec.polres_id.id != user.polres_id.id:
+            return None
+        return rec
+
+    @http.route('/petadigi/api/patroli/list', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_list(self, offset=0, limit=20, filter=None, **kwargs):
+        user = self._auth_check()
+        if not user:
+            return []
+        P    = request.env['petadigi.patroli'].sudo()
+        base = ([('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
+                else [('polres_id', '=', user.polres_id.id)])
+        if filter == 'today':
+            utc_start, utc_end = _today_utc_range_wib()
+            base = base + [('tanggal_mulai', '>=', utc_start),
+                           ('tanggal_mulai', '<=', utc_end)]
+        elif filter == 'aktif':
+            base = base + [('state', '=', 'PROSES')]
+        records = P.search_read(
+            base,
+            ['id', 'code', 'state', 'tanggal_mulai', 'personel_count', 'lokasi_count'],
+            order='tanggal_mulai desc',
+            offset=int(offset),
+            limit=int(limit),
+        )
+        for r in records:
+            if r.get('tanggal_mulai'):
+                r['tanggal_mulai'] = r['tanggal_mulai'].strftime('%Y-%m-%d %H:%M:%S')
+        return records
+
+    @http.route('/petadigi/api/patroli/record', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_record(self, record_id=None, **kwargs):
+        user = self._auth_check()
+        if not user or not record_id:
+            return {'error': 'unauthorized'}
+        rec = self._check_patroli_access(user, record_id)
+        if not rec:
+            return {'error': 'not found'}
+
+        def _fmt(dt):
+            return dt.strftime('%Y-%m-%d %H:%M:%S') if dt else ''
+
+        return {
+            'id':              rec.id,
+            'code':            rec.code,
+            'state':           rec.state,
+            'polres_nama':     rec.polres_id.name    if rec.polres_id    else '',
+            'polsek_nama':     rec.polsek_id.name    if rec.polsek_id    else '',
+            'kabupaten_nama':  rec.kabupaten_id.name if rec.kabupaten_id else '',
+            'kecamatan_nama':  rec.kecamatan_id.name if rec.kecamatan_id else '',
+            'desa_nama':       rec.desa_id.name      if rec.desa_id      else '',
+            'tanggal_mulai':   _fmt(rec.tanggal_mulai),
+            'tanggal_selesai': _fmt(rec.tanggal_selesai),
+            'personel_count':  rec.personel_count,
+            'lokasi_count':    rec.lokasi_count,
+            'keterangan':      rec.keterangan or '',
+            'personel': [
+                {'id': p.id, 'nama_lengkap': p.nama_lengkap, 'pangkat': p.pangkat or ''}
+                for p in rec.personel_ids
+            ],
+            'lokasi': [
+                {
+                    'id':        l.id,
+                    'tanggal':   _fmt(l.tanggal),
+                    'latitude':  l.latitude,
+                    'longitude': l.longitude,
+                    'catatan':   l.catatan or '',
+                    'has_foto':  bool(l.foto),
+                }
+                for l in rec.lokasi_ids.sorted('tanggal')
+            ],
+        }
+
+    @http.route('/petadigi/api/patroli/create', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_create(self, **kwargs):
+        user = self._auth_check()
+        if not user:
+            return {'error': 'Sesi habis. Silakan login kembali.'}
+        try:
+            vals = {
+                'polres_id':     user.polres_id.id,
+                'polsek_id':     int(kwargs['polsek_id'])    if kwargs.get('polsek_id')    else False,
+                'kabupaten_id':  int(kwargs['kabupaten_id']) if kwargs.get('kabupaten_id') else False,
+                'kecamatan_id':  int(kwargs['kecamatan_id']) if kwargs.get('kecamatan_id') else False,
+                'desa_id':       int(kwargs['desa_id'])      if kwargs.get('desa_id')      else False,
+                'tanggal_mulai': _wib_to_utc(kwargs.get('tanggal_mulai')) or False,
+                'keterangan':    kwargs.get('keterangan') or '',
+                'state':         'PROSES',
+            }
+            if user.polsek_id:
+                vals['polsek_id'] = user.polsek_id.id
+            record = request.env['petadigi.patroli'].with_user(user.id).create(vals)
+            return {'success': True, 'code': record.code, 'record_id': record.id}
+        except Exception as e:
+            _logger.error('Patroli create error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/petadigi/api/patroli/set_selesai', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_set_selesai(self, record_id=None, tanggal_selesai=None, **kwargs):
+        user = self._auth_check()
+        if not user or not record_id:
+            return {'error': 'unauthorized'}
+        if not tanggal_selesai:
+            return {'error': 'Tanggal selesai harus diisi'}
+        rec = self._check_patroli_access(user, record_id)
+        if not rec:
+            return {'error': 'unauthorized'}
+        try:
+            rec.with_user(user.id).write({
+                'state':           'SELESAI',
+                'tanggal_selesai': _wib_to_utc(tanggal_selesai),
+            })
+            return {'success': True}
+        except Exception as e:
+            return {'error': str(e)}
+
+    @http.route('/petadigi/api/patroli/personel_add', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_personel_add(self, record_id=None, nama=None, pangkat=None, **kwargs):
+        user = self._auth_check()
+        if not user or not record_id or not nama:
+            return {'error': 'Data tidak lengkap'}
+        rec = self._check_patroli_access(user, record_id)
+        if not rec:
+            return {'error': 'unauthorized'}
+        try:
+            p = request.env['petadigi.personel_patroli'].with_user(user.id).create({
+                'patroli_id': rec.id,
+                'nama':       nama.strip(),
+                'pangkat':    (pangkat or '').strip(),
+            })
+            return {'success': True, 'id': p.id, 'nama_lengkap': p.nama_lengkap}
+        except Exception as e:
+            return {'error': str(e)}
+
+    @http.route('/petadigi/api/patroli/personel_remove', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_personel_remove(self, personel_id=None, **kwargs):
+        user = self._auth_check()
+        if not user or not personel_id:
+            return {'error': 'unauthorized'}
+        try:
+            p = request.env['petadigi.personel_patroli'].sudo().browse(int(personel_id))
+            if not p.exists() or p.patroli_id.polres_id.id != user.polres_id.id:
+                return {'error': 'unauthorized'}
+            p.with_user(user.id).unlink()
+            return {'success': True}
+        except Exception as e:
+            return {'error': str(e)}
+
+    @http.route('/petadigi/api/patroli/lokasi_add', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_lokasi_add(self, record_id=None, latitude=None, longitude=None,
+                                catatan=None, tanggal=None, **kwargs):
+        user = self._auth_check()
+        if not user or not record_id:
+            return {'error': 'unauthorized'}
+        rec = self._check_patroli_access(user, record_id)
+        if not rec:
+            return {'error': 'unauthorized'}
+        try:
+            tgl_utc = (_wib_to_utc(tanggal) if tanggal
+                       else datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+            l = request.env['petadigi.lokasi_patroli'].with_user(user.id).create({
+                'patroli_id': rec.id,
+                'tanggal':    tgl_utc,
+                'latitude':   float(latitude)  if latitude  else 0.0,
+                'longitude':  float(longitude) if longitude else 0.0,
+                'catatan':    catatan or '',
+            })
+            return {'success': True, 'id': l.id}
+        except Exception as e:
+            _logger.error('Patroli lokasi_add error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/petadigi/api/patroli/lokasi_foto', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_lokasi_foto(self, lokasi_id=None, foto_data=None, foto_filename=None, **kwargs):
+        user = self._auth_check()
+        if not user or not lokasi_id or not foto_data:
+            return {'error': 'Data tidak lengkap'}
+        try:
+            l = request.env['petadigi.lokasi_patroli'].sudo().browse(int(lokasi_id))
+            if not l.exists() or l.patroli_id.polres_id.id != user.polres_id.id:
+                return {'error': 'unauthorized'}
+            if ',' in foto_data:
+                foto_data = foto_data.split(',', 1)[1]
+            l.with_user(user.id).write({'foto': foto_data})
+            return {'success': True}
+        except Exception as e:
+            _logger.error('Patroli lokasi_foto error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/petadigi/api/patroli/lokasi_remove', type='jsonrpc', auth='public', csrf=False)
+    def api_patroli_lokasi_remove(self, lokasi_id=None, **kwargs):
+        user = self._auth_check()
+        if not user or not lokasi_id:
+            return {'error': 'unauthorized'}
+        try:
+            l = request.env['petadigi.lokasi_patroli'].sudo().browse(int(lokasi_id))
+            if not l.exists() or l.patroli_id.polres_id.id != user.polres_id.id:
+                return {'error': 'unauthorized'}
+            l.with_user(user.id).unlink()
+            return {'success': True}
+        except Exception as e:
+            _logger.error('Patroli lokasi_remove error: %s', e, exc_info=True)
             return {'error': str(e)}

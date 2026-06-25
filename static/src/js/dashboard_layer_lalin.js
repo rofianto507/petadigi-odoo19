@@ -9,7 +9,7 @@ import { fmtTanggal } from './dashboard_helpers';
  */
 
 // ── Skala warna (sama dengan kriminalitas) ───────────────────────────────────
-const LALIN_COLORS = [
+export const LALIN_COLORS = [
     { min: 2001, max: Infinity, color: '#922b21', label: '> 2.000 Kejadian' },
     { min: 1001, max: 2000,     color: '#e74c3c', label: '> 1.000 Kejadian' },
     { min:  501, max: 1000,     color: '#e67e22', label: '> 500 Kejadian'   },
@@ -17,7 +17,7 @@ const LALIN_COLORS = [
     { min:    0, max:    0,     color: '#abebc6', label: 'Tidak Ada Kejadian' },
 ];
 
-function getLalinColor(jumlah) {
+export function getLalinColor(jumlah) {
     for (const tier of LALIN_COLORS) {
         if (jumlah >= tier.min) return tier.color;
     }

@@ -172,7 +172,7 @@
                 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&amp;display=swap"/>
                 <link rel="stylesheet" href="/petadigi/static/lib/fontawesome/css/font-awesome.css"/>
                 <link rel="stylesheet" type="text/css" href="/petadigi/static/lib/leaflet/leaflet.css"/>
-                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/strong_form.css?v=20260624a"/>
+                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/strong_form.css?v=20260625j"/>
             </head>
             <body>
 
@@ -213,12 +213,8 @@
 
                     <!-- ── Tab: Patroli ── -->
                     <div class="sp-tab" id="tab-patroli">
-                        <div class="sp-page-body">
-                            <div class="sp-coming-soon" style="margin-top:24px;">
-                                <i class="fa fa-car"/>
-                                <div class="sp-coming-soon-title">Fitur Patroli</div>
-                                <div class="sp-coming-soon-sub">Sistem pencatatan patroli wilayah sedang dalam pengembangan.</div>
-                            </div>
+                        <div class="sp-page-body" id="patroli-content">
+                            <!-- Diisi oleh JS -->
                         </div>
                     </div>
 
@@ -256,7 +252,7 @@
 
                 <script type="text/javascript" src="/petadigi/static/lib/leaflet/leaflet.js"/>
                 <script type="text/javascript" src="/petadigi/static/lib/echart/echarts.min.js"/>
-                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/strong_form.js?v=20260624a"/>
+                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/strong_form.js?v=20260625k"/>
                 <script>
                 if ('serviceWorker' in navigator) {
                     window.addEventListener('load', function () {
