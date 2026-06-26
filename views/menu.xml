@@ -119,7 +119,7 @@
             id="menu_petadigi_configuration"
             name="Configuration"
             parent="menu_petadigi_root"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_subdit_strong_point"
             sequence="99"/>
         <menuitem
             id="menu_config_polres"
@@ -252,7 +252,7 @@
             name="Lokasi Strong Point"
             parent="menu_petadigi_configuration"
             action="action_petadigi_lokasi_strong_point"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_subdit_strong_point"
             sequence="180"/>
     </data>
 </odoo>

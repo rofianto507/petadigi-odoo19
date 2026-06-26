@@ -46,7 +46,9 @@ class LokasiStrongPoint(models.Model):
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
         user = self.env.user
-        is_admin = user.has_group('petadigi.group_admin') or user.has_group('petadigi.group_subdit')
+        is_admin = (user.has_group('petadigi.group_admin')
+                    or user.has_group('petadigi.group_subdit')
+                    or user.has_group('petadigi.group_subdit_strong_point'))
         if not is_admin:
             if user.polres_id and 'polres_id' in fields_list:
                 defaults['polres_id'] = user.polres_id.id

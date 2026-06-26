@@ -10,15 +10,27 @@
                     <field name="name"/>
                     <field name="type"/>
                     <field name="polres_id"/>
+                    <field name="kecamatan_count" string="Total Kecamatan"/>
+                    <field name="has_geometry" string="Ada Peta"
+                           widget="boolean" optional="show"/>
                 </list>
             </field>
         </record>
+
         <record id="view_petadigi_kabupaten_form" model="ir.ui.view">
             <field name="name">kabupaten.form.petadigi</field>
             <field name="model">petadigi.kabupaten</field>
             <field name="arch" type="xml">
                 <form string="Kabupaten/Kota">
                     <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_kecamatan"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-map">
+                                <field name="kecamatan_count" widget="statinfo" string="Kecamatan"/>
+                            </button>
+                        </div>
                         <group>
                             <group>
                                 <field name="code"/>
@@ -28,7 +40,6 @@
                                 <field name="type"/>
                                 <field name="polres_id"/>
                             </group>
-                             
                         </group>
                         <notebook>
                             <page string="Daftar Kecamatan">
@@ -42,7 +53,7 @@
                             </page>
                             <page string="Peta">
                                 <group>
-                                    <field name="geometry" widget="geojson_map" nolabel="1"/>                                 
+                                    <field name="geometry" widget="geojson_map" nolabel="1"/>
                                 </group>
                                 <group>
                                     <field name="geometry" widget="text" string="Raw GeoJSON"/>
@@ -53,10 +64,45 @@
                 </form>
             </field>
         </record>
+
+        <record id="view_petadigi_kabupaten_search" model="ir.ui.view">
+            <field name="name">kabupaten.search.petadigi</field>
+            <field name="model">petadigi.kabupaten</field>
+            <field name="arch" type="xml">
+                <search string="Cari Kabupaten/Kota">
+                    <field name="name" string="Nama"/>
+                    <field name="code" string="Kode"/>
+                    <field name="polres_id" string="Polres"/>
+                    <separator/>
+                    <filter string="Kabupaten" name="filter_kabupaten"
+                            domain="[('type', '=', 'KABUPATEN')]"/>
+                    <filter string="Kota" name="filter_kota"
+                            domain="[('type', '=', 'KOTA')]"/>
+                    <separator/>
+                    <filter string="Ada Kecamatan" name="filter_ada_kecamatan"
+                            domain="[('kecamatan_count', '&gt;', 0)]"/>
+                    <filter string="Belum Ada Kecamatan" name="filter_kosong_kecamatan"
+                            domain="[('kecamatan_count', '=', 0)]"/>
+                    <separator/>
+                    <filter string="Ada Peta (Geometry)" name="filter_ada_geometry"
+                            domain="[('has_geometry', '=', True)]"/>
+                    <filter string="Belum Ada Peta" name="filter_belum_geometry"
+                            domain="[('has_geometry', '=', False)]"/>
+                    <group>
+                        <filter string="Polres" name="groupby_polres"
+                                context="{'group_by': 'polres_id'}"/>
+                        <filter string="Tipe" name="groupby_type"
+                                context="{'group_by': 'type'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
         <record id="action_petadigi_kabupaten" model="ir.actions.act_window">
             <field name="name">Kabupaten/Kota</field>
             <field name="res_model">petadigi.kabupaten</field>
             <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_petadigi_kabupaten_search"/>
         </record>
     </data>
 </odoo>

@@ -227,7 +227,6 @@
                     <sheet>
                         <group>
                             <field name="tanggal"/>
-                            <field name="patroli_id" readonly="1"/>
                         </group>
 
                         <div>

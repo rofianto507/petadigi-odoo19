@@ -83,6 +83,8 @@ access_strong_point_polsek,strong_point polsek,model_petadigi_strong_point,petad
 access_lokasi_strong_point_admin,lokasi_strong_point admin,model_petadigi_lokasi_strong_point,petadigi.group_admin,1,1,1,1
 access_lokasi_strong_point_polres,lokasi_strong_point polres,model_petadigi_lokasi_strong_point,petadigi.group_polres,1,1,1,1
 access_lokasi_strong_point_polsek,lokasi_strong_point polsek,model_petadigi_lokasi_strong_point,petadigi.group_polsek,1,1,1,1
+access_lokasi_strong_point_subdit,lokasi_strong_point subdit read,model_petadigi_lokasi_strong_point,petadigi.group_subdit,1,0,0,0
+access_lokasi_strong_point_subdit_sp,lokasi_strong_point subdit sp,model_petadigi_lokasi_strong_point,petadigi.group_subdit_strong_point,1,1,1,1
 access_personel_admin,personel admin,model_petadigi_personel,petadigi.group_admin,1,1,1,1
 access_personel_polres,personel polres,model_petadigi_personel,petadigi.group_polres,1,1,1,1
 access_personel_polsek,personel polsek,model_petadigi_personel,petadigi.group_polsek,1,1,1,1

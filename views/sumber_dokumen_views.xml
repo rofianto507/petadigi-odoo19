@@ -72,17 +72,21 @@
             <field name="arch" type="xml">
                 <form string="Sumber Dokumen">
                     <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_data"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-list"
+                                    invisible="tipe_sumber == 'LOKASI PENTING'">
+                                <field name="jumlah_data" widget="statinfo" string="Jumlah Data"/>
+                            </button>
+                        </div>
                         <div class="oe_title">
                             <h1><field name="name" placeholder="Nama Sumber Dokumen..."/></h1>
                         </div>
                         <group>
-                            <group>
-                                <field name="tipe_sumber"/>
-                                <field name="tahun"/>
-                            </group>
-                            <group>
-                                <field name="jumlah_data" string="Jumlah Data Terkait"/>
-                            </group>
+                            <field name="tipe_sumber"/>
+                            <field name="tahun"/>
                         </group>
                         <group string="Keterangan">
                             <field name="keterangan" nolabel="1"/>

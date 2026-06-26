@@ -105,6 +105,13 @@ class LatLongMapPickerLalin extends LatLongMapPicker {
                     ['id', 'name'], { order: 'name asc' }
                 );
                 this.geoOptions.kabupatens = kabupatens;
+            } else {
+                // Admin / Subdit: tampilkan semua kabupaten tanpa filter polres
+                const kabupatens = await this.orm.searchRead(
+                    'petadigi.kabupaten', [],
+                    ['id', 'name'], { order: 'name asc' }
+                );
+                this.geoOptions.kabupatens = kabupatens;
             }
 
             this.geoOptions.ready = true;

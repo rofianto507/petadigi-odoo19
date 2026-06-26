@@ -39,3 +39,24 @@ class SumberDokumen(models.Model):
                     [('sumber_dokumen_id', '=', rec.id)])
             else:
                 rec.jumlah_data = 0
+
+    def action_view_data(self):
+        self.ensure_one()
+        model = self._MODEL_MAP.get(self.tipe_sumber)
+        if not model:
+            return
+        _LABEL = {
+            'KRIMINALITAS':   'Kriminalitas',
+            'BENCANA':        'Bencana',
+            'LALU LINTAS':    'Lalu Lintas',
+            'KASUS MENONJOL': 'Kasus Menonjol',
+            'SUMUR MINYAK':   'Sumur Minyak',
+        }
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'{_LABEL.get(self.tipe_sumber, "Data")} — {self.name}',
+            'res_model': model,
+            'view_mode': 'list,form',
+            'domain': [('sumber_dokumen_id', '=', self.id)],
+            'context': {'default_sumber_dokumen_id': self.id},
+        }

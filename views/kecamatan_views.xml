@@ -10,15 +10,26 @@
                     <field name="name"/>
                     <field name="kabupaten_id"/>
                     <field name="polsek_id"/>
+                    <field name="desa_count" string="Total Desa/Kel."/>
+                    <field name="has_geometry" string="Ada Peta" widget="boolean" optional="show"/>
                 </list>
             </field>
         </record>
+
         <record id="view_petadigi_kecamatan_form" model="ir.ui.view">
             <field name="name">kecamatan.form.petadigi</field>
             <field name="model">petadigi.kecamatan</field>
             <field name="arch" type="xml">
                 <form string="Kecamatan">
                     <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_desa"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-home">
+                                <field name="desa_count" widget="statinfo" string="Desa/Kel."/>
+                            </button>
+                        </div>
                         <group>
                             <field name="code"/>
                             <field name="name"/>
@@ -37,7 +48,7 @@
                             </page>
                             <page string="Peta">
                                 <group>
-                                    <field name="geometry" widget="geojson_map" nolabel="1"/>                                 
+                                    <field name="geometry" widget="geojson_map" nolabel="1"/>
                                 </group>
                                 <group>
                                     <field name="geometry" widget="text" string="Raw GeoJSON"/>
@@ -48,10 +59,41 @@
                 </form>
             </field>
         </record>
+
+        <record id="view_petadigi_kecamatan_search" model="ir.ui.view">
+            <field name="name">kecamatan.search.petadigi</field>
+            <field name="model">petadigi.kecamatan</field>
+            <field name="arch" type="xml">
+                <search string="Cari Kecamatan">
+                    <field name="name" string="Nama Kecamatan"/>
+                    <field name="code" string="Kode"/>
+                    <field name="kabupaten_id" string="Kabupaten/Kota"/>
+                    <field name="polsek_id" string="Polsek"/>
+                    <separator/>
+                    <filter string="Ada Desa/Kel." name="filter_ada_desa"
+                            domain="[('desa_count', '&gt;', 0)]"/>
+                    <filter string="Belum Ada Desa/Kel." name="filter_kosong_desa"
+                            domain="[('desa_count', '=', 0)]"/>
+                    <separator/>
+                    <filter string="Ada Peta (Geometry)" name="filter_ada_geometry"
+                            domain="[('has_geometry', '=', True)]"/>
+                    <filter string="Belum Ada Peta" name="filter_belum_geometry"
+                            domain="[('has_geometry', '=', False)]"/>
+                    <group>
+                        <filter string="Kabupaten/Kota" name="groupby_kabupaten"
+                                context="{'group_by': 'kabupaten_id'}"/>
+                        <filter string="Polsek" name="groupby_polsek"
+                                context="{'group_by': 'polsek_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
         <record id="action_petadigi_kecamatan" model="ir.actions.act_window">
             <field name="name">Kecamatan</field>
             <field name="res_model">petadigi.kecamatan</field>
             <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_petadigi_kecamatan_search"/>
         </record>
     </data>
 </odoo>

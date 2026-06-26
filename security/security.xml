@@ -57,6 +57,19 @@
         <field name="implied_ids" eval="[(4, ref('petadigi.group_petadigi_user'))]"/>
     </record>
 
+    <!-- Subdit Strong Point: khusus DITLANTAS dan DITSAMAPTA.
+         Implies group_subdit → user yang pilih ini otomatis dapat semua hak Subdit
+         + tambahan CRUD lokasi_strong_point.
+         Admin cukup pilih "Subdit Strong Point" (bukan "Subdit") untuk user tsb. -->
+    <record id="group_subdit_strong_point" model="res.groups">
+        <field name="name">Subdit Strong Point</field>
+        <field name="privilege_id" ref="privilege_petadigi_access"/>
+        <field name="implied_ids" eval="[
+            (4, ref('petadigi.group_subdit')),
+            (4, ref('petadigi.group_petadigi_user')),
+        ]"/>
+    </record>
+
     <!-- ═══════════════════════════════════════════════════════
          RECORD RULES
          Admin tidak butuh record rule (akses global via ir.model.access).
