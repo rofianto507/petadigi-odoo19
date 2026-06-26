@@ -1150,7 +1150,7 @@
             + '<div class="sp-card">'
             +   '<div class="sp-card-title"><i class="fa fa-camera"></i> Dokumentasi</div>'
             +   fotoSection
-            +   '<input type="file" id="sp-foto-input" accept="image/*" capture="environment" style="display:none"/>'
+            +   '<input type="file" id="sp-foto-input" accept="image/*" style="display:none"/>'
             + '</div>'
 
             // Set Selesai card (only if PROSES)
@@ -1363,7 +1363,7 @@
             +     '<button class="sp-profile-photo-edit" id="sp-photo-edit-btn" title="Ganti foto profil">'
             +       '<i class="fa fa-camera"></i>'
             +     '</button>'
-            +     '<input type="file" id="sp-photo-input" accept="image/*" capture="user" style="display:none"/>'
+            +     '<input type="file" id="sp-photo-input" accept="image/*" style="display:none"/>'
             +   '</div>'
             +   '<div class="sp-profile-info">'
             +     '<div class="sp-profile-name">' + _esc(ctx.user_name || '-') + '</div>'
@@ -2141,7 +2141,7 @@
             +   '<div id="pt-foto-preview" style="display:none;">'
             +     '<button class="sp-btn-secondary" id="pt-foto-ganti" style="width:100%;margin-top:8px;"><i class="fa fa-camera"></i> Ganti Foto</button>'
             +   '</div>'
-            +   '<input type="file" id="pt-foto-input" accept="image/*" capture="environment" style="display:none"/>'
+            +   '<input type="file" id="pt-foto-input" accept="image/*" style="display:none"/>'
             + '</div>'
             + '<div class="sp-card">'
             +   '<div class="sp-card-title" style="color:var(--sp-primary);"><i class="fa fa-pencil"></i> Catatan</div>'

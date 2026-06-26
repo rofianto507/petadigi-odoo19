@@ -1,21 +1,24 @@
 {
-  "short_name": "Attendance",
-  "name": "Smart Attendance",
-  "icons": [
-    {
-      "src": "/hr_smartatt/static/src/img/logo.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "/hr_smartatt/static/src/img/logo.png",
-      "type": "image/png",
-      "sizes": "512x512"
-    }
-  ],
-  "start_url": "/smartatt",
+  "name": "PetaDigi Mobile",
+  "short_name": "PetaDigi",
+  "description": "Sistem Pemetaan Digital - Polri",
+  "start_url": "/petadigi/form",
+  "scope": "/petadigi/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#14858e",
-  "orientation": "portrait-primary"
+  "orientation": "portrait-primary",
+  "background_color": "#71639e",
+  "theme_color": "#71639e",
+  "lang": "id",
+  "icons": [
+    {"src": "/petadigi/static/img/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any"},
+    {"src": "/petadigi/static/img/icons/icon-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "any"},
+    {"src": "/petadigi/static/img/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any"},
+    {"src": "/petadigi/static/img/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any"},
+    {"src": "/petadigi/static/img/icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any"},
+    {"src": "/petadigi/static/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/petadigi/static/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "/petadigi/static/img/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any"},
+    {"src": "/petadigi/static/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/petadigi/static/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
 }

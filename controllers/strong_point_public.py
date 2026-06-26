@@ -89,6 +89,9 @@ class StrongPointPublicController(http.Controller):
             return None
         if record.polres_id.id != user.polres_id.id:
             return None
+        # Polsek user hanya boleh akses record polsek-nya sendiri
+        if user.polsek_id and record.polsek_id and record.polsek_id.id != user.polsek_id.id:
+            return None
         return record
 
     # ── Routes ───────────────────────────────────────────────────────────────
@@ -109,28 +112,30 @@ class StrongPointPublicController(http.Controller):
             "theme_color": "#71639e",
             "lang": "id",
             "icons": [
-                {"src": "/petadigi/static/img/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png"},
-                {"src": "/petadigi/static/img/icons/icon-96.png",  "sizes": "96x96",   "type": "image/png"},
-                {"src": "/petadigi/static/img/icons/icon-128.png", "sizes": "128x128", "type": "image/png"},
-                {"src": "/petadigi/static/img/icons/icon-144.png", "sizes": "144x144", "type": "image/png"},
-                {"src": "/petadigi/static/img/icons/icon-152.png", "sizes": "152x152", "type": "image/png"},
-                {"src": "/petadigi/static/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-                {"src": "/petadigi/static/img/icons/icon-384.png", "sizes": "384x384", "type": "image/png"},
-                {"src": "/petadigi/static/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                {"src": "/petadigi/static/img/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any"},
+                {"src": "/petadigi/static/img/icons/icon-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "any"},
+                {"src": "/petadigi/static/img/icons/icon-128.png", "sizes": "128x128", "type": "image/png", "purpose": "any"},
+                {"src": "/petadigi/static/img/icons/icon-144.png", "sizes": "144x144", "type": "image/png", "purpose": "any"},
+                {"src": "/petadigi/static/img/icons/icon-152.png", "sizes": "152x152", "type": "image/png", "purpose": "any"},
+                {"src": "/petadigi/static/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+                {"src": "/petadigi/static/img/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+                {"src": "/petadigi/static/img/icons/icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any"},
+                {"src": "/petadigi/static/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+                {"src": "/petadigi/static/img/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
             ],
         }
         return request.make_response(
             json.dumps(manifest),
             headers=[
                 ('Content-Type', 'application/manifest+json'),
-                ('Cache-Control', 'public, max-age=86400'),
+                ('Cache-Control', 'no-cache, no-store, must-revalidate'),
             ],
         )
 
     @http.route('/petadigi/sw.js', type='http', auth='public', csrf=False, website=False)
     def pwa_service_worker(self, **kwargs):
         sw = """
-const CACHE = 'petadigi-v1';
+const CACHE = 'petadigi-v2';
 const SHELL = [
   '/petadigi/static/lib/fontawesome/css/font-awesome.css',
   '/petadigi/static/lib/leaflet/leaflet.css',
@@ -382,9 +387,21 @@ self.addEventListener('fetch', e => {
         if not user:
             return {'error': 'Sesi habis. Silakan login kembali.'}
         try:
+            # Polsek user: paksa polsek_id-nya sendiri
+            # Polres user: validasi polsek_id yang dikirim memang milik polres-nya
+            if user.polsek_id:
+                resolved_polsek = user.polsek_id.id
+            elif kwargs.get('polsek_id'):
+                ps = request.env['petadigi.polsek'].sudo().browse(int(kwargs['polsek_id']))
+                if not ps.exists() or ps.polres_id.id != user.polres_id.id:
+                    return {'error': 'unauthorized'}
+                resolved_polsek = ps.id
+            else:
+                resolved_polsek = False
+
             vals = {
                 'polres_id':     user.polres_id.id,
-                'polsek_id':     int(kwargs['polsek_id'])    if kwargs.get('polsek_id')    else False,
+                'polsek_id':     resolved_polsek,
                 'lokasi_id':     int(kwargs['lokasi_id'])    if kwargs.get('lokasi_id')    else False,
                 'kabupaten_id':  int(kwargs['kabupaten_id']) if kwargs.get('kabupaten_id') else False,
                 'kecamatan_id':  int(kwargs['kecamatan_id']) if kwargs.get('kecamatan_id') else False,
@@ -395,8 +412,6 @@ self.addEventListener('fetch', e => {
                 'keterangan':    kwargs.get('keterangan')    or '',
                 'state':         'PROSES',
             }
-            if user.polsek_id:
-                vals['polsek_id'] = user.polsek_id.id
             record = request.env['petadigi.strong_point'].with_user(user.id).create(vals)
             return {'success': True, 'code': record.code, 'record_id': record.id}
         except Exception as e:
@@ -603,6 +618,9 @@ self.addEventListener('fetch', e => {
         rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
         if not rec.exists() or rec.polres_id.id != user.polres_id.id:
             return None
+        # Polsek user hanya boleh akses record polsek-nya sendiri
+        if user.polsek_id and rec.polsek_id and rec.polsek_id.id != user.polsek_id.id:
+            return None
         return rec
 
     @http.route('/petadigi/api/patroli/list', type='jsonrpc', auth='public', csrf=False)
@@ -680,9 +698,21 @@ self.addEventListener('fetch', e => {
         if not user:
             return {'error': 'Sesi habis. Silakan login kembali.'}
         try:
+            # Polsek user: paksa polsek_id-nya sendiri
+            # Polres user: validasi polsek_id yang dikirim memang milik polres-nya
+            if user.polsek_id:
+                resolved_polsek = user.polsek_id.id
+            elif kwargs.get('polsek_id'):
+                ps = request.env['petadigi.polsek'].sudo().browse(int(kwargs['polsek_id']))
+                if not ps.exists() or ps.polres_id.id != user.polres_id.id:
+                    return {'error': 'unauthorized'}
+                resolved_polsek = ps.id
+            else:
+                resolved_polsek = False
+
             vals = {
                 'polres_id':     user.polres_id.id,
-                'polsek_id':     int(kwargs['polsek_id'])    if kwargs.get('polsek_id')    else False,
+                'polsek_id':     resolved_polsek,
                 'kabupaten_id':  int(kwargs['kabupaten_id']) if kwargs.get('kabupaten_id') else False,
                 'kecamatan_id':  int(kwargs['kecamatan_id']) if kwargs.get('kecamatan_id') else False,
                 'desa_id':       int(kwargs['desa_id'])      if kwargs.get('desa_id')      else False,
@@ -690,8 +720,6 @@ self.addEventListener('fetch', e => {
                 'keterangan':    kwargs.get('keterangan') or '',
                 'state':         'PROSES',
             }
-            if user.polsek_id:
-                vals['polsek_id'] = user.polsek_id.id
             record = request.env['petadigi.patroli'].with_user(user.id).create(vals)
             return {'success': True, 'code': record.code, 'record_id': record.id}
         except Exception as e:

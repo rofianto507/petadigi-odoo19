@@ -1,38 +1,105 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
+
+        <!-- ── Search View ──────────────────────────────────────────────── -->
+        <record id="view_petadigi_sumber_dokumen_search" model="ir.ui.view">
+            <field name="name">sumber_dokumen.search.petadigi</field>
+            <field name="model">petadigi.sumber_dokumen</field>
+            <field name="arch" type="xml">
+                <search string="Cari Sumber Dokumen">
+                    <field name="name"/>
+                    <field name="keterangan"/>
+                    <field name="tahun"/>
+                    <separator/>
+                    <filter name="filter_kriminalitas" string="Kriminalitas"
+                            domain="[('tipe_sumber', '=', 'KRIMINALITAS')]"/>
+                    <filter name="filter_kam" string="Kasus Menonjol"
+                            domain="[('tipe_sumber', '=', 'KASUS MENONJOL')]"/>
+                    <filter name="filter_bencana" string="Bencana"
+                            domain="[('tipe_sumber', '=', 'BENCANA')]"/>
+                    <filter name="filter_lalin" string="Lalu Lintas"
+                            domain="[('tipe_sumber', '=', 'LALU LINTAS')]"/>
+                    <filter name="filter_sumur" string="Sumur Minyak"
+                            domain="[('tipe_sumber', '=', 'SUMUR MINYAK')]"/>
+                    <filter name="filter_lokasi" string="Lokasi Penting"
+                            domain="[('tipe_sumber', '=', 'LOKASI PENTING')]"/>
+                    <separator/>
+                    <filter name="filter_tahun_2026" string="2026"
+                            domain="[('tahun', '=', '2026')]"/>
+                    <filter name="filter_tahun_2025" string="2025"
+                            domain="[('tahun', '=', '2025')]"/>
+                    <filter name="filter_tahun_2024" string="2024"
+                            domain="[('tahun', '=', '2024')]"/>
+                    <filter name="filter_tahun_2023" string="2023"
+                            domain="[('tahun', '=', '2023')]"/>
+                    <filter name="filter_tahun_2022" string="2022"
+                            domain="[('tahun', '=', '2022')]"/>
+                    <group>
+                        <filter name="group_tipe" string="Tipe Sumber"
+                                context="{'group_by': 'tipe_sumber'}"/>
+                        <filter name="group_tahun" string="Tahun"
+                                context="{'group_by': 'tahun'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- ── List View ────────────────────────────────────────────────── -->
         <record id="view_petadigi_sumber_dokumen_list" model="ir.ui.view">
             <field name="name">sumber_dokumen.list.petadigi</field>
             <field name="model">petadigi.sumber_dokumen</field>
             <field name="arch" type="xml">
-                <list string="Sumber Dokumen">
+                <list string="Sumber Dokumen" default_order="tahun desc, tipe_sumber asc">
                     <field name="name"/>
-                    <field name="tipe_sumber"/>
+                    <field name="tipe_sumber" widget="badge"
+                           decoration-info="tipe_sumber == 'KRIMINALITAS'"
+                           decoration-warning="tipe_sumber == 'BENCANA'"
+                           decoration-danger="tipe_sumber == 'LALU LINTAS'"
+                           decoration-success="tipe_sumber == 'KASUS MENONJOL'"
+                           decoration-muted="tipe_sumber in ('LOKASI PENTING', 'SUMUR MINYAK')"/>
                     <field name="tahun"/>
-                    <field name="keterangan"/>
+                    <field name="jumlah_data" string="Jumlah Data" optional="show"/>
+                    <field name="keterangan" optional="hide"/>
                 </list>
             </field>
         </record>
+
+        <!-- ── Form View ────────────────────────────────────────────────── -->
         <record id="view_petadigi_sumber_dokumen_form" model="ir.ui.view">
             <field name="name">sumber_dokumen.form.petadigi</field>
             <field name="model">petadigi.sumber_dokumen</field>
             <field name="arch" type="xml">
                 <form string="Sumber Dokumen">
                     <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" placeholder="Nama Sumber Dokumen..."/></h1>
+                        </div>
                         <group>
-                            <field name="name"/>
-                            <field name="tipe_sumber"/>
-                            <field name="tahun"/>
-                            <field name="keterangan"/>
+                            <group>
+                                <field name="tipe_sumber"/>
+                                <field name="tahun"/>
+                            </group>
+                            <group>
+                                <field name="jumlah_data" string="Jumlah Data Terkait"/>
+                            </group>
+                        </group>
+                        <group string="Keterangan">
+                            <field name="keterangan" nolabel="1"/>
                         </group>
                     </sheet>
                 </form>
             </field>
         </record>
+
+        <!-- ── Action ───────────────────────────────────────────────────── -->
         <record id="action_petadigi_sumber_dokumen" model="ir.actions.act_window">
             <field name="name">Sumber Dokumen</field>
             <field name="res_model">petadigi.sumber_dokumen</field>
             <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_petadigi_sumber_dokumen_search"/>
+            <field name="context">{'search_default_group_tipe': 1}</field>
         </record>
+
     </data>
 </odoo>
