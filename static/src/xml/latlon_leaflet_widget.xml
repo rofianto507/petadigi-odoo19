@@ -9,4 +9,98 @@
         </div>
        
     </t>
+
+    <t t-name="petadigi.LatLongMapPickerLalin">
+        <div class="sp-lalin-map-wrap">
+
+            <!-- Baris 1: Filter tanggal -->
+            <div class="sp-lalin-filter-bar">
+                <span class="sp-lalin-filter-label">
+                    <i class="fa fa-car"/> Data Lalu Lintas
+                </span>
+                <div class="sp-lalin-date-group">
+                    <label>Dari</label>
+                    <input type="date" class="o_input sp-lalin-date-input"
+                           t-att-value="lalinDate.from"
+                           t-on-change="onDateFromChange"/>
+                    <label>s/d</label>
+                    <input type="date" class="o_input sp-lalin-date-input"
+                           t-att-value="lalinDate.to"
+                           t-on-change="onDateToChange"/>
+                    <t t-if="lalinLoad.loading">
+                        <i class="fa fa-spinner fa-spin sp-lalin-spinner"/>
+                    </t>
+                </div>
+            </div>
+
+            <!-- Baris 2: Drill-down wilayah (tampil setelah user info dimuat) -->
+            <div class="sp-lalin-geo-bar" t-if="geoOptions.ready">
+
+                <!-- Kabupaten: disabled (readonly) untuk polsek, dropdown untuk polres -->
+                <div class="sp-lalin-geo-item">
+                    <label class="sp-lalin-geo-label">Kabupaten</label>
+                    <t t-if="geoOptions.isPolsek">
+                        <input type="text" class="o_input sp-lalin-geo-input sp-lalin-geo-fixed"
+                               t-att-value="geoOptions.fixedKabupatenName"
+                               readonly="readonly"/>
+                    </t>
+                    <t t-else="">
+                        <select class="o_input sp-lalin-geo-input" t-on-change="onKabupatenChange">
+                            <option value="">-- Semua Kabupaten --</option>
+                            <t t-foreach="geoOptions.kabupatens" t-as="kab" t-key="kab.id">
+                                <option t-att-value="kab.id"
+                                        t-att-selected="geoFilter.kabupatenId === kab.id">
+                                    <t t-esc="kab.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </t>
+                </div>
+
+                <!-- Kecamatan: aktif setelah kabupaten dipilih (atau polsek mode) -->
+                <div class="sp-lalin-geo-item">
+                    <label class="sp-lalin-geo-label">Kecamatan</label>
+                    <select class="o_input sp-lalin-geo-input"
+                            t-att-disabled="!geoFilter.kabupatenId &amp;&amp; !geoOptions.isPolsek"
+                            t-on-change="onKecamatanChange">
+                        <option value="">-- Semua Kecamatan --</option>
+                        <t t-foreach="geoOptions.kecamatans" t-as="kec" t-key="kec.id">
+                            <option t-att-value="kec.id"
+                                    t-att-selected="geoFilter.kecamatanId === kec.id">
+                                <t t-esc="kec.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+                <!-- Desa: aktif setelah kecamatan dipilih -->
+                <div class="sp-lalin-geo-item">
+                    <label class="sp-lalin-geo-label">Desa / Kel.</label>
+                    <select class="o_input sp-lalin-geo-input"
+                            t-att-disabled="!geoFilter.kecamatanId"
+                            t-on-change="onDesaChange">
+                        <option value="">-- Semua Desa --</option>
+                        <t t-foreach="geoOptions.desas" t-as="desa" t-key="desa.id">
+                            <option t-att-value="desa.id"
+                                    t-att-selected="geoFilter.desaId === desa.id">
+                                <t t-esc="desa.name"/>
+                            </option>
+                        </t>
+                    </select>
+                </div>
+
+            </div>
+
+            <!-- Peta -->
+            <div class="oe_latlong_mappicker" t-ref="mapDiv">
+                <t t-if="props.readonly">
+                    <div class="latlong-mappicker-overlay">
+                        Klik <b>Edit</b> untuk mengganti koordinat.
+                    </div>
+                </t>
+            </div>
+
+        </div>
+    </t>
+
 </templates>

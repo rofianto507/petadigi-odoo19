@@ -103,6 +103,28 @@ petadigi.kecamatan       → Kecamatan (menyimpan GeoJSON geometry, FK: kabupate
 petadigi.desa            → Desa/Kelurahan (menyimpan GeoJSON geometry, FK: kecamatan_id)
 ```
 
+**`petadigi.polres`** — Kepolisian Resort
+- `name`, `address`
+- `polsek_ids` (One2many → `petadigi.polsek`)
+- `polsek_count` (Integer, computed stored), `kabupaten_count` (Integer, computed stored)
+- `user_count` (Integer, computed, non-stored) — hanya user dengan `group_polres` + `polres_id = rec.id`
+- Smart buttons form: Polsek (`fa-building`), Kabupaten (`fa-map-marker`), User Polres (`fa-users`)
+- List view: kolom `polsek_count`
+- Search view: filter Ada Polsek / Ada Kabupaten
+- `action_view_polsek`, `action_view_kabupaten`, `action_view_users`
+
+**`petadigi.polsek`** — Kepolisian Sektor
+- `name`, `address`, `polres_id` (required)
+- `kecamatan_ids` (One2many → `petadigi.kecamatan`)
+- `kecamatan_count` (Integer, computed stored)
+- `user_count` (Integer, computed, non-stored) — hanya user dengan `group_polsek` + `polsek_id = rec.id`
+- Smart buttons form: Kecamatan (`fa-map`), User Polsek (`fa-users`)
+- List view: kolom `kecamatan_count`
+- Search view: filter Ada Kecamatan / Belum Ada Kecamatan; groupby Polres (default aktif)
+- `action_view_kecamatan`, `action_view_users`
+
+> **Odoo 19 API**: `res.users` pakai `group_ids` (Many2many, bukan `groups_id`). Filter domain: `('group_ids', 'in', [group.id])`. `res.groups` pakai `user_ids` (bukan `users`).
+
 ### Model Utama Aplikasi — Peta
 
 **`petadigi.kriminalitas`** — Kasus kriminalitas
@@ -764,7 +786,8 @@ clearImage() {
 | `dashboard_layer_sumur_minyak.js` | Marker sumur minyak + `_getActiveFilters` + popup |
 | `dashboard_charts_sumur_minyak.js` | Bar + donut + tabel data sumur minyak |
 | `dashboard_monitoring_giat.js` | Dashboard Cooling System: KPI, charts, tables, map cluster |
-| `latlon_leaflet_widget.js` | Odoo field widget lat/lon picker |
+| `latlon_leaflet_widget.js` | Odoo field widget lat/lon picker (base class `LatLongMapPicker`) |
+| `latlon_map_lalin_widget.js` | Widget peta Lokasi Strong Point: extend `LatLongMapPicker` + choropleth lalu lintas + drill-down geo filter kabupaten→kecamatan→desa |
 | `kabupaten_map_widget.js` | Odoo field widget polygon GeoJSON editor |
 | `giat_form.js` | Standalone OWL app form publik petugas lapangan (tema biru) |
 | `sumur_form.js` | Standalone OWL app form publik input sumur lapangan (tema amber) |
@@ -1269,6 +1292,31 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - Views lengkap: list, form (smart button + tab personel inline), search (filter + groupby), graph, pivot, calendar
 - Sequence PTL + security CSV + menu Maps → Patroli
 
+**Patroli Security + Master Data (2026-06-26)**
+- Security audit patroli: tambah 6 record rules di `security/security.xml`:
+  - `rule_patroli_polres/polsek` — domain `polres_id/polsek_id = user.polres_id/polsek_id`
+  - `rule_personel_patroli_polres/polsek` — domain via relasi `patroli_id.polres_id/polsek_id`
+  - `rule_lokasi_patroli_polres/polsek` — domain via relasi `patroli_id.polres_id/polsek_id`
+
+- Master data Polres: smart buttons (Polsek, Kabupaten, User Polres), kolom `polsek_count` di list, search view (filter Ada Polsek / Ada Kabupaten)
+- Master data Polsek: smart buttons (Kecamatan, User Polsek), kolom `kecamatan_count` di list, search view (filter Ada Kecamatan / Belum Ada Kecamatan, groupby Polres default aktif)
+- `user_count` kedua model filter `group_ids in [group_polres/polsek]` — Odoo 19 field name adalah `group_ids` (bukan `groups_id`)
+
+**Lokasi Strong Point — Map Widget Lalin (2026-06-26)**
+- File baru: `static/src/js/latlon_map_lalin_widget.js`
+- Widget `latlong_map_picker_lalin` — extend `LatLongMapPicker`, template `petadigi.LatLongMapPickerLalin`
+- Choropleth lalu lintas 30 hari terakhir (default), warna dari `LALIN_COLORS`
+- Drill-down geo filter: kabupaten → kecamatan → desa (dropdown, responsive per akses)
+  - Akses **polres**: semua dropdown aktif, kabupaten = select box
+  - Akses **polsek**: kabupaten fixed (readonly, ambil via kecamatan pertama polsek), kecamatan dari polsek tsb
+- Init: baca `props.record.data.polsek_id / polres_id` (tidak perlu ORM read user)
+- Concurrent guard: `_lalinCallId` counter — hanya pemanggilan terakhir yang apply hasil
+- Auto-zoom: `_initialFitDone` flag — pertama kali load: `fitBounds` ke area aktif
+- Auto-center marker: record baru (lat/lng = 0) → marker di-set ke center bounds, `record.update()`
+- Geo filter desa saat kecamatan berubah: async load via `orm.searchRead('petadigi.desa', ...)`
+- XML template (`latlon_leaflet_widget.xml`): `<t-name="petadigi.LatLongMapPickerLalin">` — dua bar filter (tanggal + geo), `&amp;&amp;` bukan `&&` untuk boolean di atribut XML
+- Error XML `<group string="...">`: Odoo 19 search view tidak support atribut `string` di tag `<group>` — harus `<group>` saja
+
 ### Potensial Berikutnya
 - Export/report Monitoring Giat ke PDF/Excel
 - Notifikasi real-time kasus baru
@@ -1278,4 +1326,4 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 
 ---
 
-*Dokumen diperbarui: 2026-06-25*
+*Dokumen diperbarui: 2026-06-26*

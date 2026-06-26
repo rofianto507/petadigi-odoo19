@@ -9,6 +9,7 @@
                     <field name="name"/>
                     <field name="address"/>
                     <field name="polres_id"/>
+                    <field name="kecamatan_count" string="Total Kecamatan"/>
                 </list>
             </field>
         </record>
@@ -18,6 +19,20 @@
             <field name="arch" type="xml">
                 <form string="Polsek">
                     <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_kecamatan"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-map">
+                                <field name="kecamatan_count" widget="statinfo" string="Kecamatan"/>
+                            </button>
+                            <button name="action_view_users"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    icon="fa-users">
+                                <field name="user_count" widget="statinfo" string="User Polsek"/>
+                            </button>
+                        </div>
                         <group>
                             <field name="name"/>
                             <field name="address"/>
@@ -38,10 +53,33 @@
                 </form>
             </field>
         </record>
+        <record id="view_petadigi_polsek_search" model="ir.ui.view">
+            <field name="name">polsek.search.petadigi</field>
+            <field name="model">petadigi.polsek</field>
+            <field name="arch" type="xml">
+                <search string="Cari Polsek">
+                    <field name="name" string="Nama Polsek"/>
+                    <field name="address" string="Alamat"/>
+                    <field name="polres_id" string="Polres"/>
+                    <separator/>
+                    <filter string="Ada Kecamatan" name="filter_ada_kecamatan"
+                            domain="[('kecamatan_count', '&gt;', 0)]"/>
+                    <filter string="Belum Ada Kecamatan" name="filter_kosong"
+                            domain="[('kecamatan_count', '=', 0)]"/>
+                    <group>
+                        <filter string="Polres" name="groupby_polres"
+                                context="{'group_by': 'polres_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
         <record id="action_petadigi_polsek" model="ir.actions.act_window">
             <field name="name">Polsek</field>
             <field name="res_model">petadigi.polsek</field>
             <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_petadigi_polsek_search"/>
+            <field name="context">{'search_default_groupby_polres': 1}</field>
         </record>
     </data>
 </odoo>

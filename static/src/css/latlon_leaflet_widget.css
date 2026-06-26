@@ -35,3 +35,143 @@
     font-size: 11px;
     color: #333;
 }
+
+/* ── Lalin Map Picker ───────────────────────────────────────────────────── */
+
+.sp-lalin-map-wrap {
+    width: 100%;
+}
+
+.sp-lalin-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    background: #fff8f0;
+    border: 1px solid #f0d9c0;
+    border-radius: 6px 6px 0 0;
+    border-bottom: none;
+    flex-wrap: wrap;
+}
+
+.sp-lalin-filter-label {
+    font-weight: 600;
+    font-size: 12px;
+    color: #c0392b;
+    white-space: nowrap;
+}
+
+.sp-lalin-filter-label .fa {
+    margin-right: 4px;
+}
+
+.sp-lalin-date-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.sp-lalin-date-group label {
+    font-size: 11px;
+    color: #555;
+    margin: 0;
+}
+
+.sp-lalin-date-input {
+    font-size: 12px !important;
+    padding: 3px 7px !important;
+    height: 28px !important;
+    width: 135px;
+}
+
+.sp-lalin-spinner {
+    color: #e74c3c;
+    font-size: 14px;
+}
+
+.sp-lalin-map-wrap .oe_latlong_mappicker {
+    border-radius: 0 0 6px 6px;
+    border-top: none;
+}
+
+/* ── Geo drill-down bar ─────────────────────────────────────────────────── */
+
+.sp-lalin-geo-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background: #f7f3ee;
+    border: 1px solid #f0d9c0;
+    border-bottom: none;
+    flex-wrap: wrap;
+}
+
+.sp-lalin-geo-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sp-lalin-geo-label {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+    margin: 0;
+    font-weight: 500;
+}
+
+.sp-lalin-geo-input {
+    font-size: 12px !important;
+    padding: 3px 7px !important;
+    height: 28px !important;
+    min-width: 130px;
+    max-width: 180px;
+}
+
+.sp-lalin-geo-input:disabled,
+.sp-lalin-geo-fixed {
+    background: #f0f0f0 !important;
+    color: #999 !important;
+    cursor: not-allowed;
+}
+
+/* Legend di dalam peta */
+.sp-lalin-legend {
+    background: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.25);
+    font-size: 11px;
+    min-width: 170px;
+}
+
+.sp-lalin-legend-title {
+    font-weight: 600;
+    color: #c0392b;
+    margin-bottom: 6px;
+}
+
+.sp-lalin-legend-title .fa {
+    margin-right: 4px;
+}
+
+.sp-lalin-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+}
+
+.sp-lalin-legend-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.sp-lalin-tooltip {
+    font-size: 12px;
+}

@@ -325,9 +325,20 @@ self.addEventListener('fetch', e => {
         user = self._auth_check()
         if not user:
             return []
-        domain = [('polres_id', '=', user.polres_id.id), ('state', '=', 'aktif')]
         if user.polsek_id:
-            domain.append(('polsek_id', 'in', [user.polsek_id.id, False]))
+            # Polsek: hanya lokasi yang memang ditujukan untuk polsek ini
+            domain = [
+                ('polres_id', '=', user.polres_id.id),
+                ('polsek_id', '=', user.polsek_id.id),
+                ('state',     '=', 'aktif'),
+            ]
+        else:
+            # Polres: hanya lokasi tanpa polsek (ditujukan untuk polres, bukan jajaran)
+            domain = [
+                ('polres_id', '=', user.polres_id.id),
+                ('polsek_id', '=', False),
+                ('state',     '=', 'aktif'),
+            ]
         return request.env['petadigi.lokasi_strong_point'].sudo().search_read(
             domain, ['id', 'nama', 'code', 'lat', 'lng'], order='nama asc'
         )

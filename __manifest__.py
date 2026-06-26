@@ -132,6 +132,7 @@ TEKNOLOGI:
             'petadigi/static/src/js/dashboard_layer_kriminal.js',
             'petadigi/static/src/js/dashboard_layer_kam.js',
             'petadigi/static/src/js/dashboard_layer_lalin.js',
+            'petadigi/static/src/js/latlon_map_lalin_widget.js',
             'petadigi/static/src/js/dashboard_layer_bencana.js',
             'petadigi/static/src/js/dashboard_layer_lokasi.js',
             'petadigi/static/src/js/dashboard_overlay_lokasi.js',

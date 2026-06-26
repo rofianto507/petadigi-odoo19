@@ -76,9 +76,9 @@
                                 <field name="lng" string="Longitude"/>
                             </group>
                         </group>
-                        <group string="Peta Lokasi">
+                        <group string="Peta Lokasi &amp; Kepadatan Lalu Lintas">
                             <field name="lat"
-                                widget="latlong_map_picker"
+                                widget="latlong_map_picker_lalin"
                                 nolabel="1"
                                 colspan="2"/>
                         </group>
