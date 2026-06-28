@@ -435,6 +435,24 @@ span.flatpickr-weekday {
     display: inline-block;
     vertical-align: bottom;
 }
+
+/* ── Nav Security: visibilitas sidebar berdasarkan role ── */
+/* Subdit Strong Point: tampilkan hanya umum, kriminal, kam, strong, patroli */
+.petadigi-sidebar.nav-role-subdit-sp .petadigi-nav-item[data-mode="bencana"],
+.petadigi-sidebar.nav-role-subdit-sp .petadigi-nav-item[data-mode="lalin"],
+.petadigi-sidebar.nav-role-subdit-sp .petadigi-nav-item[data-mode="lokasi"],
+.petadigi-sidebar.nav-role-subdit-sp .petadigi-nav-item[data-mode="sumur"] {
+    display: none !important;
+}
+/* Subdit biasa: tampilkan hanya umum, kriminal, kam */
+.petadigi-sidebar.nav-role-subdit .petadigi-nav-item[data-mode="bencana"],
+.petadigi-sidebar.nav-role-subdit .petadigi-nav-item[data-mode="lalin"],
+.petadigi-sidebar.nav-role-subdit .petadigi-nav-item[data-mode="strong"],
+.petadigi-sidebar.nav-role-subdit .petadigi-nav-item[data-mode="patroli"],
+.petadigi-sidebar.nav-role-subdit .petadigi-nav-item[data-mode="lokasi"],
+.petadigi-sidebar.nav-role-subdit .petadigi-nav-item[data-mode="sumur"] {
+    display: none !important;
+}
 .petadigi-sumber-text.expanded {
     white-space: normal;
     text-overflow: unset;

@@ -86,7 +86,7 @@
                         </div>
                         <group>
                             <group string="WILAYAH">
-                                <!-- Admin: bebas pilih semua -->
+                                <!-- Admin: bebas pilih, kabupaten difilter polres -->
                                 <field name="polres_id"
                                     groups="petadigi.group_admin"/>
                                 <field name="polsek_id"
@@ -95,6 +95,15 @@
                                 <field name="kabupaten_id"
                                     groups="petadigi.group_admin"
                                     domain="[('polres_id', '=', polres_id)]"/>
+                                <!-- Subdit SP: polres bebas, kabupaten bebas (tidak tergantung polres) -->
+                                <field name="polres_id"
+                                    groups="petadigi.group_subdit_strong_point"/>
+                                <field name="polsek_id"
+                                    groups="petadigi.group_subdit_strong_point"
+                                    domain="[('polres_id', '=', polres_id)]"/>
+                                <field name="kabupaten_id"
+                                    groups="petadigi.group_subdit_strong_point"
+                                    domain="[]"/>
                                 <!-- Polres: polres terkunci, polsek & kabupaten bebas di polresnya -->
                                 <field name="polres_id"
                                     groups="petadigi.group_polres"

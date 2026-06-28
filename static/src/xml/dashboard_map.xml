@@ -4,7 +4,7 @@
         <div class="petadigi-dashboard">
 
             <!-- ══ SIDEBAR ══ -->
-            <div class="petadigi-sidebar" t-ref="sidebar">
+            <div class="petadigi-sidebar" t-ref="sidebar" t-att-class="navSecurity.cls">
                 <!-- Collapse button di atas -->
                 <div class="petadigi-sidebar-top">
                     <button class="petadigi-collapse-btn" t-on-click="onToggleSidebar">

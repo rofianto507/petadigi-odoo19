@@ -1385,6 +1385,73 @@ html, body {
     justify-content: center;
 }
 
+.sp-header-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.sp-filter-btn {
+    background: none;
+    border: none;
+    padding: 4px 7px;
+    cursor: pointer;
+    color: var(--sp-text-muted, #888);
+    font-size: 15px;
+    border-radius: 6px;
+    position: relative;
+    line-height: 1;
+    -webkit-tap-highlight-color: transparent;
+}
+.sp-filter-btn--active {
+    background: rgba(113,99,158,.12);
+    color: var(--sp-primary);
+}
+.sp-filter-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--sp-primary, #71639e);
+    border: 1.5px solid var(--sp-surface, #fff);
+}
+.sp-filter-panel {
+    background: var(--sp-surface-alt, #f5f5f5);
+    border-bottom: 1px solid var(--sp-border, #eee);
+    padding: 10px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.sp-filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.sp-filter-select {
+    flex: 1;
+    min-width: 130px;
+    padding: 7px 10px;
+    border: 1px solid var(--sp-border, #ddd);
+    border-radius: 8px;
+    background: var(--sp-surface, #fff);
+    font-size: 13px;
+    color: var(--sp-on-surface, #333);
+    -webkit-appearance: auto;
+    appearance: auto;
+}
+.sp-filter-reset {
+    align-self: flex-start;
+    background: none;
+    border: 1px solid var(--sp-border, #ddd);
+    border-radius: 8px;
+    padding: 5px 12px;
+    font-size: 12px;
+    color: var(--sp-text-muted, #888);
+    cursor: pointer;
+}
+
 .sp-record-list { display: flex; flex-direction: column; gap: 10px; padding-bottom: 80px; }
 
 .sp-record-item {

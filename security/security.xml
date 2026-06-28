@@ -206,6 +206,18 @@
         <field name="perm_unlink" eval="True"/>
     </record>
 
+    <!-- Subdit Strong Point: override filter subdit_id → bisa lihat semua kriminalitas (choropleth dashboard patroli) -->
+    <record id="rule_kriminalitas_subdit_sp_allow" model="ir.rule">
+        <field name="name">Kriminalitas: subdit strong point lihat semua</field>
+        <field name="model_id" ref="model_petadigi_kriminalitas"/>
+        <field name="domain_force">[]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit_strong_point'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
     <!-- ─── Kasus Menonjol ────────────────────────────────── -->
     <record id="rule_kasus_menonjol_polres" model="ir.rule">
         <field name="name">Kasus Menonjol: akses polres</field>
@@ -303,6 +315,18 @@
         <field name="model_id" ref="model_petadigi_lalu_lintas"/>
         <field name="domain_force">[('id', '=', -1)]</field>
         <field name="groups" eval="[(4, ref('petadigi.group_subdit'))]"/>
+        <field name="perm_read"   eval="True"/>
+        <field name="perm_write"  eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Subdit Strong Point: override blokir lalin → bisa lihat semua (choropleth dashboard) -->
+    <record id="rule_lalu_lintas_subdit_sp_allow" model="ir.rule">
+        <field name="name">Lalu Lintas: subdit strong point lihat semua</field>
+        <field name="model_id" ref="model_petadigi_lalu_lintas"/>
+        <field name="domain_force">[]</field>
+        <field name="groups" eval="[(4, ref('petadigi.group_subdit_strong_point'))]"/>
         <field name="perm_read"   eval="True"/>
         <field name="perm_write"  eval="False"/>
         <field name="perm_create" eval="False"/>

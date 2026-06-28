@@ -60,14 +60,14 @@
             name="Strong Point"
             parent="menu_petadigi_maps"
             action="action_petadigi_strong_point"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_subdit_strong_point"
             sequence="5"/>
         <menuitem
             id="menu_patroli"
             name="Patroli"
             parent="menu_petadigi_maps"
             action="action_petadigi_patroli"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_subdit_strong_point"
             sequence="5"/>
         <menuitem
             id="menu_lokasi_penting"

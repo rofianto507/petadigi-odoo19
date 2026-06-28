@@ -333,6 +333,9 @@
         listDone:     false,
         listObserver: null, // IntersectionObserver for infinite scroll
         listFilter:   null, // 'today' | 'all' | null
+        filterOpen:   false,
+        filterPolres: null,
+        filterState:  null,
     };
 
     // ── Distance helpers ─────────────────────────────────────────────────────
@@ -433,7 +436,7 @@
     function _loadRecordPage(rv, initial) {
         if (_sp.listLoading || _sp.listDone) return;
         _sp.listLoading = true;
-        rpc('/petadigi/api/list', { offset: _sp.listOffset, limit: _sp.listPerPage, filter: _sp.listFilter || null })
+        rpc('/petadigi/api/list', { offset: _sp.listOffset, limit: _sp.listPerPage, filter: _sp.listFilter || null, polres_id: _sp.filterPolres || null, state: _sp.filterState || null })
             .then(function (records) {
                 _sp.listLoading = false;
                 records = records || [];
@@ -466,6 +469,10 @@
             +     '<span class="sp-badge ' + badgeCls + '">' + badgeTxt + '</span>'
             +   '</div>'
             +   '<div class="sp-record-lokasi">' + _esc(r.lokasi_nama || '—') + '</div>'
+            +   '<div class="sp-record-meta" style="color:var(--sp-text-muted,#888);font-size:11px;margin-bottom:2px;">'
+            +     '<i class="fa fa-shield"></i> ' + _esc((r.polres_id && r.polres_id[1]) || '—')
+            +     (r.kabupaten_id ? '<span class="sp-record-sep">·</span><i class="fa fa-map"></i> ' + _esc(r.kabupaten_id[1]) : '')
+            +   '</div>'
             +   '<div class="sp-record-meta">'
             +     '<i class="fa fa-clock-o"></i> ' + _fmtDtDisplay(r.tanggal_mulai)
             +     '<span class="sp-record-sep">·</span>'
@@ -500,6 +507,59 @@
         _sp.listObserver.observe(sentinel);
     }
 
+    function _filterPanelHtml(ns) {
+        var st  = ns === 'sp' ? _sp : _pt;
+        var ctx = window._SP_CTX || {};
+        var hasPolres = ctx.polres_list && ctx.polres_list.length > 0;
+        var polresField = '';
+        if (hasPolres) {
+            var pOpts = '<option value="">Semua Polres</option>';
+            ctx.polres_list.forEach(function (p) {
+                pOpts += '<option value="' + p.id + '"' + (st.filterPolres == p.id ? ' selected' : '') + '>' + _esc(p.name) + '</option>';
+            });
+            polresField = '<select class="sp-filter-select" id="' + ns + '-fl-polres">' + pOpts + '</select>';
+        }
+        var sOpts = '<option value=""' + (!st.filterState ? ' selected' : '') + '>Semua Status</option>'
+            + '<option value="PROSES"' + (st.filterState === 'PROSES' ? ' selected' : '') + '>PROSES</option>'
+            + '<option value="SELESAI"' + (st.filterState === 'SELESAI' ? ' selected' : '') + '>SELESAI</option>';
+        var hasActive = st.filterPolres || st.filterState;
+        return '<div class="sp-filter-panel" id="' + ns + '-filter-panel"' + (st.filterOpen ? '' : ' style="display:none"') + '>'
+            + '<div class="sp-filter-row">'
+            + polresField
+            + '<select class="sp-filter-select" id="' + ns + '-fl-state">' + sOpts + '</select>'
+            + '</div>'
+            + (hasActive ? '<button class="sp-filter-reset" id="' + ns + '-fl-reset"><i class="fa fa-times"></i> Hapus Filter</button>' : '')
+            + '</div>';
+    }
+
+    function _wireFilterEvents(rv, ns) {
+        var st = ns === 'sp' ? _sp : _pt;
+        var reload = ns === 'sp' ? _showRecordList : _showPatroliList;
+        var filterBtn = rv.querySelector('#' + ns + '-filter-btn');
+        if (filterBtn) filterBtn.addEventListener('click', function () {
+            st.filterOpen = !st.filterOpen;
+            var panel = document.getElementById(ns + '-filter-panel');
+            if (panel) panel.style.display = st.filterOpen ? '' : 'none';
+            this.classList.toggle('sp-filter-btn--active', st.filterOpen);
+        });
+        var polresEl = rv.querySelector('#' + ns + '-fl-polres');
+        if (polresEl) polresEl.addEventListener('change', function () {
+            st.filterPolres = this.value ? parseInt(this.value) : null;
+            reload();
+        });
+        var stateEl = rv.querySelector('#' + ns + '-fl-state');
+        if (stateEl) stateEl.addEventListener('change', function () {
+            st.filterState = this.value || null;
+            reload();
+        });
+        var resetEl = rv.querySelector('#' + ns + '-fl-reset');
+        if (resetEl) resetEl.addEventListener('click', function () {
+            st.filterPolres = null;
+            st.filterState  = null;
+            reload();
+        });
+    }
+
     function _buildRecordList(rv, records) {
         var filterBadge = _sp.listFilter === 'today'
             ? ' <button class="sp-filter-badge" id="sp-filter-clear">'
@@ -507,29 +567,43 @@
               + '<i class="fa fa-times sp-filter-badge-x"></i>'
               + '</button>'
             : '';
+        var hasActive = _sp.filterPolres || _sp.filterState;
+        var filterBtnHtml = '<button class="sp-filter-btn' + (_sp.filterOpen ? ' sp-filter-btn--active' : '') + '" id="sp-filter-btn">'
+            + '<i class="fa fa-filter"></i>'
+            + (hasActive ? '<span class="sp-filter-dot"></span>' : '')
+            + '</button>';
+        var headerRight = '<div class="sp-header-right">'
+            + '<span class="sp-records-count" id="sp-records-count">' + _sp.listOffset + (_sp.listDone ? '' : '+') + '</span>'
+            + filterBtnHtml
+            + '</div>';
         if (!records.length) {
             rv.innerHTML = '<div class="sp-records-header">'
                 + '<span class="sp-records-title"><i class="fa fa-map-pin"></i> Strong Point' + filterBadge + '</span>'
+                + headerRight
                 + '</div>'
+                + _filterPanelHtml('sp')
                 + '<div class="sp-records-empty" style="margin-top:24px">'
                 + '<i class="fa fa-map-pin"></i>'
-                + '<div class="sp-records-empty-title">' + (_sp.listFilter === 'today' ? 'Tidak ada SP hari ini' : 'Belum ada Strong Point') + '</div>'
-                + '<div class="sp-records-empty-sub">' + (_sp.listFilter === 'today' ? 'Belum ada data strong point untuk hari ini' : 'Tap tombol <b>+</b> untuk menambah data baru') + '</div>'
+                + '<div class="sp-records-empty-title">' + (_sp.listFilter === 'today' ? 'Tidak ada SP hari ini' : (hasActive ? 'Tidak ada data sesuai filter' : 'Belum ada Strong Point')) + '</div>'
+                + '<div class="sp-records-empty-sub">' + (_sp.listFilter === 'today' ? 'Belum ada data strong point untuk hari ini' : (hasActive ? 'Coba ubah atau hapus filter' : 'Tap tombol <b>+</b> untuk menambah data baru')) + '</div>'
                 + '</div>';
             var cb = rv.querySelector('#sp-filter-clear');
             if (cb) cb.addEventListener('click', function () { _sp.listFilter = null; _showRecordList(); });
+            _wireFilterEvents(rv, 'sp');
             return;
         }
         var html = '<div class="sp-records-header">'
             + '<span class="sp-records-title"><i class="fa fa-map-pin"></i> Strong Point' + filterBadge + '</span>'
-            + '<span class="sp-records-count" id="sp-records-count">' + _sp.listOffset + (_sp.listDone ? '' : '+') + '</span>'
+            + headerRight
             + '</div>'
+            + _filterPanelHtml('sp')
             + '<div class="sp-record-list">';
         records.forEach(function (r) { html += _recordItemHtml(r); });
         html += '</div>';
         rv.innerHTML = html;
         var clearBtn = rv.querySelector('#sp-filter-clear');
         if (clearBtn) clearBtn.addEventListener('click', function () { _sp.listFilter = null; _showRecordList(); });
+        _wireFilterEvents(rv, 'sp');
         rv.querySelectorAll('.sp-record-item').forEach(function (btn) { _wireRecordClick(btn, rv); });
         if (!_sp.listDone) _setupListSentinel(rv);
     }
@@ -718,6 +792,19 @@
                 + '</div>';
         }
 
+        // Polres field: dropdown untuk subdit SP, readonly untuk lainnya
+        var polresHtml;
+        if (ctx.is_subdit_sp) {
+            var polresOpts = '<option value="">— Pilih Polres —</option>';
+            (ctx.polres_list || []).forEach(function (p) {
+                var sel = (ctx.polres_id && p.id === ctx.polres_id) ? ' selected' : '';
+                polresOpts += '<option value="' + p.id + '"' + sel + '>' + _esc(p.name) + '</option>';
+            });
+            polresHtml = '<select class="sp-select" id="sp-polres-select">' + polresOpts + '</select>';
+        } else {
+            polresHtml = '<input type="text" class="sp-input" value="' + _esc(ctx.polres_name || '') + '" readonly/>';
+        }
+
         // Kabupaten options
         var kabOpts = '<option value="">— Pilih Kabupaten —</option>';
         (ctx.kabupaten_list || []).forEach(function (k) {
@@ -753,7 +840,7 @@
             +   '<div class="sp-field">'
             +     '<label class="sp-label">Polres</label>'
             +     '<div class="sp-input-wrap"><i class="fa fa-shield sp-input-icon"></i>'
-            +     '<input type="text" class="sp-input" value="' + _esc(ctx.polres_name || '') + '" readonly/></div>'
+            +     polresHtml + '</div>'
             +   '</div>'
             +   polsekRow
             +   '<div class="sp-field">'
@@ -1003,6 +1090,11 @@
         var kecId  = document.getElementById('sp-kecamatan')?.value;
         var tglMul = document.getElementById('sp-tgl-mulai')?.value;
 
+        var ctx    = window._SP_CTX || {};
+        if (ctx.is_subdit_sp) {
+            var polresCheckEl = document.getElementById('sp-polres-select');
+            if (!polresCheckEl || !polresCheckEl.value) { showToast('Pilih Polres terlebih dahulu', 'error'); return; }
+        }
         if (!kabId)  { showToast('Pilih Kabupaten terlebih dahulu', 'error'); return; }
         if (!kecId)  { showToast('Pilih Kecamatan terlebih dahulu', 'error'); return; }
         if (!tglMul) { showToast('Isi Tanggal & Jam Mulai', 'error'); return; }
@@ -1012,7 +1104,6 @@
         btn.disabled = true;
         label.innerHTML = '<span class="sp-spinner"></span> Menyimpan...';
 
-        var ctx    = window._SP_CTX || {};
         var params = {
             lokasi_id:       _sp.selected ? _sp.selected.id : null,
             kabupaten_id:    parseInt(kabId),
@@ -1028,6 +1119,10 @@
         if (!ctx.is_polsek) {
             var polsekVal = document.getElementById('sp-polsek')?.value;
             if (polsekVal) params.polsek_id = parseInt(polsekVal);
+        }
+        if (ctx.is_subdit_sp) {
+            var polresSelEl = document.getElementById('sp-polres-select');
+            if (polresSelEl && polresSelEl.value) params.polres_id = parseInt(polresSelEl.value);
         }
 
         rpc('/petadigi/api/submit', params).then(function (res) {
@@ -1351,8 +1446,8 @@
         if (!el) return;
 
         var photoSrc = ctx.user_id ? '/web/image/res.users/' + ctx.user_id + '/image_128' : '';
-        var roleLabel = ctx.is_polsek ? 'Polsek' : 'Polres';
-        var roleIcon  = ctx.is_polsek ? 'fa-building' : 'fa-shield';
+        var roleLabel = ctx.is_subdit_sp ? 'Subdit' : (ctx.is_polsek ? 'Polsek' : 'Polres');
+        var roleIcon  = ctx.is_subdit_sp ? 'fa-star' : (ctx.is_polsek ? 'fa-building' : 'fa-shield');
 
         el.innerHTML = ''
             + '<div class="sp-profile-card">'
@@ -1459,6 +1554,9 @@
         listDone:     false,
         listObserver: null,
         listFilter:   null,
+        filterOpen:   false,
+        filterPolres: null,
+        filterState:  null,
         detailId:     null,
         userPos:      null,
         map:          null,
@@ -1517,7 +1615,7 @@
     function _ptLoadPage(rv, initial) {
         if (_pt.listLoading || _pt.listDone) return;
         _pt.listLoading = true;
-        rpc('/petadigi/api/patroli/list', { offset: _pt.listOffset, limit: _pt.listPerPage, filter: _pt.listFilter || null })
+        rpc('/petadigi/api/patroli/list', { offset: _pt.listOffset, limit: _pt.listPerPage, filter: _pt.listFilter || null, polres_id: _pt.filterPolres || null, state: _pt.filterState || null })
             .then(function (records) {
                 _pt.listLoading = false;
                 records = records || [];
@@ -1539,6 +1637,10 @@
             +   '<div class="sp-record-head">'
             +     '<span class="sp-record-code">' + _esc(r.code) + '</span>'
             +     '<span class="sp-badge ' + (isProses ? 'sp-badge--proses-lw' : 'sp-badge--selesai-lw') + '">' + (isProses ? 'PROSES' : 'SELESAI') + '</span>'
+            +   '</div>'
+            +   '<div class="sp-record-meta" style="color:var(--sp-text-muted,#888);font-size:11px;margin-bottom:2px;">'
+            +     '<i class="fa fa-shield"></i> ' + _esc((r.polres_id && r.polres_id[1]) || '—')
+            +     (r.kabupaten_id ? '<span class="sp-record-sep">·</span><i class="fa fa-map"></i> ' + _esc(r.kabupaten_id[1]) : '')
             +   '</div>'
             +   '<div class="sp-record-lokasi" style="color:var(--sp-primary);font-size:12px;">'
             +     '<i class="fa fa-map-marker"></i> ' + (r.lokasi_count || 0) + ' titik'
@@ -1572,22 +1674,39 @@
     }
 
     function _ptBuildList(rv, records) {
+        var hasActive = _pt.filterPolres || _pt.filterState;
+        var filterBtnHtml = '<button class="sp-filter-btn' + (_pt.filterOpen ? ' sp-filter-btn--active' : '') + '" id="pt-filter-btn">'
+            + '<i class="fa fa-filter"></i>'
+            + (hasActive ? '<span class="sp-filter-dot"></span>' : '')
+            + '</button>';
+        var headerRight = '<div class="sp-header-right">'
+            + '<span class="sp-records-count" id="pt-records-count">' + _pt.listOffset + (_pt.listDone ? '' : '+') + '</span>'
+            + filterBtnHtml
+            + '</div>';
         if (!records.length) {
-            rv.innerHTML = '<div class="sp-records-header"><span class="sp-records-title"><i class="fa fa-car" style="color:var(--sp-primary)"></i> Patroli</span></div>'
+            rv.innerHTML = '<div class="sp-records-header">'
+                + '<span class="sp-records-title"><i class="fa fa-car" style="color:var(--sp-primary)"></i> Patroli</span>'
+                + headerRight
+                + '</div>'
+                + _filterPanelHtml('pt')
                 + '<div class="sp-records-empty" style="margin-top:24px;">'
                 + '<i class="fa fa-car" style="color:var(--sp-primary);font-size:32px;"></i>'
-                + '<div class="sp-records-empty-title">Belum ada Patroli</div>'
-                + '<div class="sp-records-empty-sub">Tap tombol <b>+</b> untuk membuat patroli baru</div>'
+                + '<div class="sp-records-empty-title">' + (hasActive ? 'Tidak ada data sesuai filter' : 'Belum ada Patroli') + '</div>'
+                + '<div class="sp-records-empty-sub">' + (hasActive ? 'Coba ubah atau hapus filter' : 'Tap tombol <b>+</b> untuk membuat patroli baru') + '</div>'
                 + '</div>';
+            _wireFilterEvents(rv, 'pt');
             return;
         }
         var html = '<div class="sp-records-header">'
             + '<span class="sp-records-title"><i class="fa fa-car" style="color:var(--sp-primary)"></i> Patroli</span>'
-            + '<span class="sp-records-count" id="pt-records-count">' + _pt.listOffset + (_pt.listDone ? '' : '+') + '</span>'
-            + '</div><div class="sp-record-list">';
+            + headerRight
+            + '</div>'
+            + _filterPanelHtml('pt')
+            + '<div class="sp-record-list">';
         records.forEach(function (r) { html += _ptRecordHtml(r); });
         html += '</div>';
         rv.innerHTML = html;
+        _wireFilterEvents(rv, 'pt');
         rv.querySelectorAll('.sp-record-item').forEach(function (btn) { _ptWireClick(btn, rv); });
         if (!_pt.listDone) _ptSetupSentinel(rv);
     }
@@ -1623,6 +1742,19 @@
 
     function _buildPatroliCreate(fv) {
         var ctx = window._SP_CTX || {};
+
+        var ptPolresHtml;
+        if (ctx.is_subdit_sp) {
+            var ptPolresOpts = '<option value="">— Pilih Polres —</option>';
+            (ctx.polres_list || []).forEach(function (p) {
+                var sel = (ctx.polres_id && p.id === ctx.polres_id) ? ' selected' : '';
+                ptPolresOpts += '<option value="' + p.id + '"' + sel + '>' + _esc(p.name) + '</option>';
+            });
+            ptPolresHtml = '<select class="sp-select" id="pt-polres-select">' + ptPolresOpts + '</select>';
+        } else {
+            ptPolresHtml = '<input type="text" class="sp-input" value="' + _esc(ctx.polres_name || '') + '" readonly/>';
+        }
+
         var polsekRow = ctx.is_polsek
             ? '<div class="sp-field"><label class="sp-label">Polsek</label>'
               + '<div class="sp-input-wrap"><i class="fa fa-building sp-input-icon"></i>'
@@ -1651,7 +1783,7 @@
             +   '<div class="sp-card-title" style="color:var(--sp-primary);"><i class="fa fa-map-marker"></i> Wilayah</div>'
             +   '<div class="sp-field"><label class="sp-label">Polres</label>'
             +     '<div class="sp-input-wrap"><i class="fa fa-shield sp-input-icon"></i>'
-            +     '<input type="text" class="sp-input" value="' + _esc(ctx.polres_name || '') + '" readonly/></div></div>'
+            +     ptPolresHtml + '</div></div>'
             +   polsekRow
             +   '<div class="sp-field"><label class="sp-label">Kabupaten <span class="sp-req">*</span></label>'
             +     '<div class="sp-input-wrap"><i class="fa fa-map sp-input-icon"></i>'
@@ -1712,6 +1844,10 @@
             var kabId  = document.getElementById('pt-kabupaten').value;
             var kecId  = document.getElementById('pt-kecamatan').value;
             var tglMul = document.getElementById('pt-tgl-mulai').value;
+            if (ctx.is_subdit_sp) {
+                var ptPolresCheckEl = document.getElementById('pt-polres-select');
+                if (!ptPolresCheckEl || !ptPolresCheckEl.value) { showToast('Pilih Polres terlebih dahulu', 'error'); return; }
+            }
             if (!kabId)  { showToast('Pilih Kabupaten terlebih dahulu', 'error'); return; }
             if (!kecId)  { showToast('Pilih Kecamatan terlebih dahulu', 'error'); return; }
             if (!tglMul) { showToast('Isi Tanggal & Jam Mulai', 'error'); return; }
@@ -1729,6 +1865,10 @@
             if (!ctx.is_polsek) {
                 var psVal = document.getElementById('pt-polsek') && document.getElementById('pt-polsek').value;
                 if (psVal) params.polsek_id = parseInt(psVal);
+            }
+            if (ctx.is_subdit_sp) {
+                var ptPolresSelEl = document.getElementById('pt-polres-select');
+                if (ptPolresSelEl && ptPolresSelEl.value) params.polres_id = parseInt(ptPolresSelEl.value);
             }
             rpc('/petadigi/api/patroli/create', params).then(function (res) {
                 if (res && res.success) {

@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { Component, onMounted, useRef } from "@odoo/owl";
+import { Component, onMounted, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -121,6 +121,11 @@ export class DashboardMap extends Component {
         this._userPolresName = null;
         this._isPolsekUser   = false;
         this._isPolresUser   = false;
+        this._isSubditUser   = false;
+        this._isSubditSP     = false;
+
+        // Reactive state untuk nav security — harus useState agar OWL tidak reset saat re-render
+        this.navSecurity = useState({ cls: '' });
 
         this.sidebarOpen    = true;
         this.currentMode    = 'umum';
@@ -188,14 +193,17 @@ export class DashboardMap extends Component {
         onMounted(async () => {
             // Role-based polres filter: cek group dan ambil polres_id via ORM
             try {
-                const [isPolsek, isPolresBase, isAdmin, isSubdit] = await Promise.all([
+                const [isPolsek, isPolresBase, isAdmin, isSubdit, isSubditSP] = await Promise.all([
                     this.orm.call('res.users', 'has_group', ['petadigi.group_polsek']),
                     this.orm.call('res.users', 'has_group', ['petadigi.group_polres']),
                     this.orm.call('res.users', 'has_group', ['petadigi.group_admin']),
                     this.orm.call('res.users', 'has_group', ['petadigi.group_subdit']),
+                    this.orm.call('res.users', 'has_group', ['petadigi.group_subdit_strong_point']),
                 ]);
                 this._isPolsekUser = !!isPolsek;
                 this._isPolresUser = !!isPolresBase && !isAdmin && !isSubdit;
+                this._isSubditSP   = !!isSubditSP;
+                this._isSubditUser = !!isSubdit && !isSubditSP;
                 if (this._isPolsekUser || this._isPolresUser) {
                     const uid = odoo?.session_info?.uid;
                     if (uid) {
@@ -206,6 +214,8 @@ export class DashboardMap extends Component {
                 }
             } catch (_) {}
 
+            // Selalu terapkan nav security (dipanggil di luar try agar tetap jalan walau group check error)
+            this._applyNavSecurity();
             await initFilters(this);
             this._initFlatpickr();
             await this._updateFilterVisibility('umum');
@@ -295,6 +305,35 @@ export class DashboardMap extends Component {
 
         this.currentMode = mode;
         this._switchMode(mode);
+    }
+
+    _applyNavSecurity() {
+        // Set reactive class — OWL akan menjaga class ini tetap ada melalui setiap re-render
+        // via t-att-class="navSecurity.cls" di template sidebar
+        if (this._isSubditSP) {
+            this.navSecurity.cls = 'nav-role-subdit-sp';
+        } else if (this._isSubditUser) {
+            this.navSecurity.cls = 'nav-role-subdit';
+        } else {
+            this.navSecurity.cls = '';
+            return;
+        }
+
+        // Tentukan mode yang tersembunyi untuk role ini
+        const hideModes = this._isSubditSP
+            ? ['bencana', 'lalin', 'lokasi', 'sumur']
+            : ['bencana', 'lalin', 'strong', 'patroli', 'lokasi', 'sumur'];
+
+        // Jika mode aktif saat ini tersembunyi, pindah ke Peta Kriminalitas
+        if (hideModes.includes(this.currentMode)) {
+            this.currentMode = 'kriminal';
+            const kriminalItem = this.sidebarRef.el?.querySelector('.petadigi-nav-item[data-mode="kriminal"]');
+            if (kriminalItem) {
+                this.sidebarRef.el.querySelectorAll('.petadigi-nav-item').forEach(el => el.classList.remove('active'));
+                kriminalItem.classList.add('active');
+                this._switchMode('kriminal');
+            }
+        }
     }
 
     async onKategoriChange() {
