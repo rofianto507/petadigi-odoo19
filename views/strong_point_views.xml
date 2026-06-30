@@ -8,6 +8,7 @@
             <field name="arch" type="xml">
                 <list string="Strong Point">
                     <field name="code"/>
+                    <field name="create_uid" string="Penginput" optional="show"/>
                     <field name="tanggal_mulai"/>
                     <field name="tanggal_selesai"/>
                     <field name="polres_id"/>
@@ -30,10 +31,13 @@
             <field name="arch" type="xml">
                 <search string="Cari Strong Point">
                     <field name="code"/>
+                    <field name="create_uid" string="Penginput"/>
                     <field name="polres_id"/>
                     <field name="polsek_id"/>
                     <field name="kabupaten_id"/>
                     <field name="kecamatan_id"/>
+                    <separator/>
+                    <filter string="Dataku" name="filter_mine" domain="[('create_uid', '=', uid)]"/>
                     <separator/>
                     <filter string="PROSES" name="filter_proses" domain="[('state','=','PROSES')]"/>
                     <filter string="SELESAI" name="filter_selesai" domain="[('state','=','SELESAI')]"/>
@@ -51,6 +55,7 @@
                         domain="[('tanggal_mulai','&gt;=', context_today().replace(month=1, day=1).strftime('%Y-%m-%d 00:00:00')),
                                  ('tanggal_mulai','&lt;=', context_today().replace(month=12, day=31).strftime('%Y-%m-%d 23:59:59'))]"/>
                     <group>
+                        <filter string="Penginput" name="groupby_user" context="{'group_by': 'create_uid'}"/>
                         <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>
                         <filter string="Kabupaten" name="groupby_kabupaten" context="{'group_by': 'kabupaten_id'}"/>
                         <filter string="Status" name="groupby_state" context="{'group_by': 'state'}"/>
