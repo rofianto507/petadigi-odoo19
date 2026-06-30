@@ -252,7 +252,7 @@
 
                 <script type="text/javascript" src="/petadigi/static/lib/leaflet/leaflet.js"/>
                 <script type="text/javascript" src="/petadigi/static/lib/echart/echarts.min.js"/>
-                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/strong_form.js?v=20260626a"/>
+                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/strong_form.js?v=20260629c"/>
                 <script>
                 if ('serviceWorker' in navigator) {
                     window.addEventListener('load', function () {

@@ -333,9 +333,9 @@
         listDone:     false,
         listObserver: null, // IntersectionObserver for infinite scroll
         listFilter:   null, // 'today' | 'all' | null
-        filterOpen:   false,
-        filterPolres: null,
-        filterState:  null,
+        filterOpen:     false,
+        filterKabupaten: null,
+        filterState:    null,
     };
 
     // ── Distance helpers ─────────────────────────────────────────────────────
@@ -436,7 +436,7 @@
     function _loadRecordPage(rv, initial) {
         if (_sp.listLoading || _sp.listDone) return;
         _sp.listLoading = true;
-        rpc('/petadigi/api/list', { offset: _sp.listOffset, limit: _sp.listPerPage, filter: _sp.listFilter || null, polres_id: _sp.filterPolres || null, state: _sp.filterState || null })
+        rpc('/petadigi/api/list', { offset: _sp.listOffset, limit: _sp.listPerPage, filter: _sp.listFilter || null, kabupaten_id: _sp.filterKabupaten || null, state: _sp.filterState || null })
             .then(function (records) {
                 _sp.listLoading = false;
                 records = records || [];
@@ -510,22 +510,22 @@
     function _filterPanelHtml(ns) {
         var st  = ns === 'sp' ? _sp : _pt;
         var ctx = window._SP_CTX || {};
-        var hasPolres = ctx.polres_list && ctx.polres_list.length > 0;
-        var polresField = '';
-        if (hasPolres) {
-            var pOpts = '<option value="">Semua Polres</option>';
-            ctx.polres_list.forEach(function (p) {
-                pOpts += '<option value="' + p.id + '"' + (st.filterPolres == p.id ? ' selected' : '') + '>' + _esc(p.name) + '</option>';
+        var hasKabupaten = ctx.kabupaten_list && ctx.kabupaten_list.length > 0;
+        var kabupatenField = '';
+        if (hasKabupaten) {
+            var kOpts = '<option value="">Semua Kabupaten</option>';
+            ctx.kabupaten_list.forEach(function (k) {
+                kOpts += '<option value="' + k.id + '"' + (st.filterKabupaten == k.id ? ' selected' : '') + '>' + _esc(k.name) + '</option>';
             });
-            polresField = '<select class="sp-filter-select" id="' + ns + '-fl-polres">' + pOpts + '</select>';
+            kabupatenField = '<select class="sp-filter-select" id="' + ns + '-fl-kabupaten">' + kOpts + '</select>';
         }
         var sOpts = '<option value=""' + (!st.filterState ? ' selected' : '') + '>Semua Status</option>'
             + '<option value="PROSES"' + (st.filterState === 'PROSES' ? ' selected' : '') + '>PROSES</option>'
             + '<option value="SELESAI"' + (st.filterState === 'SELESAI' ? ' selected' : '') + '>SELESAI</option>';
-        var hasActive = st.filterPolres || st.filterState;
+        var hasActive = st.filterKabupaten || st.filterState;
         return '<div class="sp-filter-panel" id="' + ns + '-filter-panel"' + (st.filterOpen ? '' : ' style="display:none"') + '>'
             + '<div class="sp-filter-row">'
-            + polresField
+            + kabupatenField
             + '<select class="sp-filter-select" id="' + ns + '-fl-state">' + sOpts + '</select>'
             + '</div>'
             + (hasActive ? '<button class="sp-filter-reset" id="' + ns + '-fl-reset"><i class="fa fa-times"></i> Hapus Filter</button>' : '')
@@ -542,9 +542,9 @@
             if (panel) panel.style.display = st.filterOpen ? '' : 'none';
             this.classList.toggle('sp-filter-btn--active', st.filterOpen);
         });
-        var polresEl = rv.querySelector('#' + ns + '-fl-polres');
-        if (polresEl) polresEl.addEventListener('change', function () {
-            st.filterPolres = this.value ? parseInt(this.value) : null;
+        var kabupatenEl = rv.querySelector('#' + ns + '-fl-kabupaten');
+        if (kabupatenEl) kabupatenEl.addEventListener('change', function () {
+            st.filterKabupaten = this.value ? parseInt(this.value) : null;
             reload();
         });
         var stateEl = rv.querySelector('#' + ns + '-fl-state');
@@ -554,7 +554,7 @@
         });
         var resetEl = rv.querySelector('#' + ns + '-fl-reset');
         if (resetEl) resetEl.addEventListener('click', function () {
-            st.filterPolres = null;
+            st.filterKabupaten = null;
             st.filterState  = null;
             reload();
         });
@@ -567,7 +567,7 @@
               + '<i class="fa fa-times sp-filter-badge-x"></i>'
               + '</button>'
             : '';
-        var hasActive = _sp.filterPolres || _sp.filterState;
+        var hasActive = _sp.filterKabupaten || _sp.filterState;
         var filterBtnHtml = '<button class="sp-filter-btn' + (_sp.filterOpen ? ' sp-filter-btn--active' : '') + '" id="sp-filter-btn">'
             + '<i class="fa fa-filter"></i>'
             + (hasActive ? '<span class="sp-filter-dot"></span>' : '')
@@ -772,9 +772,11 @@
         var lok = _sp.selected;
         var pos = _sp.userPos;
 
-        // Polsek row
+        // Polsek row — disembunyikan untuk subdit SP (selalu Polda, tidak punya polsek)
         var polsekRow = '';
-        if (ctx.is_polsek) {
+        if (ctx.is_subdit_sp) {
+            polsekRow = '';
+        } else if (ctx.is_polsek) {
             polsekRow = '<div class="sp-field">'
                 + '<label class="sp-label">Polsek</label>'
                 + '<div class="sp-input-wrap"><i class="fa fa-building sp-input-icon"></i>'
@@ -792,18 +794,14 @@
                 + '</div>';
         }
 
-        // Polres field: dropdown untuk subdit SP, readonly untuk lainnya
-        var polresHtml;
-        if (ctx.is_subdit_sp) {
-            var polresOpts = '<option value="">— Pilih Polres —</option>';
-            (ctx.polres_list || []).forEach(function (p) {
-                var sel = (ctx.polres_id && p.id === ctx.polres_id) ? ' selected' : '';
-                polresOpts += '<option value="' + p.id + '"' + sel + '>' + _esc(p.name) + '</option>';
-            });
-            polresHtml = '<select class="sp-select" id="sp-polres-select">' + polresOpts + '</select>';
-        } else {
-            polresHtml = '<input type="text" class="sp-input" value="' + _esc(ctx.polres_name || '') + '" readonly/>';
-        }
+        // Polres field — disembunyikan untuk subdit SP (auto-assign ke Polda di backend)
+        var polresRow = ctx.is_subdit_sp ? '' : (
+            '<div class="sp-field">'
+            + '<label class="sp-label">Polres</label>'
+            + '<div class="sp-input-wrap"><i class="fa fa-shield sp-input-icon"></i>'
+            + '<input type="text" class="sp-input" value="' + _esc(ctx.polres_name || '') + '" readonly/></div>'
+            + '</div>'
+        );
 
         // Kabupaten options
         var kabOpts = '<option value="">— Pilih Kabupaten —</option>';
@@ -837,11 +835,7 @@
             // Card 1: Wilayah
             + '<div class="sp-card">'
             +   '<div class="sp-card-title"><i class="fa fa-map-marker"></i> Wilayah</div>'
-            +   '<div class="sp-field">'
-            +     '<label class="sp-label">Polres</label>'
-            +     '<div class="sp-input-wrap"><i class="fa fa-shield sp-input-icon"></i>'
-            +     polresHtml + '</div>'
-            +   '</div>'
+            +   polresRow
             +   polsekRow
             +   '<div class="sp-field">'
             +     '<label class="sp-label">Kabupaten <span class="sp-req">*</span></label>'
@@ -1091,10 +1085,6 @@
         var tglMul = document.getElementById('sp-tgl-mulai')?.value;
 
         var ctx    = window._SP_CTX || {};
-        if (ctx.is_subdit_sp) {
-            var polresCheckEl = document.getElementById('sp-polres-select');
-            if (!polresCheckEl || !polresCheckEl.value) { showToast('Pilih Polres terlebih dahulu', 'error'); return; }
-        }
         if (!kabId)  { showToast('Pilih Kabupaten terlebih dahulu', 'error'); return; }
         if (!kecId)  { showToast('Pilih Kecamatan terlebih dahulu', 'error'); return; }
         if (!tglMul) { showToast('Isi Tanggal & Jam Mulai', 'error'); return; }
@@ -1116,13 +1106,9 @@
             keterangan:      document.getElementById('sp-keterangan')?.value || '',
         };
 
-        if (!ctx.is_polsek) {
+        if (!ctx.is_polsek && !ctx.is_subdit_sp) {
             var polsekVal = document.getElementById('sp-polsek')?.value;
             if (polsekVal) params.polsek_id = parseInt(polsekVal);
-        }
-        if (ctx.is_subdit_sp) {
-            var polresSelEl = document.getElementById('sp-polres-select');
-            if (polresSelEl && polresSelEl.value) params.polres_id = parseInt(polresSelEl.value);
         }
 
         rpc('/petadigi/api/submit', params).then(function (res) {
@@ -1554,9 +1540,9 @@
         listDone:     false,
         listObserver: null,
         listFilter:   null,
-        filterOpen:   false,
-        filterPolres: null,
-        filterState:  null,
+        filterOpen:     false,
+        filterKabupaten: null,
+        filterState:    null,
         detailId:     null,
         userPos:      null,
         map:          null,
@@ -1615,7 +1601,7 @@
     function _ptLoadPage(rv, initial) {
         if (_pt.listLoading || _pt.listDone) return;
         _pt.listLoading = true;
-        rpc('/petadigi/api/patroli/list', { offset: _pt.listOffset, limit: _pt.listPerPage, filter: _pt.listFilter || null, polres_id: _pt.filterPolres || null, state: _pt.filterState || null })
+        rpc('/petadigi/api/patroli/list', { offset: _pt.listOffset, limit: _pt.listPerPage, filter: _pt.listFilter || null, kabupaten_id: _pt.filterKabupaten || null, state: _pt.filterState || null })
             .then(function (records) {
                 _pt.listLoading = false;
                 records = records || [];
@@ -1674,7 +1660,7 @@
     }
 
     function _ptBuildList(rv, records) {
-        var hasActive = _pt.filterPolres || _pt.filterState;
+        var hasActive = _pt.filterKabupaten || _pt.filterState;
         var filterBtnHtml = '<button class="sp-filter-btn' + (_pt.filterOpen ? ' sp-filter-btn--active' : '') + '" id="pt-filter-btn">'
             + '<i class="fa fa-filter"></i>'
             + (hasActive ? '<span class="sp-filter-dot"></span>' : '')
@@ -1743,19 +1729,15 @@
     function _buildPatroliCreate(fv) {
         var ctx = window._SP_CTX || {};
 
-        var ptPolresHtml;
-        if (ctx.is_subdit_sp) {
-            var ptPolresOpts = '<option value="">— Pilih Polres —</option>';
-            (ctx.polres_list || []).forEach(function (p) {
-                var sel = (ctx.polres_id && p.id === ctx.polres_id) ? ' selected' : '';
-                ptPolresOpts += '<option value="' + p.id + '"' + sel + '>' + _esc(p.name) + '</option>';
-            });
-            ptPolresHtml = '<select class="sp-select" id="pt-polres-select">' + ptPolresOpts + '</select>';
-        } else {
-            ptPolresHtml = '<input type="text" class="sp-input" value="' + _esc(ctx.polres_name || '') + '" readonly/>';
-        }
+        // Polres — disembunyikan untuk subdit SP (auto-assign ke Polda di backend)
+        var ptPolresRow = ctx.is_subdit_sp ? '' : (
+            '<div class="sp-field"><label class="sp-label">Polres</label>'
+            + '<div class="sp-input-wrap"><i class="fa fa-shield sp-input-icon"></i>'
+            + '<input type="text" class="sp-input" value="' + _esc(ctx.polres_name || '') + '" readonly/></div></div>'
+        );
 
-        var polsekRow = ctx.is_polsek
+        // Polsek — disembunyikan untuk subdit SP (selalu Polda, tidak punya polsek)
+        var polsekRow = ctx.is_subdit_sp ? '' : (ctx.is_polsek
             ? '<div class="sp-field"><label class="sp-label">Polsek</label>'
               + '<div class="sp-input-wrap"><i class="fa fa-building sp-input-icon"></i>'
               + '<input type="text" class="sp-input" value="' + _esc(ctx.polsek_name || '') + '" readonly/></div></div>'
@@ -1765,7 +1747,7 @@
                 return '<div class="sp-field"><label class="sp-label">Polsek</label>'
                     + '<div class="sp-input-wrap"><i class="fa fa-building sp-input-icon"></i>'
                     + '<select class="sp-select" id="pt-polsek">' + opts + '</select></div></div>';
-            })();
+            })());
 
         var kabOpts = '<option value="">— Pilih Kabupaten —</option>';
         (ctx.kabupaten_list || []).forEach(function (k) { kabOpts += '<option value="' + k.id + '">' + _esc(k.name) + '</option>'; });
@@ -1781,9 +1763,7 @@
             + '</div>'
             + '<div class="sp-card">'
             +   '<div class="sp-card-title" style="color:var(--sp-primary);"><i class="fa fa-map-marker"></i> Wilayah</div>'
-            +   '<div class="sp-field"><label class="sp-label">Polres</label>'
-            +     '<div class="sp-input-wrap"><i class="fa fa-shield sp-input-icon"></i>'
-            +     ptPolresHtml + '</div></div>'
+            +   ptPolresRow
             +   polsekRow
             +   '<div class="sp-field"><label class="sp-label">Kabupaten <span class="sp-req">*</span></label>'
             +     '<div class="sp-input-wrap"><i class="fa fa-map sp-input-icon"></i>'
@@ -1844,10 +1824,6 @@
             var kabId  = document.getElementById('pt-kabupaten').value;
             var kecId  = document.getElementById('pt-kecamatan').value;
             var tglMul = document.getElementById('pt-tgl-mulai').value;
-            if (ctx.is_subdit_sp) {
-                var ptPolresCheckEl = document.getElementById('pt-polres-select');
-                if (!ptPolresCheckEl || !ptPolresCheckEl.value) { showToast('Pilih Polres terlebih dahulu', 'error'); return; }
-            }
             if (!kabId)  { showToast('Pilih Kabupaten terlebih dahulu', 'error'); return; }
             if (!kecId)  { showToast('Pilih Kecamatan terlebih dahulu', 'error'); return; }
             if (!tglMul) { showToast('Isi Tanggal & Jam Mulai', 'error'); return; }
@@ -1862,13 +1838,9 @@
                 tanggal_mulai: _fmtDatetimeLocal(tglMul),
                 keterangan:    document.getElementById('pt-keterangan').value || '',
             };
-            if (!ctx.is_polsek) {
+            if (!ctx.is_polsek && !ctx.is_subdit_sp) {
                 var psVal = document.getElementById('pt-polsek') && document.getElementById('pt-polsek').value;
                 if (psVal) params.polsek_id = parseInt(psVal);
-            }
-            if (ctx.is_subdit_sp) {
-                var ptPolresSelEl = document.getElementById('pt-polres-select');
-                if (ptPolresSelEl && ptPolresSelEl.value) params.polres_id = parseInt(ptPolresSelEl.value);
             }
             rpc('/petadigi/api/patroli/create', params).then(function (res) {
                 if (res && res.success) {

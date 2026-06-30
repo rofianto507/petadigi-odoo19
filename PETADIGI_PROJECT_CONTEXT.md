@@ -344,8 +344,14 @@ petadigi.subdit                   petadigi.sub_status_perkara
 
 ### Controller (`controllers/strong_point_public.py`)
 - Class: `StrongPointPublicController`
-- Auth helper: `_auth_check()` — cek `user.polres_id`, return None jika public/tanpa polres
-- Access check: `_check_record_access(user, record_id)` — validasi ownership polres
+- Auth helper: `_auth_check()` — return None jika public atau (tidak punya `polres_id` DAN bukan `group_subdit_strong_point`)
+- Context builder: `_build_user_ctx(user)` — return dict ctx user; subdit_sp mendapat `ctx.polres_id`/`ctx.polres_name` auto-isi dari `_get_polda_polres()`, `polres_list`/`polsek_list` selalu `[]` (field disembunyikan di form), `kabupaten_list` semua kabupaten (tanpa filter polres)
+- Access check: `_check_record_access(user, record_id)` — subdit_sp hanya boleh akses record milik sendiri (`record.create_uid.id == user.id`); polres/polsek pakai ownership check
+- Patroli access: `_check_patroli_access(user, record_id)` — pola sama dengan `_check_record_access`
+- Lokasi patroli access: `_lokasi_patroli_authorized(user, lokasi)` — helper untuk endpoint `lokasi_foto`/`lokasi_remove`, subdit_sp dicek via `lokasi.patroli_id.create_uid`
+- Auto-resolve polres create: `_get_polda_polres()` — cari satu-satunya polres dengan `polsek_count = 0` (level Polda, mis. "Polda Sumatera Selatan"); dipanggil langsung di `api_submit`/`api_patroli_create` untuk subdit_sp tanpa perlu input dari user (field Polres & Polsek dihidden di form mobile, `resolved_polsek` dipaksa `False`)
+
+> **Filosofi akses subdit_sp (2026-06-29)**: petugas subdit terkonsentrasi di Polda — agar tidak terdistrak data dari seluruh polres/polsek, SEMUA visibilitas data (list, KPI, weekly chart, detail, lokasi picker, CRUD personel/lokasi) dibatasi ke **data yang mereka input sendiri** (`create_uid = user.id`). Dropdown polres saat create dibatasi ke polres tanpa polsek (level Polda). Kabupaten/kecamatan/desa TETAP bebas akses (tidak dibatasi).
 
 **Timezone helpers** (module-level di controller):
 ```python
@@ -374,7 +380,7 @@ def _wib_to_utc(dt_str):
 | `POST /petadigi/api/lokasi` | List lokasi SP aktif (filtered by polres/polsek) |
 | `POST /petadigi/api/kecamatan` | Cascading by `kabupaten_id` |
 | `POST /petadigi/api/desa` | Cascading by `kecamatan_id` |
-| `POST /petadigi/api/list` | List SP records — paginated (offset/limit=20), terima `filter='today'` untuk filter WIB hari ini |
+| `POST /petadigi/api/list` | List SP records — paginated (offset/limit=20), terima `filter='today'`, `polres_id`, `state` |
 | `POST /petadigi/api/submit` | Create SP record baru, `tanggal_mulai` di-`_wib_to_utc()` |
 | `POST /petadigi/api/record` | Detail 1 record: info + personel + `foto_src` (base64 data URL) |
 | `POST /petadigi/api/personel_add` | Tambah personel ke SP |
@@ -468,11 +474,15 @@ if att and att.datas:
       listOffset: 0, listPerPage: 20, listLoading: false,
       listDone: false, listObserver: null,  // infinite scroll pagination
       detailId: null,
-      listFilter: null,  // 'today' atau null (diset saat klik KPI card)
+      listFilter: null,    // 'today' | null
+      filterOpen: false,   // panel filter terbuka/tertutup
+      filterPolres: null,  // polres_id filter (hanya subdit_sp)
+      filterState: null,   // 'PROSES' | 'SELESAI' | null
   };
   ```
+- **State object** `_pt` — sama dengan `_sp`, tambahan: `titikFile`, `map`, `marker`
 
-**Tab navigasi**: Beranda (KPI cards + weekly chart + greeting avatar), Strong Point, Patroli (coming soon), Profil
+**Tab navigasi**: Beranda (KPI cards + weekly chart + greeting avatar), Strong Point, Patroli, Profil
 
 **Alur Strong Point tab**:
 1. `_showRecordList()` — load 20 pertama, infinite scroll (IntersectionObserver sentinel)
@@ -548,7 +558,11 @@ if (data.has_foto && data.foto_src) {
 - `.sp-greeting-avatar` — avatar 44×44 circular, initials + img overlay
 - `.sp-greeting-av-img { position: absolute; inset: 0; object-fit: cover; }` — overlay foto di atas initials
 - `.sp-chart-card / .sp-chart-canvas { height: 150px; }` — weekly bar chart
-- `.sp-filter-badge` — pill badge di header record list saat filter aktif
+- `.sp-filter-badge` — pill badge di header record list saat filter aktif (filter 'today')
+- `.sp-header-right` — flex container count badge + filter icon button
+- `.sp-filter-btn` / `.sp-filter-btn--active` — tombol filter icon di kanan header
+- `.sp-filter-dot` — dot merah di atas filter icon jika ada filter aktif
+- `.sp-filter-panel` / `.sp-filter-row` / `.sp-filter-select` / `.sp-filter-reset` — panel dropdown filter
 
 ### ModSecurity
 Jika deploy ke VPS dengan nginx ModSecurity, tambahkan location block:
@@ -976,9 +990,15 @@ if user.polsek_id: defaults.setdefault('polsek_id', user.polsek_id.id)
 ### Group Akses
 - `petadigi.group_admin` — Admin PetaDigi
 - `petadigi.group_subdit` — Subdit (baca+tulis KAM & kriminalitas)
+- `petadigi.group_subdit_strong_point` — Subdit Strong Point: akses mobile `/petadigi` tanpa `polres_id`, lihat semua data SP & Patroli, polres bebas pilih, kabupaten tidak difilter polres; implies `group_subdit`
 - `petadigi.group_polres` — Polres (data wilayahnya sendiri)
 - `petadigi.group_polsek` — Polsek (data wilayahnya sendiri)
 - `petadigi.group_petadigi_user` — User umum (baca semua data referensi)
+
+**Profil mobile — Badge "Level Akses":**
+- `group_subdit_strong_point` → "Subdit" (icon `fa-star`)
+- `group_polsek` → "Polsek" (icon `fa-building`)
+- default (polres/admin) → "Polres" (icon `fa-shield`)
 
 ### Format Username
 - **Polres**: `madmin_[nama_polres_slug]`
@@ -1317,13 +1337,54 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - XML template (`latlon_leaflet_widget.xml`): `<t-name="petadigi.LatLongMapPickerLalin">` — dua bar filter (tanggal + geo), `&amp;&amp;` bukan `&&` untuk boolean di atribut XML
 - Error XML `<group string="...">`: Odoo 19 search view tidak support atribut `string` di tag `<group>` — harus `<group>` saja
 
+**Multi-role Mobile (group_subdit_strong_point) (2026-06-28)**
+- Group baru `petadigi.group_subdit_strong_point` — implies group_subdit → group_petadigi_user
+- Login mobile tanpa `polres_id` diizinkan untuk subdit_sp
+- Backend views (strong_point + patroli): field WILAYAH dibagi per role (4 blok: admin, subdit_sp, polres, polsek)
+- `kabupaten_id` untuk subdit_sp pakai `domain="[]"` (override model-level domain)
+- Form mobile: polres sebagai dropdown bebas untuk subdit_sp (bukan readonly)
+- Semua API: data tidak dibatasi domain polres/polsek untuk subdit_sp
+- Create SP & Patroli: `polres_id` diambil dari form dropdown (subdit_sp) atau session user (lainnya)
+- Profil: badge "Subdit" (fa-star) untuk group_subdit_strong_point
+
+**Polres + Kabupaten Info di List Item Mobile (2026-06-28)**
+- List item Strong Point dan Patroli: tampilkan polres dan kabupaten di baris info
+- Muncul di bawah kode/nama, di atas tanggal+personel
+- API `api_list` dan `api_patroli_list` mengembalikan `polres_id` dan `kabupaten_id`
+- Akses `r.polres_id[1]` dan `r.kabupaten_id[1]` (format `[id, "Name"]` dari search_read)
+
+**Filter List Strong Point & Patroli (2026-06-29)**
+- Icon filter di pojok kanan header list (sebelah count badge)
+- Klik icon → toggle panel filter di bawah header (tanpa reload)
+- Panel: dropdown Polres (hanya subdit_sp) + dropdown Status (PROSES/SELESAI)
+- Dot merah di icon jika ada filter aktif; tombol "Hapus Filter" di panel
+- State: `filterOpen`, `filterPolres`, `filterState` di objek `_sp` dan `_pt`
+- API: `api_list` + `api_patroli_list` terima `polres_id` dan `state` sebagai filter tambahan
+- Helper: `_filterPanelHtml(ns)` + `_wireFilterEvents(rv, ns)` reusable untuk SP dan Patroli
+
+**Subdit Strong Point — Pembatasan Visibilitas Data (2026-06-29)**
+- Latar belakang: petugas subdit terkonsentrasi di Polda — sebelumnya melihat SEMUA data SP/Patroli dari semua polres, sekarang dibatasi hanya data yang **mereka input sendiri** agar tidak terdistrak
+- Domain `create_uid = user.id` diterapkan ke: `api_kpi`, `api_weekly`, `api_list`, `api_patroli_list`, `api_lokasi` (picker lokasi strong point)
+- `_check_record_access` / `_check_patroli_access`: subdit_sp hanya lolos jika `record.create_uid.id == user.id` (sebelumnya bypass total)
+- Helper baru `_lokasi_patroli_authorized(user, lokasi)` — dipakai di `lokasi_foto` & `lokasi_remove` (titik patroli)
+- `api_personel_remove` / `api_patroli_personel_remove`: subdit_sp dicek via `create_uid` parent record (sebelumnya bypass total)
+- Kabupaten/Kecamatan/Desa TETAP bebas akses untuk subdit_sp (tidak dibatasi create_uid maupun polres)
+- Lokasi Strong Point baru (master data) harus dibuat via backend Odoo — mobile tidak punya UI create lokasi, hanya picker yang tampilkan punya sendiri
+
+**Revisi — Field Polres/Polsek Disembunyikan (2026-06-29, simplifikasi)**
+- Awalnya field Polres dibuat dropdown bebas pilih untuk subdit_sp di form create SP & Patroli — user minta lebih simpel
+- Field Polres & Polsek di form mobile (`_buildForm`, `_buildPatroliCreate`) sekarang **disembunyikan total** untuk subdit_sp (`polresRow`/`ptPolresRow`/`polsekRow` = `''`)
+- Backend auto-resolve via `_get_polda_polres()` — cari polres `polsek_count = 0` tanpa butuh input dari user sama sekali, dipanggil langsung di `api_submit`/`api_patroli_create`
+- `resolved_polsek` dipaksa `False` untuk subdit_sp (Polda tidak punya polsek)
+- `_build_user_ctx`: `ctx.polres_id`/`ctx.polres_name` auto-isi dari Polda yang sama (dipakai juga di Profil/header); `polres_list`/`polsek_list` selalu `[]` — filter panel polres otomatis tidak tampil untuk subdit_sp karena `polres_list` kosong (memang tidak relevan, datanya selalu 1 polres yang sama)
+- Cache bust JS: `?v=20260629b` di `strong_point_login_template.xml`
+
 ### Potensial Berikutnya
 - Export/report Monitoring Giat ke PDF/Excel
 - Notifikasi real-time kasus baru
 - Grafik trend tahunan untuk mode bencana dan sumur minyak
 - Dashboard backend Strong Point (choropleth / marker di peta utama)
-- Tab Patroli di mobile app (form pencatatan patroli via `/petadigi`)
 
 ---
 
-*Dokumen diperbarui: 2026-06-26*
+*Dokumen diperbarui: 2026-06-29*

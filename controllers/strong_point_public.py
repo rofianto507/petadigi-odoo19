@@ -66,11 +66,12 @@ class StrongPointPublicController(http.Controller):
             kabupaten_list = request.env['petadigi.kabupaten'].sudo().search_read(
                 [], ['id', 'name'], order='name asc',
             )
-            polres_list = request.env['petadigi.polres'].sudo().search_read(
-                [], ['id', 'name'], order='name asc',
-            )
+            # Subdit Strong Point selalu atas nama Polda (polres tanpa polsek) — auto-assign
+            polda = self._get_polda_polres()
+            ctx['polres_id']      = polda.id   if polda else None
+            ctx['polres_name']    = polda.name if polda else None
             ctx['kabupaten_list'] = kabupaten_list
-            ctx['polres_list']    = polres_list
+            ctx['polres_list']    = []
             ctx['polsek_list']    = []
             ctx['kecamatan_list'] = []
         else:
@@ -104,7 +105,7 @@ class StrongPointPublicController(http.Controller):
         if not record.exists():
             return None
         if user.has_group('petadigi.group_subdit_strong_point'):
-            return record
+            return record if record.create_uid.id == user.id else None
         if record.polres_id.id != user.polres_id.id:
             return None
         if user.polsek_id and record.polsek_id and record.polsek_id.id != user.polsek_id.id:
@@ -250,7 +251,7 @@ self.addEventListener('fetch', e => {
             return {'error': 'unauthorized'}
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         SP   = request.env['petadigi.strong_point'].sudo()
-        base = ([] if is_subdit_sp
+        base = ([('create_uid', '=', user.id)] if is_subdit_sp
                 else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
 
@@ -268,7 +269,7 @@ self.addEventListener('fetch', e => {
         personel_today = groups_today[0]['personel_count'] if groups_today else 0
 
         P      = request.env['petadigi.patroli'].sudo()
-        base_p = ([] if is_subdit_sp
+        base_p = ([('create_uid', '=', user.id)] if is_subdit_sp
                   else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                   else [('polres_id', '=', user.polres_id.id)])
         today_domain = base_p + [('tanggal_mulai', '>=', utc_start),
@@ -321,7 +322,7 @@ self.addEventListener('fetch', e => {
             return {'error': 'unauthorized'}
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         SP   = request.env['petadigi.strong_point'].sudo()
-        base = ([] if is_subdit_sp
+        base = ([('create_uid', '=', user.id)] if is_subdit_sp
                 else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
 
@@ -350,7 +351,7 @@ self.addEventListener('fetch', e => {
             return []
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         if is_subdit_sp:
-            domain = [('state', '=', 'aktif')]
+            domain = [('state', '=', 'aktif'), ('create_uid', '=', user.id)]
         elif user.polsek_id:
             domain = [
                 ('polres_id', '=', user.polres_id.id),
@@ -391,21 +392,21 @@ self.addEventListener('fetch', e => {
     # ── API: List records ────────────────────────────────────────────────────
 
     @http.route('/petadigi/api/list', type='jsonrpc', auth='public', csrf=False)
-    def api_list(self, offset=0, limit=20, filter=None, polres_id=None, state=None, **kwargs):
+    def api_list(self, offset=0, limit=20, filter=None, kabupaten_id=None, state=None, **kwargs):
         user = self._auth_check()
         if not user:
             return []
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         SP   = request.env['petadigi.strong_point'].sudo()
-        base = ([] if is_subdit_sp
+        base = ([('create_uid', '=', user.id)] if is_subdit_sp
                 else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
         if filter == 'today':
             utc_start, utc_end = _today_utc_range_wib()
             base = base + [('tanggal_mulai', '>=', utc_start),
                            ('tanggal_mulai', '<=', utc_end)]
-        if polres_id:
-            base = base + [('polres_id', '=', int(polres_id))]
+        if kabupaten_id:
+            base = base + [('kabupaten_id', '=', int(kabupaten_id))]
         if state:
             base = base + [('state', '=', state)]
         records = SP.search_read(
@@ -429,20 +430,23 @@ self.addEventListener('fetch', e => {
             return {'error': 'Sesi habis. Silakan login kembali.'}
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         try:
-            if user.polsek_id:
-                resolved_polsek = user.polsek_id.id
-            elif kwargs.get('polsek_id'):
-                ps = request.env['petadigi.polsek'].sudo().browse(int(kwargs['polsek_id']))
-                if not ps.exists():
-                    return {'error': 'unauthorized'}
-                if not is_subdit_sp and ps.polres_id.id != user.polres_id.id:
-                    return {'error': 'unauthorized'}
-                resolved_polsek = ps.id
-            else:
+            if is_subdit_sp:
                 resolved_polsek = False
-
-            resolved_polres = (int(kwargs['polres_id']) if is_subdit_sp and kwargs.get('polres_id')
-                               else user.polres_id.id)
+                polda = self._get_polda_polres()
+                if not polda:
+                    return {'error': 'Data Polda tidak ditemukan'}
+                resolved_polres = polda.id
+            else:
+                if user.polsek_id:
+                    resolved_polsek = user.polsek_id.id
+                elif kwargs.get('polsek_id'):
+                    ps = request.env['petadigi.polsek'].sudo().browse(int(kwargs['polsek_id']))
+                    if not ps.exists() or ps.polres_id.id != user.polres_id.id:
+                        return {'error': 'unauthorized'}
+                    resolved_polsek = ps.id
+                else:
+                    resolved_polsek = False
+                resolved_polres = user.polres_id.id
             vals = {
                 'polres_id':     resolved_polres,
                 'polsek_id':     resolved_polsek,
@@ -549,9 +553,11 @@ self.addEventListener('fetch', e => {
             p = request.env['petadigi.personel'].sudo().browse(int(personel_id))
             if not p.exists():
                 return {'error': 'unauthorized'}
-            if not user.has_group('petadigi.group_subdit_strong_point'):
-                if p.strong_point_id.polres_id.id != user.polres_id.id:
+            if user.has_group('petadigi.group_subdit_strong_point'):
+                if p.strong_point_id.create_uid.id != user.id:
                     return {'error': 'unauthorized'}
+            elif p.strong_point_id.polres_id.id != user.polres_id.id:
+                return {'error': 'unauthorized'}
             p.with_user(user.id).unlink()
             return {'success': True}
         except Exception as e:
@@ -666,21 +672,32 @@ self.addEventListener('fetch', e => {
         if not rec.exists():
             return None
         if user.has_group('petadigi.group_subdit_strong_point'):
-            return rec
+            return rec if rec.create_uid.id == user.id else None
         if rec.polres_id.id != user.polres_id.id:
             return None
         if user.polsek_id and rec.polsek_id and rec.polsek_id.id != user.polsek_id.id:
             return None
         return rec
 
+    def _lokasi_patroli_authorized(self, user, lokasi):
+        if not lokasi.exists():
+            return False
+        if user.has_group('petadigi.group_subdit_strong_point'):
+            return lokasi.patroli_id.create_uid.id == user.id
+        return lokasi.patroli_id.polres_id.id == user.polres_id.id
+
+    def _get_polda_polres(self):
+        """Polres level Polda (tanpa polsek) — auto-assign untuk Subdit Strong Point."""
+        return request.env['petadigi.polres'].sudo().search([('polsek_count', '=', 0)], limit=1)
+
     @http.route('/petadigi/api/patroli/list', type='jsonrpc', auth='public', csrf=False)
-    def api_patroli_list(self, offset=0, limit=20, filter=None, polres_id=None, state=None, **kwargs):
+    def api_patroli_list(self, offset=0, limit=20, filter=None, kabupaten_id=None, state=None, **kwargs):
         user = self._auth_check()
         if not user:
             return []
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         P    = request.env['petadigi.patroli'].sudo()
-        base = ([] if is_subdit_sp
+        base = ([('create_uid', '=', user.id)] if is_subdit_sp
                 else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
         if filter == 'today':
@@ -689,8 +706,8 @@ self.addEventListener('fetch', e => {
                            ('tanggal_mulai', '<=', utc_end)]
         elif filter == 'aktif':
             base = base + [('state', '=', 'PROSES')]
-        if polres_id:
-            base = base + [('polres_id', '=', int(polres_id))]
+        if kabupaten_id:
+            base = base + [('kabupaten_id', '=', int(kabupaten_id))]
         if state:
             base = base + [('state', '=', state)]
         records = P.search_read(
@@ -755,20 +772,23 @@ self.addEventListener('fetch', e => {
             return {'error': 'Sesi habis. Silakan login kembali.'}
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         try:
-            if user.polsek_id:
-                resolved_polsek = user.polsek_id.id
-            elif kwargs.get('polsek_id'):
-                ps = request.env['petadigi.polsek'].sudo().browse(int(kwargs['polsek_id']))
-                if not ps.exists():
-                    return {'error': 'unauthorized'}
-                if not is_subdit_sp and ps.polres_id.id != user.polres_id.id:
-                    return {'error': 'unauthorized'}
-                resolved_polsek = ps.id
-            else:
+            if is_subdit_sp:
                 resolved_polsek = False
-
-            resolved_polres = (int(kwargs['polres_id']) if is_subdit_sp and kwargs.get('polres_id')
-                               else user.polres_id.id)
+                polda = self._get_polda_polres()
+                if not polda:
+                    return {'error': 'Data Polda tidak ditemukan'}
+                resolved_polres = polda.id
+            else:
+                if user.polsek_id:
+                    resolved_polsek = user.polsek_id.id
+                elif kwargs.get('polsek_id'):
+                    ps = request.env['petadigi.polsek'].sudo().browse(int(kwargs['polsek_id']))
+                    if not ps.exists() or ps.polres_id.id != user.polres_id.id:
+                        return {'error': 'unauthorized'}
+                    resolved_polsek = ps.id
+                else:
+                    resolved_polsek = False
+                resolved_polres = user.polres_id.id
             vals = {
                 'polres_id':     resolved_polres,
                 'polsek_id':     resolved_polsek,
@@ -831,9 +851,11 @@ self.addEventListener('fetch', e => {
             p = request.env['petadigi.personel_patroli'].sudo().browse(int(personel_id))
             if not p.exists():
                 return {'error': 'unauthorized'}
-            if not user.has_group('petadigi.group_subdit_strong_point'):
-                if p.patroli_id.polres_id.id != user.polres_id.id:
+            if user.has_group('petadigi.group_subdit_strong_point'):
+                if p.patroli_id.create_uid.id != user.id:
                     return {'error': 'unauthorized'}
+            elif p.patroli_id.polres_id.id != user.polres_id.id:
+                return {'error': 'unauthorized'}
             p.with_user(user.id).unlink()
             return {'success': True}
         except Exception as e:
@@ -870,8 +892,7 @@ self.addEventListener('fetch', e => {
             return {'error': 'Data tidak lengkap'}
         try:
             l = request.env['petadigi.lokasi_patroli'].sudo().browse(int(lokasi_id))
-            is_sp = user.has_group('petadigi.group_subdit_strong_point')
-            if not l.exists() or (not is_sp and l.patroli_id.polres_id.id != user.polres_id.id):
+            if not self._lokasi_patroli_authorized(user, l):
                 return {'error': 'unauthorized'}
             if ',' in foto_data:
                 foto_data = foto_data.split(',', 1)[1]
@@ -888,8 +909,7 @@ self.addEventListener('fetch', e => {
             return {'error': 'unauthorized'}
         try:
             l = request.env['petadigi.lokasi_patroli'].sudo().browse(int(lokasi_id))
-            is_sp = user.has_group('petadigi.group_subdit_strong_point')
-            if not l.exists() or (not is_sp and l.patroli_id.polres_id.id != user.polres_id.id):
+            if not self._lokasi_patroli_authorized(user, l):
                 return {'error': 'unauthorized'}
             l.with_user(user.id).unlink()
             return {'success': True}
