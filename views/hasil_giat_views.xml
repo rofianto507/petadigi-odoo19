@@ -32,18 +32,7 @@
                     <field name="polres_id"/>
                     <field name="polsek_id"/>
                     <separator/>
-                    <filter string="Hari Ini" name="filter_today"
-                        domain="[('tanggal','&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal','&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
-                    <filter string="Minggu Ini" name="filter_this_week"
-                        domain="[('tanggal','&gt;=', (context_today() - relativedelta(days=context_today().weekday())).strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal','&lt;=', (context_today() - relativedelta(days=context_today().weekday()) + relativedelta(days=6)).strftime('%Y-%m-%d 23:59:59'))]"/>
-                    <filter string="Bulan Ini" name="filter_this_month"
-                        domain="[('tanggal','&gt;=', context_today().replace(day=1).strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal','&lt;=', (context_today().replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).strftime('%Y-%m-%d 23:59:59'))]"/>
-                    <filter string="Tahun Ini" name="filter_this_year"
-                        domain="[('tanggal','&gt;=', context_today().replace(month=1, day=1).strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal','&lt;=', context_today().replace(month=12, day=31).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="Tanggal" name="filter_tanggal" date="tanggal"/>
                     <group>
                         <filter string="Jenis Laporan" name="groupby_jenis" context="{'group_by': 'jenis_laporan_id'}"/>
                         <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>

@@ -42,18 +42,7 @@
                     <filter string="PROSES" name="filter_proses" domain="[('state','=','PROSES')]"/>
                     <filter string="SELESAI" name="filter_selesai" domain="[('state','=','SELESAI')]"/>
                     <separator/>
-                    <filter string="Hari Ini" name="filter_today"
-                        domain="[('tanggal_mulai','&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal_mulai','&lt;=', context_today().strftime('%Y-%m-%d 23:59:59'))]"/>
-                    <filter string="Minggu Ini" name="filter_this_week"
-                        domain="[('tanggal_mulai','&gt;=', (context_today() - relativedelta(days=context_today().weekday())).strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal_mulai','&lt;=', (context_today() - relativedelta(days=context_today().weekday()) + relativedelta(days=6)).strftime('%Y-%m-%d 23:59:59'))]"/>
-                    <filter string="Bulan Ini" name="filter_this_month"
-                        domain="[('tanggal_mulai','&gt;=', context_today().replace(day=1).strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal_mulai','&lt;=', (context_today().replace(day=1) + relativedelta(months=1) - relativedelta(days=1)).strftime('%Y-%m-%d 23:59:59'))]"/>
-                    <filter string="Tahun Ini" name="filter_this_year"
-                        domain="[('tanggal_mulai','&gt;=', context_today().replace(month=1, day=1).strftime('%Y-%m-%d 00:00:00')),
-                                 ('tanggal_mulai','&lt;=', context_today().replace(month=12, day=31).strftime('%Y-%m-%d 23:59:59'))]"/>
+                    <filter string="Tanggal Mulai" name="filter_tanggal_mulai" date="tanggal_mulai"/>
                     <group>
                         <filter string="Penginput" name="groupby_user" context="{'group_by': 'create_uid'}"/>
                         <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>

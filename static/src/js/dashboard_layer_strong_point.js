@@ -100,19 +100,21 @@ function _fmtNum(n) {
 }
 
 // ── Markers ───────────────────────────────────────────────────────────────────
-async function _loadStrongMarkers(ctx, domain, limit) {
-    ctx.markerLayerGroup.clearLayers();
-
-    const searchOpts = limit ? { limit, order: 'tanggal_mulai desc' } : { order: 'tanggal_mulai desc' };
-    const records = await ctx.orm.searchRead(
+function _fetchStrongRecords(ctx, domain, limit) {
+    const opts = limit ? { limit, order: 'tanggal_mulai desc' } : { order: 'tanggal_mulai desc' };
+    return ctx.orm.searchRead(
         'petadigi.strong_point',
         [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
         ['id', 'code', 'polres_id', 'polsek_id', 'kabupaten_id', 'lokasi_id',
          'tanggal_mulai', 'tanggal_selesai', 'personel_count', 'state', 'latitude', 'longitude'],
-        searchOpts,
+        opts,
     );
+}
 
-    records.forEach(r => {
+function _renderStrongMarkers(ctx, records) {
+    ctx.markerLayerGroup.clearLayers();
+
+    const markers = records.map(r => {
         const color  = r.state === 'SELESAI' ? '#27ae60' : '#e67e22';
         const polres = Array.isArray(r.polres_id)    ? r.polres_id[1]    : '-';
         const polsek = Array.isArray(r.polsek_id)    ? r.polsek_id[1]    : '-';
@@ -168,8 +170,10 @@ async function _loadStrongMarkers(ctx, domain, limit) {
             }, 0);
         });
 
-        ctx.markerLayerGroup.addLayer(marker);
+        return marker;
     });
+
+    ctx.markerLayerGroup.addLayers(markers);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -185,7 +189,7 @@ export async function loadModeStrong(ctx) {
 
     try {
         const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
-        const [lalinGroups, spGroups, records] = await Promise.all([
+        const [lalinGroups, spGroups, records, markerRecords] = await Promise.all([
             ctx.orm.call(
                 'petadigi.lalu_lintas',
                 'read_group',
@@ -203,6 +207,7 @@ export async function loadModeStrong(ctx) {
                 kabDomain,
                 ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
             ),
+            _fetchStrongRecords(ctx, _buildStrongDomain(filters, geoBase), 1000),
         ]);
         const lalinMap = _buildCountMap(lalinGroups, 'kabupaten_id');
         const spMap    = _buildCountMap(spGroups,    'kabupaten_id');
