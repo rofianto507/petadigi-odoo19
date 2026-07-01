@@ -171,20 +171,21 @@ export async function loadModeLokasi(ctx) {
     const baseDomain = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
 
     try {
-        const groups = await ctx.orm.call(
-            'petadigi.lokasi_penting',
-            'read_group',
-            [_buildDomain(filters, baseDomain), ['kabupaten_id'], ['kabupaten_id']],
-            { lazy: false }
-        );
-        const kasusMap = _buildKasusMap(groups, 'kabupaten_id');
-
         const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
-        const records   = await ctx.orm.searchRead(
-            'petadigi.kabupaten',
-            kabDomain,
-            ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lokasi_penting',
+                'read_group',
+                [_buildDomain(filters, baseDomain), ['kabupaten_id'], ['kabupaten_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kabupaten',
+                kabDomain,
+                ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+            ),
+        ]);
+        const kasusMap = _buildKasusMap(groups, 'kabupaten_id');
 
         const features = records
             .filter(r => r.geometry)
@@ -301,19 +302,20 @@ export async function drillDownLokasiKecamatan(ctx, kabProps, kabLayer, filters)
 
     try {
         const domain = _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]);
-        const groups = await ctx.orm.call(
-            'petadigi.lokasi_penting',
-            'read_group',
-            [domain, ['kecamatan_id'], ['kecamatan_id']],
-            { lazy: false }
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lokasi_penting',
+                'read_group',
+                [domain, ['kecamatan_id'], ['kecamatan_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kecamatan',
+                [['kabupaten_id', '=', kabProps.id]],
+                ['id', 'code', 'name', 'desa_ids', 'geometry'],
+            ),
+        ]);
         const kasusMap = _buildKasusMap(groups, 'kecamatan_id');
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.kecamatan',
-            [['kabupaten_id', '=', kabProps.id]],
-            ['id', 'code', 'name', 'desa_ids', 'geometry'],
-        );
 
         const features = records
             .filter(r => r.geometry)
@@ -437,19 +439,20 @@ export async function drillDownLokasiKelurahan(ctx, kecProps, kecLayer, filters,
 
     try {
         const domain = _buildDomain(filters, [['kecamatan_id', '=', kecProps.id]]);
-        const groups = await ctx.orm.call(
-            'petadigi.lokasi_penting',
-            'read_group',
-            [domain, ['desa_id'], ['desa_id']],
-            { lazy: false }
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lokasi_penting',
+                'read_group',
+                [domain, ['desa_id'], ['desa_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.desa',
+                [['kecamatan_id', '=', kecProps.id]],
+                ['id', 'code', 'name', 'type', 'geometry'],
+            ),
+        ]);
         const kasusMap = _buildKasusMap(groups, 'desa_id');
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.desa',
-            [['kecamatan_id', '=', kecProps.id]],
-            ['id', 'code', 'name', 'type', 'geometry'],
-        );
 
         const features = records
             .filter(r => r.geometry)

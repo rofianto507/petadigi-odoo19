@@ -118,22 +118,24 @@ function _buildDesaKasusMap(groups) {
 }
 
 // ── Marker ───────────────────────────────────────────────────────────────────
-async function _loadKamMarkers(ctx, domain) {
+async function _loadKamMarkers(ctx, domain, limit) {
     ctx.markerLayerGroup.clearLayers();
 
-    // Ambil icon dari setiap kategori kamtibmas
-    const categories = await ctx.orm.searchRead('petadigi.kategori_kamtibmas', [], ['id', 'icon']);
+    const searchOpts = limit ? { limit, order: 'tanggal_kejadian desc' } : { order: 'tanggal_kejadian desc' };
+    const [categories, records] = await Promise.all([
+        ctx.orm.searchRead('petadigi.kategori_kamtibmas', [], ['id', 'icon']),
+        ctx.orm.searchRead(
+            'petadigi.kasus_menonjol',
+            [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
+            ['id', 'no_lp', 'latitude', 'longitude', 'jenis_tkp_id',
+             'kategori_id', 'modus_operandi_id', 'tersangka', 'state', 'tanggal_kejadian'],
+            searchOpts,
+        ),
+    ]);
     const categoryIconMap = {};
     for (const cat of categories) {
         categoryIconMap[cat.id] = cat.icon || 'fa-exclamation-circle';
     }
-
-    const records = await ctx.orm.searchRead(
-        'petadigi.kasus_menonjol',
-        [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
-        ['id', 'no_lp', 'latitude', 'longitude', 'jenis_tkp_id',
-         'kategori_id', 'modus_operandi_id', 'tersangka', 'state', 'tanggal_kejadian'],
-    );
 
     records.forEach(r => {
         const statusColor    = r.state === 'SELESAI' ? '#27ae60' : '#e67e22';
@@ -210,20 +212,21 @@ export async function loadModeKam(ctx) {
     const baseDomain = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
 
     try {
-        const groups = await ctx.orm.call(
-            'petadigi.kasus_menonjol',
-            'read_group',
-            [_buildDomain(filters, baseDomain), ['kabupaten_id'], ['kabupaten_id']],
-            { lazy: false }
-        );
-        const kasusMap = _buildKasusMap(groups);
-
         const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
-        const records   = await ctx.orm.searchRead(
-            'petadigi.kabupaten',
-            kabDomain,
-            ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.kasus_menonjol',
+                'read_group',
+                [_buildDomain(filters, baseDomain), ['kabupaten_id'], ['kabupaten_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kabupaten',
+                kabDomain,
+                ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+            ),
+        ]);
+        const kasusMap = _buildKasusMap(groups);
 
         const features = records
             .filter(r => r.geometry)
@@ -273,7 +276,7 @@ export async function loadModeKam(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadKamMarkers(ctx, _buildDomain(filters, baseDomain));
+        await _loadKamMarkers(ctx, _buildDomain(filters, baseDomain), 1000);
     } catch (error) {
         console.error('Gagal memuat data kasus menonjol:', error);
     }
@@ -343,19 +346,20 @@ export async function drillDownKamKecamatan(ctx, kabProps, kabLayer, filters) {
 
     try {
         const domain = _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]);
-        const groups = await ctx.orm.call(
-            'petadigi.kasus_menonjol',
-            'read_group',
-            [domain, ['kecamatan_id'], ['kecamatan_id']],
-            { lazy: false }
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.kasus_menonjol',
+                'read_group',
+                [domain, ['kecamatan_id'], ['kecamatan_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kecamatan',
+                [['kabupaten_id', '=', kabProps.id]],
+                ['id', 'code', 'name', 'desa_ids', 'geometry'],
+            ),
+        ]);
         const kasusMap = _buildKecamatanKasusMap(groups);
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.kecamatan',
-            [['kabupaten_id', '=', kabProps.id]],
-            ['id', 'code', 'name', 'desa_ids', 'geometry'],
-        );
 
         const features = records
             .filter(r => r.geometry)
@@ -406,7 +410,7 @@ export async function drillDownKamKecamatan(ctx, kabProps, kabLayer, filters) {
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadKamMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]));
+        await _loadKamMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]), 500);
         _addKamBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         // Sinkronkan dropdown kabupaten + KPI + grafik ke scope kabupaten yang dipilih
@@ -482,19 +486,20 @@ export async function drillDownKamDesa(ctx, kecProps, kecLayer, filters, kabProp
 
     try {
         const domain = _buildDomain(filters, [['kecamatan_id', '=', kecProps.id]]);
-        const groups = await ctx.orm.call(
-            'petadigi.kasus_menonjol',
-            'read_group',
-            [domain, ['desa_id'], ['desa_id']],
-            { lazy: false }
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.kasus_menonjol',
+                'read_group',
+                [domain, ['desa_id'], ['desa_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.desa',
+                [['kecamatan_id', '=', kecProps.id]],
+                ['id', 'code', 'name', 'type', 'geometry'],
+            ),
+        ]);
         const kasusMap = _buildDesaKasusMap(groups);
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.desa',
-            [['kecamatan_id', '=', kecProps.id]],
-            ['id', 'code', 'name', 'type', 'geometry'],
-        );
 
         const features = records
             .filter(r => r.geometry)

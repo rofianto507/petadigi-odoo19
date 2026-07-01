@@ -100,15 +100,16 @@ function _fmtNum(n) {
 }
 
 // ── Markers ───────────────────────────────────────────────────────────────────
-async function _loadStrongMarkers(ctx, domain) {
+async function _loadStrongMarkers(ctx, domain, limit) {
     ctx.markerLayerGroup.clearLayers();
 
+    const searchOpts = limit ? { limit, order: 'tanggal_mulai desc' } : { order: 'tanggal_mulai desc' };
     const records = await ctx.orm.searchRead(
         'petadigi.strong_point',
         [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
         ['id', 'code', 'polres_id', 'polsek_id', 'kabupaten_id', 'lokasi_id',
          'tanggal_mulai', 'tanggal_selesai', 'personel_count', 'state', 'latitude', 'longitude'],
-        { limit: 2000 }
+        searchOpts,
     );
 
     records.forEach(r => {
@@ -183,30 +184,28 @@ export async function loadModeStrong(ctx) {
     const geoBase  = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
 
     try {
-        // Choropleth berdasarkan jumlah kejadian lalu lintas
-        const lalinGroups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
-            'read_group',
-            [_buildLalinDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
-            { lazy: false }
-        );
-        const lalinMap = _buildCountMap(lalinGroups, 'kabupaten_id');
-
-        // Info jumlah strong point untuk popup
-        const spGroups = await ctx.orm.call(
-            'petadigi.strong_point',
-            'read_group',
-            [_buildStrongDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
-            { lazy: false }
-        );
-        const spMap = _buildCountMap(spGroups, 'kabupaten_id');
-
         const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
-        const records   = await ctx.orm.searchRead(
-            'petadigi.kabupaten',
-            kabDomain,
-            ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
-        );
+        const [lalinGroups, spGroups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lalu_lintas',
+                'read_group',
+                [_buildLalinDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                { lazy: false }
+            ),
+            ctx.orm.call(
+                'petadigi.strong_point',
+                'read_group',
+                [_buildStrongDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kabupaten',
+                kabDomain,
+                ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+            ),
+        ]);
+        const lalinMap = _buildCountMap(lalinGroups, 'kabupaten_id');
+        const spMap    = _buildCountMap(spGroups,    'kabupaten_id');
 
         const features = records
             .filter(r => r.geometry)
@@ -258,7 +257,7 @@ export async function loadModeStrong(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadStrongMarkers(ctx, _buildStrongDomain(filters, geoBase));
+        await _loadStrongMarkers(ctx, _buildStrongDomain(filters, geoBase), 1000);
     } catch (error) {
         console.error('Gagal memuat data strong point:', error);
     }
@@ -331,27 +330,27 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
     try {
         const geoKab = [['kabupaten_id', '=', kabProps.id]];
 
-        const lalinGroups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
-            'read_group',
-            [_buildLalinDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
-            { lazy: false }
-        );
+        const [lalinGroups, spGroups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lalu_lintas',
+                'read_group',
+                [_buildLalinDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
+                { lazy: false }
+            ),
+            ctx.orm.call(
+                'petadigi.strong_point',
+                'read_group',
+                [_buildStrongDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kecamatan',
+                [['kabupaten_id', '=', kabProps.id]],
+                ['id', 'code', 'name', 'desa_ids', 'geometry'],
+            ),
+        ]);
         const lalinMap = _buildCountMap(lalinGroups, 'kecamatan_id');
-
-        const spGroups = await ctx.orm.call(
-            'petadigi.strong_point',
-            'read_group',
-            [_buildStrongDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
-            { lazy: false }
-        );
-        const spMap = _buildCountMap(spGroups, 'kecamatan_id');
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.kecamatan',
-            [['kabupaten_id', '=', kabProps.id]],
-            ['id', 'code', 'name', 'desa_ids', 'geometry'],
-        );
+        const spMap    = _buildCountMap(spGroups,    'kecamatan_id');
 
         const features = records
             .filter(r => r.geometry)
@@ -483,27 +482,27 @@ export async function drillDownStrongKelurahan(ctx, kecProps, kecLayer, filters,
     try {
         const geoKec = [['kecamatan_id', '=', kecProps.id]];
 
-        const lalinGroups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
-            'read_group',
-            [_buildLalinDomain(filters, geoKec), ['desa_id'], ['desa_id']],
-            { lazy: false }
-        );
+        const [lalinGroups, spGroups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lalu_lintas',
+                'read_group',
+                [_buildLalinDomain(filters, geoKec), ['desa_id'], ['desa_id']],
+                { lazy: false }
+            ),
+            ctx.orm.call(
+                'petadigi.strong_point',
+                'read_group',
+                [_buildStrongDomain(filters, geoKec), ['desa_id'], ['desa_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.desa',
+                [['kecamatan_id', '=', kecProps.id]],
+                ['id', 'code', 'name', 'type', 'geometry'],
+            ),
+        ]);
         const lalinMap = _buildCountMap(lalinGroups, 'desa_id');
-
-        const spGroups = await ctx.orm.call(
-            'petadigi.strong_point',
-            'read_group',
-            [_buildStrongDomain(filters, geoKec), ['desa_id'], ['desa_id']],
-            { lazy: false }
-        );
-        const spMap = _buildCountMap(spGroups, 'desa_id');
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.desa',
-            [['kecamatan_id', '=', kecProps.id]],
-            ['id', 'code', 'name', 'type', 'geometry'],
-        );
+        const spMap    = _buildCountMap(spGroups,    'desa_id');
 
         const features = records
             .filter(r => r.geometry)

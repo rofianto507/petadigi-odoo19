@@ -97,22 +97,24 @@ function _buildKasusMap(groups, field) {
 }
 
 // ── Marker ───────────────────────────────────────────────────────────────────
-async function _loadLalinMarkers(ctx, domain) {
+async function _loadLalinMarkers(ctx, domain, limit) {
     ctx.markerLayerGroup.clearLayers();
 
-    // Ambil icon dari setiap kategori lalu lintas
-    const categories = await ctx.orm.searchRead('petadigi.kategori_lalu_lintas', [], ['id', 'icon']);
+    const searchOpts = limit ? { limit, order: 'tanggal_kejadian desc' } : { order: 'tanggal_kejadian desc' };
+    const [categories, records] = await Promise.all([
+        ctx.orm.searchRead('petadigi.kategori_lalu_lintas', [], ['id', 'icon']),
+        ctx.orm.searchRead(
+            'petadigi.lalu_lintas',
+            [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
+            ['id', 'code', 'nama_lokasi', 'latitude', 'longitude',
+             'kategori_id', 'jenis_jalan_id', 'penyebab', 'state', 'tanggal_kejadian'],
+            searchOpts,
+        ),
+    ]);
     const categoryIconMap = {};
     for (const cat of categories) {
         categoryIconMap[cat.id] = cat.icon || 'fa-car';
     }
-
-    const records = await ctx.orm.searchRead(
-        'petadigi.lalu_lintas',
-        [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
-        ['id', 'code', 'nama_lokasi', 'latitude', 'longitude',
-         'kategori_id', 'jenis_jalan_id', 'penyebab', 'state', 'tanggal_kejadian'],
-    );
 
     records.forEach(r => {
         const stateColor  = r.state === 'PROSES' ? '#e67e22' : '#27ae60';
@@ -213,20 +215,21 @@ export async function loadModeLalin(ctx) {
     const baseDomain = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
 
     try {
-        const groups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
-            'read_group',
-            [_buildDomain(filters, baseDomain), ['kabupaten_id'], ['kabupaten_id']],
-            { lazy: false }
-        );
-        const kasusMap = _buildKasusMap(groups, 'kabupaten_id');
-
         const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
-        const records   = await ctx.orm.searchRead(
-            'petadigi.kabupaten',
-            kabDomain,
-            ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lalu_lintas',
+                'read_group',
+                [_buildDomain(filters, baseDomain), ['kabupaten_id'], ['kabupaten_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kabupaten',
+                kabDomain,
+                ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+            ),
+        ]);
+        const kasusMap = _buildKasusMap(groups, 'kabupaten_id');
 
         const features = records
             .filter(r => r.geometry)
@@ -276,7 +279,7 @@ export async function loadModeLalin(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadLalinMarkers(ctx, _buildDomain(filters, baseDomain));
+        await _loadLalinMarkers(ctx, _buildDomain(filters, baseDomain), 1000);
     } catch (error) {
         console.error('Gagal memuat data lalu lintas:', error);
     }
@@ -346,19 +349,20 @@ export async function drillDownLalinKecamatan(ctx, kabProps, kabLayer, filters) 
 
     try {
         const domain = _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]);
-        const groups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
-            'read_group',
-            [domain, ['kecamatan_id'], ['kecamatan_id']],
-            { lazy: false }
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lalu_lintas',
+                'read_group',
+                [domain, ['kecamatan_id'], ['kecamatan_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kecamatan',
+                [['kabupaten_id', '=', kabProps.id]],
+                ['id', 'code', 'name', 'desa_ids', 'geometry'],
+            ),
+        ]);
         const kasusMap = _buildKasusMap(groups, 'kecamatan_id');
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.kecamatan',
-            [['kabupaten_id', '=', kabProps.id]],
-            ['id', 'code', 'name', 'desa_ids', 'geometry'],
-        );
 
         const features = records
             .filter(r => r.geometry)
@@ -409,7 +413,7 @@ export async function drillDownLalinKecamatan(ctx, kabProps, kabLayer, filters) 
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadLalinMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]));
+        await _loadLalinMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]), 500);
         _addLalinBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         ctx.drillKabupatenId = kabProps.id;
@@ -484,19 +488,20 @@ export async function drillDownLalinKelurahan(ctx, kecProps, kecLayer, filters, 
 
     try {
         const domain = _buildDomain(filters, [['kecamatan_id', '=', kecProps.id]]);
-        const groups = await ctx.orm.call(
-            'petadigi.lalu_lintas',
-            'read_group',
-            [domain, ['desa_id'], ['desa_id']],
-            { lazy: false }
-        );
+        const [groups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.lalu_lintas',
+                'read_group',
+                [domain, ['desa_id'], ['desa_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.desa',
+                [['kecamatan_id', '=', kecProps.id]],
+                ['id', 'code', 'name', 'type', 'geometry'],
+            ),
+        ]);
         const kasusMap = _buildKasusMap(groups, 'desa_id');
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.desa',
-            [['kecamatan_id', '=', kecProps.id]],
-            ['id', 'code', 'name', 'type', 'geometry'],
-        );
 
         const features = records
             .filter(r => r.geometry)

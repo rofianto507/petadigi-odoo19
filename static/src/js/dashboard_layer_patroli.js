@@ -131,7 +131,7 @@ async function _loadPatroliMarkers(ctx, filters, geoConditions = []) {
         'petadigi.lokasi_patroli',
         domain,
         ['id', 'patroli_id', 'tanggal', 'latitude', 'longitude', 'catatan'],
-        { limit: 2000 }
+        { limit: 1000 }
     );
 
     records.forEach(r => {
@@ -248,30 +248,28 @@ export async function loadModePatroli(ctx) {
     const geoBase = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
 
     try {
-        // Choropleth berdasarkan jumlah kriminalitas
-        const krimGroups = await ctx.orm.call(
-            'petadigi.kriminalitas',
-            'read_group',
-            [_buildKriminalDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
-            { lazy: false }
-        );
-        const krimMap = _buildCountMap(krimGroups, 'kabupaten_id');
-
-        // Info jumlah patroli untuk popup
-        const ptGroups = await ctx.orm.call(
-            'petadigi.patroli',
-            'read_group',
-            [_buildPatroliDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
-            { lazy: false }
-        );
-        const ptMap = _buildCountMap(ptGroups, 'kabupaten_id');
-
         const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
-        const records   = await ctx.orm.searchRead(
-            'petadigi.kabupaten',
-            kabDomain,
-            ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
-        );
+        const [krimGroups, ptGroups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.kriminalitas',
+                'read_group',
+                [_buildKriminalDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                { lazy: false }
+            ),
+            ctx.orm.call(
+                'petadigi.patroli',
+                'read_group',
+                [_buildPatroliDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kabupaten',
+                kabDomain,
+                ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+            ),
+        ]);
+        const krimMap = _buildCountMap(krimGroups, 'kabupaten_id');
+        const ptMap   = _buildCountMap(ptGroups,   'kabupaten_id');
 
         const features = records
             .filter(r => r.geometry)
@@ -396,27 +394,27 @@ export async function drillDownPatroliKecamatan(ctx, kabProps, kabLayer, filters
     try {
         const geoKab = [['kabupaten_id', '=', kabProps.id]];
 
-        const krimGroups = await ctx.orm.call(
-            'petadigi.kriminalitas',
-            'read_group',
-            [_buildKriminalDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
-            { lazy: false }
-        );
+        const [krimGroups, ptGroups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.kriminalitas',
+                'read_group',
+                [_buildKriminalDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
+                { lazy: false }
+            ),
+            ctx.orm.call(
+                'petadigi.patroli',
+                'read_group',
+                [_buildPatroliDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.kecamatan',
+                [['kabupaten_id', '=', kabProps.id]],
+                ['id', 'code', 'name', 'desa_ids', 'geometry'],
+            ),
+        ]);
         const krimMap = _buildCountMap(krimGroups, 'kecamatan_id');
-
-        const ptGroups = await ctx.orm.call(
-            'petadigi.patroli',
-            'read_group',
-            [_buildPatroliDomain(filters, geoKab), ['kecamatan_id'], ['kecamatan_id']],
-            { lazy: false }
-        );
-        const ptMap = _buildCountMap(ptGroups, 'kecamatan_id');
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.kecamatan',
-            [['kabupaten_id', '=', kabProps.id]],
-            ['id', 'code', 'name', 'desa_ids', 'geometry'],
-        );
+        const ptMap   = _buildCountMap(ptGroups,   'kecamatan_id');
 
         const features = records
             .filter(r => r.geometry)
@@ -548,27 +546,27 @@ export async function drillDownPatroliKelurahan(ctx, kecProps, kecLayer, filters
     try {
         const geoKec = [['kecamatan_id', '=', kecProps.id]];
 
-        const krimGroups = await ctx.orm.call(
-            'petadigi.kriminalitas',
-            'read_group',
-            [_buildKriminalDomain(filters, geoKec), ['desa_id'], ['desa_id']],
-            { lazy: false }
-        );
+        const [krimGroups, ptGroups, records] = await Promise.all([
+            ctx.orm.call(
+                'petadigi.kriminalitas',
+                'read_group',
+                [_buildKriminalDomain(filters, geoKec), ['desa_id'], ['desa_id']],
+                { lazy: false }
+            ),
+            ctx.orm.call(
+                'petadigi.patroli',
+                'read_group',
+                [_buildPatroliDomain(filters, geoKec), ['desa_id'], ['desa_id']],
+                { lazy: false }
+            ),
+            ctx.orm.searchRead(
+                'petadigi.desa',
+                [['kecamatan_id', '=', kecProps.id]],
+                ['id', 'code', 'name', 'type', 'geometry'],
+            ),
+        ]);
         const krimMap = _buildCountMap(krimGroups, 'desa_id');
-
-        const ptGroups = await ctx.orm.call(
-            'petadigi.patroli',
-            'read_group',
-            [_buildPatroliDomain(filters, geoKec), ['desa_id'], ['desa_id']],
-            { lazy: false }
-        );
-        const ptMap = _buildCountMap(ptGroups, 'desa_id');
-
-        const records = await ctx.orm.searchRead(
-            'petadigi.desa',
-            [['kecamatan_id', '=', kecProps.id]],
-            ['id', 'code', 'name', 'type', 'geometry'],
-        );
+        const ptMap   = _buildCountMap(ptGroups,   'desa_id');
 
         const features = records
             .filter(r => r.geometry)
