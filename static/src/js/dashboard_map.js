@@ -465,7 +465,7 @@ export class DashboardMap extends Component {
         const subKategoriEl      = this.filterSubKategori?.el;
         const stateEl            = this.filterState?.el;
 
-        const showPolres = mode === 'kriminal' && !this._isPolsekUser;
+        const showPolres = ['kriminal', 'strong', 'patroli'].includes(mode) && !this._isPolsekUser;
         const polresEl   = this.filterPolres?.el;
         if (jenisLpEl)       jenisLpEl.style.display          = showJenisLP       ? '' : 'none';
         if (tahunEl)         tahunEl.style.display             = showTahun         ? '' : 'none';
@@ -595,8 +595,8 @@ export class DashboardMap extends Component {
             chips.push(chip('fa-file-text-o', tahun ? `Sumber dokumen tahun ${tahun}` : 'Semua tahun'));
         }
 
-        // Polres — hanya tampil di mode kriminal
-        if (mode === 'kriminal') {
+        // Polres — tampil di mode kriminal, strong, patroli
+        if (['kriminal', 'strong', 'patroli'].includes(mode)) {
             if (!this._isPolsekUser) {
                 const polresEl   = this.filterPolres?.el;
                 const polresName = (polresEl && polresEl.value)
@@ -873,7 +873,8 @@ export class DashboardMap extends Component {
                     ...(dateFrom ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']] : []),
                     ...(dateTo   ? [['tanggal_mulai', '<=', dateTo   + ' 23:59:59']] : []),
                 ];
-                const d = [...df_s, ...drillDomain];
+                const polresf_sp = polresId ? [['polres_id', '=', polresId]] : [];
+                const d = [...df_s, ...polresf_sp, ...drillDomain];
                 const [total, proses, lokasiGroups, personelGroups] = await Promise.all([
                     this.orm.searchCount('petadigi.strong_point', d),
                     this.orm.searchCount('petadigi.strong_point', [...d, ['state','=','PROSES']]),
@@ -895,11 +896,14 @@ export class DashboardMap extends Component {
                     ...(dateFrom ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']] : []),
                     ...(dateTo   ? [['tanggal_mulai', '<=', dateTo   + ' 23:59:59']] : []),
                 ];
-                const d = [...df_p, ...drillDomain];
+                const polresf_p   = polresId ? [['polres_id',            '=', polresId]] : [];
+                const polresf_lok = polresId ? [['patroli_id.polres_id', '=', polresId]] : [];
+                const d = [...df_p, ...polresf_p, ...drillDomain];
                 const dLokasi = [
                     ...(dateFrom ? [['patroli_id.tanggal_mulai', '>=', dateFrom + ' 00:00:00']] : []),
                     ...(dateTo   ? [['patroli_id.tanggal_mulai', '<=', dateTo   + ' 23:59:59']] : []),
                     ...drillDomain.map(([f, op, v]) => [`patroli_id.${f}`, op, v]),
+                    ...polresf_lok,
                 ];
                 const [total, proses, totalLokasi, personelGroups] = await Promise.all([
                     this.orm.searchCount('petadigi.patroli', d),
@@ -992,12 +996,17 @@ export class DashboardMap extends Component {
         this.markerLayerGroup    = L.markerClusterGroup({
             chunkedLoading:          true,
             chunkInterval:           150,
+            chunkSize:               50,
             maxClusterRadius:        80,
             showCoverageOnHover:     false,
             spiderfyOnMaxZoom:       true,
             disableClusteringAtZoom: 14,
             iconCreateFunction: (cluster) => {
-                const count = cluster.getChildCount();
+                const children = cluster.getAllChildMarkers();
+                const hasCustomCount = children.length > 0 && children.every(m => m._markerCount !== undefined);
+                const count = hasCustomCount
+                    ? children.reduce((sum, m) => sum + (m._markerCount || 0), 0)
+                    : cluster.getChildCount();
                 let size, cls;
                 if      (count < 10)   { size = 34; cls = 'sm'; }
                 else if (count < 100)  { size = 42; cls = 'md'; }

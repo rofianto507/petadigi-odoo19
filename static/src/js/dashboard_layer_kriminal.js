@@ -1,7 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
-import { fmtTanggal } from './dashboard_helpers';
+import { fmtTanggal, renderKabupatenSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Kriminal
@@ -323,7 +323,9 @@ export async function loadModeKriminal(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadKriminalMarkers(ctx, _buildDomain(filters, baseDomain), 1000);
+        renderKabupatenSummaryMarkers(ctx, geoLayer, filters, 'jumlah_kasus',
+            `<i class="fa fa-exclamation-triangle"></i> Peta Kriminal`,
+            'fa-map-marker', drillDownKriminalKecamatan);
     } catch (error) {
         console.error("Gagal memuat data kriminalitas:", error);
     }

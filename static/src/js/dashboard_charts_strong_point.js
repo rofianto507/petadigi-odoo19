@@ -167,6 +167,7 @@ export async function updateStrongCharts(ctx, mode) {
     const stateValue  = ctx.filterState?.el?.value || '';
     const dateFrom    = ctx.activeDateFrom || '';
     const dateTo      = ctx.activeDateTo   || '';
+    const polresId    = ctx._polresFilterId;
 
     const drillDomain = ctx.drillKecamatanId
         ? [['kecamatan_id', '=', ctx.drillKecamatanId]]
@@ -176,7 +177,8 @@ export async function updateStrongCharts(ctx, mode) {
 
     const baseDomain = [
         ...drillDomain,
-        ...(kabupatenId ? [['kabupaten_id',   '=',  kabupatenId]]              : []),
+        ...(polresId    ? [['polres_id',       '=',  polresId]]                 : []),
+        ...(kabupatenId ? [['kabupaten_id',    '=',  kabupatenId]]              : []),
         ...(stateValue  ? [['state',           '=',  stateValue]]               : []),
         ...(dateFrom    ? [['tanggal_mulai',   '>=', dateFrom + ' 00:00:00']]   : []),
         ...(dateTo      ? [['tanggal_mulai',   '<=', dateTo   + ' 23:59:59']]   : []),
@@ -254,6 +256,7 @@ export async function updateStrongTable(ctx, mode, page) {
     const stateValue  = ctx.filterState?.el?.value || '';
     const dateFrom    = ctx.activeDateFrom || '';
     const dateTo      = ctx.activeDateTo   || '';
+    const polresId    = ctx._polresFilterId;
 
     const drillDomain = ctx.drillKecamatanId
         ? [['kecamatan_id', '=', ctx.drillKecamatanId]]
@@ -263,7 +266,8 @@ export async function updateStrongTable(ctx, mode, page) {
 
     const domain = [
         ...drillDomain,
-        ...(kabupatenId ? [['kabupaten_id',  '=',  kabupatenId]]             : []),
+        ...(polresId    ? [['polres_id',      '=',  polresId]]                : []),
+        ...(kabupatenId ? [['kabupaten_id',   '=',  kabupatenId]]             : []),
         ...(stateValue  ? [['state',          '=',  stateValue]]              : []),
         ...(dateFrom    ? [['tanggal_mulai',  '>=', dateFrom + ' 00:00:00']]  : []),
         ...(dateTo      ? [['tanggal_mulai',  '<=', dateTo   + ' 23:59:59']]  : []),

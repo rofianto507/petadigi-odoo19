@@ -58,6 +58,7 @@ export function removeStrongLegend(ctx) {
 // ── Helpers filter ────────────────────────────────────────────────────────────
 function _getActiveFilters(ctx) {
     return {
+        polresId:    ctx._polresFilterId,
         kabupatenId: ctx.filterKabupaten?.el?.value ? parseInt(ctx.filterKabupaten.el.value) : null,
         stateValue:  ctx.filterState?.el?.value || '',
         dateFrom:    ctx.activeDateFrom || '',
@@ -67,6 +68,7 @@ function _getActiveFilters(ctx) {
 
 function _buildStrongDomain(filters, extraDomain = []) {
     const domain = [...extraDomain];
+    if (filters.polresId)   domain.push(['polres_id',     '=',  filters.polresId]);
     if (filters.stateValue) domain.push(['state',         '=',  filters.stateValue]);
     if (filters.dateFrom)   domain.push(['tanggal_mulai', '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)     domain.push(['tanggal_mulai', '<=', filters.dateTo   + ' 23:59:59']);
@@ -75,6 +77,7 @@ function _buildStrongDomain(filters, extraDomain = []) {
 
 function _buildLalinDomain(filters, extraDomain = []) {
     const domain = [...extraDomain];
+    if (filters.polresId) domain.push(['kabupaten_id.polres_id', '=', filters.polresId]);
     if (filters.dateFrom) domain.push(['tanggal_kejadian', '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)   domain.push(['tanggal_kejadian', '<=', filters.dateTo   + ' 23:59:59']);
     return domain;
@@ -111,26 +114,24 @@ function _fetchStrongRecords(ctx, domain, limit) {
     );
 }
 
-function _renderStrongMarkers(ctx, records) {
-    ctx.markerLayerGroup.clearLayers();
+function _createStrongMarker(r, ctx) {
+    const color = r.state === 'SELESAI' ? '#27ae60' : '#e67e22';
+    const icon = L.divIcon({
+        className: '',
+        html: `<div class="petadigi-bencana-marker" style="border-color:${color};">
+                   <i class="fa fa-map-pin" style="color:${color};"></i>
+               </div>`,
+        iconSize:   [24, 24],
+        iconAnchor: [12, 12],
+    });
+    const marker = L.marker([r.latitude, r.longitude], { icon });
 
-    const markers = records.map(r => {
-        const color  = r.state === 'SELESAI' ? '#27ae60' : '#e67e22';
+    // Lazy popup: build HTML only when user clicks, not upfront for all markers
+    marker.once('click', () => {
         const polres = Array.isArray(r.polres_id)    ? r.polres_id[1]    : '-';
         const polsek = Array.isArray(r.polsek_id)    ? r.polsek_id[1]    : '-';
         const kab    = Array.isArray(r.kabupaten_id) ? r.kabupaten_id[1] : '-';
         const lokasi = Array.isArray(r.lokasi_id)    ? r.lokasi_id[1]    : '-';
-
-        const icon = L.divIcon({
-            className: '',
-            html: `<div class="petadigi-bencana-marker" style="border-color:${color};">
-                       <i class="fa fa-map-pin" style="color:${color};"></i>
-                   </div>`,
-            iconSize:   [24, 24],
-            iconAnchor: [12, 12],
-        });
-        const marker = L.marker([r.latitude, r.longitude], { icon });
-
         marker.bindPopup(`
             <div class="petadigi-popup">
                 <div class="petadigi-popup-header" style="background:${color};">
@@ -156,7 +157,6 @@ function _renderStrongMarkers(ctx, records) {
                 </div>
             </div>
         `, { maxWidth: 300, className: 'petadigi-leaflet-popup' });
-
         marker.on('popupopen', () => {
             setTimeout(() => {
                 const btn = document.getElementById(`btn-detail-strong-${r.id}`);
@@ -169,8 +169,69 @@ function _renderStrongMarkers(ctx, records) {
                 }));
             }, 0);
         });
+        marker.openPopup();
+    });
 
-        return marker;
+    return marker;
+}
+
+// Fetch + render markers sebagai background task — choropleth dan ECharts
+// selesai dulu selama network request berlangsung, baru marker dirender chunked
+async function _fetchAndRenderStrongMarkers(ctx, domain, limit) {
+    const ver = ctx._modeVersion;
+    const records = await _fetchStrongRecords(ctx, domain, limit);
+    if (ctx._modeVersion !== ver) return;
+
+    ctx.markerLayerGroup.clearLayers();
+    const CHUNK = 20;
+    for (let i = 0; i < records.length; i += CHUNK) {
+        if (ctx._modeVersion !== ver) return;
+        const markers = records.slice(i, i + CHUNK).map(r => _createStrongMarker(r, ctx));
+        ctx.markerLayerGroup.addLayers(markers);
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+}
+
+// Render satu bubble marker per kabupaten — count dari read_group yang sudah ada,
+// tidak perlu fetch record detail. Klik langsung drill-down ke kecamatan.
+function _renderKabupatenSummaryMarkers(ctx, geoLayer, filters) {
+    ctx.markerLayerGroup.clearLayers();
+    const markers = [];
+
+    geoLayer.eachLayer(polygonLayer => {
+        const props = polygonLayer.feature.properties;
+        const count = props.jumlah_strong || 0;
+        if (!count) return;
+
+        const center = polygonLayer.getBounds().getCenter();
+        let size, cls;
+        if      (count < 10)   { size = 34; cls = 'sm'; }
+        else if (count < 100)  { size = 42; cls = 'md'; }
+        else if (count < 1000) { size = 50; cls = 'lg'; }
+        else                   { size = 58; cls = 'xl'; }
+        const label = count >= 1000
+            ? (count >= 10000 ? Math.floor(count / 1000) + 'K+' : (count / 1000).toFixed(1) + 'K')
+            : count;
+
+        const icon = L.divIcon({
+            html: `<div class="petadigi-cluster-icon petadigi-cluster-icon--${cls}" style="width:${size}px;height:${size}px;">${label}</div>`,
+            className: '',
+            iconSize:   L.point(size, size),
+            iconAnchor: L.point(size / 2, size / 2),
+        });
+
+        const marker = L.marker([center.lat, center.lng], { icon });
+        marker._markerCount = count;
+
+        const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+        marker.on('click', () => {
+            ctx.map.closePopup();
+            ctx._updateBreadcrumb(`<i class="fa fa-map-pin"></i> Peta Strong Point`);
+            ctx._appendBreadcrumb(`<i class="fa fa-map-pin"></i> ${tipeLabel} ${props.name}`);
+            drillDownStrongKecamatan(ctx, props, polygonLayer, filters);
+        });
+
+        markers.push(marker);
     });
 
     ctx.markerLayerGroup.addLayers(markers);
@@ -188,27 +249,56 @@ export async function loadModeStrong(ctx) {
     const geoBase  = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
 
     try {
-        const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
-        const [lalinGroups, spGroups, records, markerRecords] = await Promise.all([
-            ctx.orm.call(
-                'petadigi.lalu_lintas',
-                'read_group',
-                [_buildLalinDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
-                { lazy: false }
-            ),
-            ctx.orm.call(
-                'petadigi.strong_point',
-                'read_group',
+        let spGroups, lalinGroups, records;
+
+        if (filters.polresId && !filters.kabupatenId) {
+            // Fetch spGroups first to derive kabupaten IDs from actual data —
+            // avoids empty map when kabupaten.polres_id is not populated.
+            spGroups = await ctx.orm.call(
+                'petadigi.strong_point', 'read_group',
                 [_buildStrongDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
                 { lazy: false }
-            ),
-            ctx.orm.searchRead(
-                'petadigi.kabupaten',
-                kabDomain,
-                ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
-            ),
-            _fetchStrongRecords(ctx, _buildStrongDomain(filters, geoBase), 1000),
-        ]);
+            );
+            if (ctx._modeVersion !== ver) return;
+
+            const spKabIds = spGroups
+                .filter(g => Array.isArray(g.kabupaten_id) && g.kabupaten_id[0])
+                .map(g => g.kabupaten_id[0]);
+
+            const kabDomain = spKabIds.length
+                ? [['id', 'in', spKabIds]]
+                : [['polres_id', '=', filters.polresId]];
+
+            [lalinGroups, records] = await Promise.all([
+                ctx.orm.call(
+                    'petadigi.lalu_lintas', 'read_group',
+                    [_buildLalinDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                    { lazy: false }
+                ),
+                ctx.orm.searchRead(
+                    'petadigi.kabupaten', kabDomain,
+                    ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+                ),
+            ]);
+        } else {
+            const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
+            [lalinGroups, spGroups, records] = await Promise.all([
+                ctx.orm.call(
+                    'petadigi.lalu_lintas', 'read_group',
+                    [_buildLalinDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                    { lazy: false }
+                ),
+                ctx.orm.call(
+                    'petadigi.strong_point', 'read_group',
+                    [_buildStrongDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                    { lazy: false }
+                ),
+                ctx.orm.searchRead(
+                    'petadigi.kabupaten', kabDomain,
+                    ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+                ),
+            ]);
+        }
         const lalinMap = _buildCountMap(lalinGroups, 'kabupaten_id');
         const spMap    = _buildCountMap(spGroups,    'kabupaten_id');
 
@@ -262,7 +352,7 @@ export async function loadModeStrong(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadStrongMarkers(ctx, _buildStrongDomain(filters, geoBase), 1000);
+        _renderKabupatenSummaryMarkers(ctx, geoLayer, filters);
     } catch (error) {
         console.error('Gagal memuat data strong point:', error);
     }
@@ -408,7 +498,7 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadStrongMarkers(ctx, _buildStrongDomain(filters, geoKab));
+        _fetchAndRenderStrongMarkers(ctx, _buildStrongDomain(filters, geoKab));
         _addStrongBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         ctx.drillKabupatenId = kabProps.id;
@@ -559,7 +649,7 @@ export async function drillDownStrongKelurahan(ctx, kecProps, kecLayer, filters,
         });
 
         ctx.desaLayerGroup.addLayer(geoLayer);
-        await _loadStrongMarkers(ctx, _buildStrongDomain(filters, geoKec));
+        _fetchAndRenderStrongMarkers(ctx, _buildStrongDomain(filters, geoKec));
         _addStrongBackButton(ctx, 'kecamatan', { kecProps, kecLayer, filters, kabProps, kabLayer });
 
         ctx.drillKecamatanId = kecProps.id;

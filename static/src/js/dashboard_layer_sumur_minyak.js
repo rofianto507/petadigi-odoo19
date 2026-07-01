@@ -1,5 +1,7 @@
 ﻿/** @odoo-module **/
 
+import { renderKabupatenSummaryMarkers } from './dashboard_helpers';
+
 /**
  * Peta Sumur Minyak Masyarakat
  * Choropleth per kabupaten/kecamatan/desa — warna coklat/amber berdasarkan jumlah sumur.
@@ -226,7 +228,9 @@ export async function loadModeSumur(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadSumurMarkers(ctx, _buildDomain(filters, baseDomain));
+        renderKabupatenSummaryMarkers(ctx, geoLayer, filters, 'jumlah_sumur',
+            `<i class="fa fa-tint"></i> Peta Sumur Minyak`,
+            'fa-tint', drillDownSumurKecamatan);
     } catch (error) {
         console.error('Gagal memuat data sumur minyak:', error);
     }

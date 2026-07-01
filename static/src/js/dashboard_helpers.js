@@ -133,6 +133,66 @@ export function addBackButton(ctx, targetLevel, backCtx, onBack) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// KABUPATEN SUMMARY MARKERS
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Render satu bubble marker per kabupaten di level overview.
+ * Count diambil dari feature.properties[countProp] — sudah ada dari read_group choropleth,
+ * tidak perlu fetch ulang. Klik langsung drill-down ke kecamatan.
+ *
+ * @param {DashboardMap} ctx
+ * @param {L.GeoJSON}    geoLayer      - layer GeoJSON kabupaten yang sudah dirender
+ * @param {object}       filters       - objek filter aktif
+ * @param {string}       countProp     - nama property count di feature.properties (mis. 'jumlah_kasus')
+ * @param {string}       mainBreadcrumb - HTML untuk breadcrumb utama
+ * @param {string}       appendIcon    - FontAwesome class untuk append breadcrumb (mis. 'fa-map-marker')
+ * @param {Function}     drillDownFn   - fungsi drill-down (ctx, props, polygonLayer, filters)
+ */
+export function renderKabupatenSummaryMarkers(ctx, geoLayer, filters, countProp, mainBreadcrumb, appendIcon, drillDownFn) {
+    ctx.markerLayerGroup.clearLayers();
+    const markers = [];
+
+    geoLayer.eachLayer(polygonLayer => {
+        const props = polygonLayer.feature.properties;
+        const count = props[countProp] || 0;
+        if (!count) return;
+
+        const center = polygonLayer.getBounds().getCenter();
+        let size, cls;
+        if      (count < 10)   { size = 34; cls = 'sm'; }
+        else if (count < 100)  { size = 42; cls = 'md'; }
+        else if (count < 1000) { size = 50; cls = 'lg'; }
+        else                   { size = 58; cls = 'xl'; }
+        const label = count >= 1000
+            ? (count >= 10000 ? Math.floor(count / 1000) + 'K+' : (count / 1000).toFixed(1) + 'K')
+            : count;
+
+        const icon = L.divIcon({
+            html: `<div class="petadigi-cluster-icon petadigi-cluster-icon--${cls}" style="width:${size}px;height:${size}px;">${label}</div>`,
+            className: '',
+            iconSize:   L.point(size, size),
+            iconAnchor: L.point(size / 2, size / 2),
+        });
+
+        const marker = L.marker([center.lat, center.lng], { icon });
+        marker._markerCount = count;
+
+        const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+        marker.on('click', () => {
+            ctx.map.closePopup();
+            ctx._updateBreadcrumb(mainBreadcrumb);
+            ctx._appendBreadcrumb(`<i class="fa ${appendIcon}"></i> ${tipeLabel} ${props.name}`);
+            drillDownFn(ctx, props, polygonLayer, filters);
+        });
+
+        markers.push(marker);
+    });
+
+    ctx.markerLayerGroup.addLayers(markers);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // COMING SOON CONTROL
 // ─────────────────────────────────────────────────────────────────────────────
 

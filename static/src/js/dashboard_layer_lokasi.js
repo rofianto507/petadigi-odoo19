@@ -1,5 +1,7 @@
 ﻿/** @odoo-module **/
 
+import { renderKabupatenSummaryMarkers } from './dashboard_helpers';
+
 /**
  * Peta Lokasi Penting
  * Choropleth per kabupaten/kecamatan/desa — warna ungu berdasarkan jumlah lokasi.
@@ -235,7 +237,9 @@ export async function loadModeLokasi(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadLokasiMarkers(ctx, _buildDomain(filters, baseDomain));
+        renderKabupatenSummaryMarkers(ctx, geoLayer, filters, 'jumlah_lokasi',
+            `<i class="fa fa-map-marker"></i> Peta Lokasi Penting`,
+            'fa-map-marker', drillDownLokasiKecamatan);
     } catch (error) {
         console.error('Gagal memuat data lokasi penting:', error);
     }

@@ -1,6 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { KRIMINAL_COLORS, getKriminalColor } from './dashboard_layer_kriminal';
+import { renderKabupatenSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Patroli — Arsiran Kriminalitas + Titik Lokasi Kegiatan Patroli
@@ -59,6 +60,7 @@ export function removePatroliLegend(ctx) {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function _getActiveFilters(ctx) {
     return {
+        polresId:    ctx._polresFilterId,
         kabupatenId: ctx.filterKabupaten?.el?.value ? parseInt(ctx.filterKabupaten.el.value) : null,
         stateValue:  ctx.filterState?.el?.value || '',
         dateFrom:    ctx.activeDateFrom || '',
@@ -68,6 +70,7 @@ function _getActiveFilters(ctx) {
 
 function _buildPatroliDomain(filters, geoConditions = []) {
     const domain = [...geoConditions];
+    if (filters.polresId)   domain.push(['polres_id',     '=',  filters.polresId]);
     if (filters.stateValue) domain.push(['state',         '=',  filters.stateValue]);
     if (filters.dateFrom)   domain.push(['tanggal_mulai', '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)     domain.push(['tanggal_mulai', '<=', filters.dateTo   + ' 23:59:59']);
@@ -76,6 +79,7 @@ function _buildPatroliDomain(filters, geoConditions = []) {
 
 function _buildKriminalDomain(filters, geoConditions = []) {
     const domain = [...geoConditions];
+    if (filters.polresId) domain.push(['kabupaten_id.polres_id', '=', filters.polresId]);
     if (filters.dateFrom) domain.push(['tanggal_kejadian', '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)   domain.push(['tanggal_kejadian', '<=', filters.dateTo   + ' 23:59:59']);
     return domain;
@@ -83,6 +87,7 @@ function _buildKriminalDomain(filters, geoConditions = []) {
 
 function _buildLokasiDomain(filters, geoConditions = []) {
     const domain = [['latitude', '!=', 0], ['longitude', '!=', 0]];
+    if (filters.polresId)   domain.push(['patroli_id.polres_id',     '=',  filters.polresId]);
     if (filters.stateValue) domain.push(['patroli_id.state',         '=',  filters.stateValue]);
     if (filters.dateFrom)   domain.push(['patroli_id.tanggal_mulai', '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)     domain.push(['patroli_id.tanggal_mulai', '<=', filters.dateTo   + ' 23:59:59']);
@@ -248,26 +253,56 @@ export async function loadModePatroli(ctx) {
     const geoBase = filters.kabupatenId ? [['kabupaten_id', '=', filters.kabupatenId]] : [];
 
     try {
-        const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
-        const [krimGroups, ptGroups, records] = await Promise.all([
-            ctx.orm.call(
-                'petadigi.kriminalitas',
-                'read_group',
-                [_buildKriminalDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
-                { lazy: false }
-            ),
-            ctx.orm.call(
-                'petadigi.patroli',
-                'read_group',
+        let krimGroups, ptGroups, records;
+
+        if (filters.polresId && !filters.kabupatenId) {
+            // Fetch ptGroups first to derive kabupaten IDs from actual data —
+            // avoids empty map when kabupaten.polres_id is not populated.
+            ptGroups = await ctx.orm.call(
+                'petadigi.patroli', 'read_group',
                 [_buildPatroliDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
                 { lazy: false }
-            ),
-            ctx.orm.searchRead(
-                'petadigi.kabupaten',
-                kabDomain,
-                ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
-            ),
-        ]);
+            );
+            if (ctx._modeVersion !== ver) return;
+
+            const ptKabIds = ptGroups
+                .filter(g => Array.isArray(g.kabupaten_id) && g.kabupaten_id[0])
+                .map(g => g.kabupaten_id[0]);
+
+            const kabDomain = ptKabIds.length
+                ? [['id', 'in', ptKabIds]]
+                : [['polres_id', '=', filters.polresId]];
+
+            [krimGroups, records] = await Promise.all([
+                ctx.orm.call(
+                    'petadigi.kriminalitas', 'read_group',
+                    [_buildKriminalDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                    { lazy: false }
+                ),
+                ctx.orm.searchRead(
+                    'petadigi.kabupaten', kabDomain,
+                    ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+                ),
+            ]);
+        } else {
+            const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
+            [krimGroups, ptGroups, records] = await Promise.all([
+                ctx.orm.call(
+                    'petadigi.kriminalitas', 'read_group',
+                    [_buildKriminalDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                    { lazy: false }
+                ),
+                ctx.orm.call(
+                    'petadigi.patroli', 'read_group',
+                    [_buildPatroliDomain(filters, geoBase), ['kabupaten_id'], ['kabupaten_id']],
+                    { lazy: false }
+                ),
+                ctx.orm.searchRead(
+                    'petadigi.kabupaten', kabDomain,
+                    ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
+                ),
+            ]);
+        }
         const krimMap = _buildCountMap(krimGroups, 'kabupaten_id');
         const ptMap   = _buildCountMap(ptGroups,   'kabupaten_id');
 
@@ -321,7 +356,10 @@ export async function loadModePatroli(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadPatroliMarkers(ctx, filters, geoBase);
+        if (ctx._patroliPolylineLayer) ctx._patroliPolylineLayer.clearLayers();
+        renderKabupatenSummaryMarkers(ctx, geoLayer, filters, 'jumlah_patroli',
+            `<i class="fa fa-car"></i> Peta Patroli`,
+            'fa-car', drillDownPatroliKecamatan);
     } catch (error) {
         console.error('Gagal memuat data patroli:', error);
     }

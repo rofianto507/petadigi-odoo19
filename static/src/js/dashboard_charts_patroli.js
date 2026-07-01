@@ -167,6 +167,7 @@ export async function updatePatroliCharts(ctx, mode) {
     const stateValue  = ctx.filterState?.el?.value || '';
     const dateFrom    = ctx.activeDateFrom || '';
     const dateTo      = ctx.activeDateTo   || '';
+    const polresId    = ctx._polresFilterId;
 
     const drillDomain = ctx.drillKecamatanId
         ? [['kecamatan_id', '=', ctx.drillKecamatanId]]
@@ -176,6 +177,7 @@ export async function updatePatroliCharts(ctx, mode) {
 
     const baseDomain = [
         ...drillDomain,
+        ...(polresId    ? [['polres_id',    '=',  polresId]]                   : []),
         ...(kabupatenId ? [['kabupaten_id', '=',  kabupatenId]]               : []),
         ...(stateValue  ? [['state',        '=',  stateValue]]                : []),
         ...(dateFrom    ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']]   : []),
@@ -184,6 +186,7 @@ export async function updatePatroliCharts(ctx, mode) {
 
     const lokasiBaseDomain = [
         ...drillDomain.map(([f, op, v]) => [`patroli_id.${f}`, op, v]),
+        ...(polresId    ? [['patroli_id.polres_id',    '=',  polresId]]                      : []),
         ...(kabupatenId ? [['patroli_id.kabupaten_id', '=',  kabupatenId]]                   : []),
         ...(stateValue  ? [['patroli_id.state',        '=',  stateValue]]                    : []),
         ...(dateFrom    ? [['patroli_id.tanggal_mulai', '>=', dateFrom + ' 00:00:00']]       : []),
@@ -259,6 +262,7 @@ export async function updatePatroliTable(ctx, mode, page) {
     const stateValue  = ctx.filterState?.el?.value || '';
     const dateFrom    = ctx.activeDateFrom || '';
     const dateTo      = ctx.activeDateTo   || '';
+    const polresId    = ctx._polresFilterId;
 
     const drillDomain = ctx.drillKecamatanId
         ? [['kecamatan_id', '=', ctx.drillKecamatanId]]
@@ -268,6 +272,7 @@ export async function updatePatroliTable(ctx, mode, page) {
 
     const domain = [
         ...drillDomain,
+        ...(polresId    ? [['polres_id',    '=',  polresId]]                   : []),
         ...(kabupatenId ? [['kabupaten_id', '=',  kabupatenId]]               : []),
         ...(stateValue  ? [['state',        '=',  stateValue]]                : []),
         ...(dateFrom    ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']]   : []),

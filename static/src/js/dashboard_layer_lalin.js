@@ -1,7 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
-import { fmtTanggal } from './dashboard_helpers';
+import { fmtTanggal, renderKabupatenSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Lalu Lintas
@@ -279,7 +279,9 @@ export async function loadModeLalin(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadLalinMarkers(ctx, _buildDomain(filters, baseDomain), 1000);
+        renderKabupatenSummaryMarkers(ctx, geoLayer, filters, 'jumlah_kasus',
+            `<i class="fa fa-car"></i> Peta Lalu Lintas`,
+            'fa-map-marker', drillDownLalinKecamatan);
     } catch (error) {
         console.error('Gagal memuat data lalu lintas:', error);
     }

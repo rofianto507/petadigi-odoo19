@@ -1,7 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
-import { fmtTanggal } from './dashboard_helpers';
+import { fmtTanggal, renderKabupatenSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Bencana
@@ -277,7 +277,9 @@ export async function loadModeBencana(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadBencanaMarkers(ctx, _buildDomain(filters, baseDomain), 1000);
+        renderKabupatenSummaryMarkers(ctx, geoLayer, filters, 'jumlah_kasus',
+            `<i class="fa fa-bolt"></i> Peta Bencana`,
+            'fa-map-marker', drillDownBencanaKecamatan);
     } catch (error) {
         console.error('Gagal memuat data bencana:', error);
     }
