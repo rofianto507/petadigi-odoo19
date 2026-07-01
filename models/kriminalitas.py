@@ -19,7 +19,7 @@ class Kriminalitas(models.Model):
     tempat_kejadian = fields.Text('Tempat Kejadian',tracking=True)
     latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)
     longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
-    tanggal_kejadian = fields.Datetime('Tanggal Kejadian',tracking=True)
+    tanggal_kejadian = fields.Datetime('Tanggal Kejadian', tracking=True, index=True)
     tanggal_laporan = fields.Datetime('Tanggal Laporan',tracking=True)
     pelapor = fields.Text('Pelapor',tracking=True)
     apa_yang_terjadi = fields.Text('Apa yang Terjadi',tracking=True)
@@ -41,39 +41,39 @@ class Kriminalitas(models.Model):
         [(str(t), str(t)) for t in range(2020, 2031)],
         string='Tahun',
         related='sumber_dokumen_id.tahun',
-        store=True,
+        store=True, index=True,
     )
-    kategori_id = fields.Many2one('petadigi.kategori_kriminal', string='Kategori', tracking=True)
+    kategori_id = fields.Many2one('petadigi.kategori_kriminal', string='Kategori', tracking=True, index=True)
     sub_kategori_id = fields.Many2one(
         'petadigi.sub_kategori_kriminal',
         string='Sub Kategori',
-        domain="[('kategori_kriminal_id', '=', kategori_id)]",  # filter by kategori
-        tracking=True
+        domain="[('kategori_kriminal_id', '=', kategori_id)]",
+        tracking=True, index=True,
     )
-    polres_id = fields.Many2one('petadigi.polres', string='Polres', tracking=True)
+    polres_id = fields.Many2one('petadigi.polres', string='Polres', tracking=True, index=True)
     polsek_id = fields.Many2one(
         'petadigi.polsek',
         string='Polsek',
-        domain="[('polres_id', '=', polres_id)]",  # filter by polres
-        tracking=True
+        domain="[('polres_id', '=', polres_id)]",
+        tracking=True,
     )
-    kabupaten_id = fields.Many2one('petadigi.kabupaten', string='Kabupaten/Kota', tracking=True)
+    kabupaten_id = fields.Many2one('petadigi.kabupaten', string='Kabupaten/Kota', tracking=True, index=True)
     kecamatan_id = fields.Many2one(
         'petadigi.kecamatan',
         string='Kecamatan',
         domain="[('kabupaten_id', '=', kabupaten_id)]",
-        tracking=True
+        tracking=True, index=True,
     )
     desa_id = fields.Many2one(
         'petadigi.desa',
         string='Desa/Kelurahan',
         domain="[('kecamatan_id', '=', kecamatan_id)]",
-        tracking=True
+        tracking=True,
     )
     status_perkara = fields.Selection([
         ('PROSES', 'PROSES'),
         ('SELESAI', 'SELESAI'),
-    ], string='Status Perkara', tracking=True, required=True, default='PROSES')
+    ], string='Status Perkara', tracking=True, required=True, default='PROSES', index=True)
     
     sub_status_perkara_id = fields.Many2one(
         'petadigi.sub_status_perkara',

@@ -1,4 +1,4 @@
-/** @odoo-module **/
+﻿/** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
 import { fmtTanggal } from './dashboard_helpers';
@@ -251,7 +251,7 @@ export async function loadModeBencana(ctx) {
         if (!features.length) return;
 
         const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.75 }),
+            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.45 }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
 
@@ -265,8 +265,8 @@ export async function loadModeBencana(ctx) {
                     ctx.kabupatenLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click',     e  => _showBencanaKabupatenPopup(ctx, e, props, layer, filters));
             }
         });
@@ -386,7 +386,7 @@ export async function drillDownBencanaKecamatan(ctx, kabProps, kabLayer, filters
         }
 
         const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.75 }),
+            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.45 }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
 
@@ -400,8 +400,8 @@ export async function drillDownBencanaKecamatan(ctx, kabProps, kabLayer, filters
                     ctx.kecamatanLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click',     e  => _showBencanaKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer));
             }
         });
@@ -523,7 +523,7 @@ export async function drillDownBencanaKelurahan(ctx, kecProps, kecLayer, filters
         }
 
         const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.75 }),
+            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.45 }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
 
@@ -537,8 +537,8 @@ export async function drillDownBencanaKelurahan(ctx, kecProps, kecLayer, filters
                     ctx.desaLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click',     e  => _showBencanaDesaPopup(ctx, e, props, filters));
             }
         });

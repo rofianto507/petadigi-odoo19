@@ -990,18 +990,27 @@ export class DashboardMap extends Component {
         this.desaLayerGroup      = L.layerGroup().addTo(this.map);
         this.desaLabelGroup      = L.layerGroup().addTo(this.map);
         this.markerLayerGroup    = L.markerClusterGroup({
-            chunkedLoading:       true,
-            maxClusterRadius:     60,
-            showCoverageOnHover:  false,
-            spiderfyOnMaxZoom:    true,
-            disableClusteringAtZoom: 16,
+            chunkedLoading:          true,
+            chunkInterval:           150,
+            maxClusterRadius:        80,
+            showCoverageOnHover:     false,
+            spiderfyOnMaxZoom:       true,
+            disableClusteringAtZoom: 14,
             iconCreateFunction: (cluster) => {
                 const count = cluster.getChildCount();
-                const size  = count < 10 ? 32 : count < 100 ? 38 : 44;
+                let size, cls;
+                if      (count < 10)   { size = 34; cls = 'sm'; }
+                else if (count < 100)  { size = 42; cls = 'md'; }
+                else if (count < 1000) { size = 50; cls = 'lg'; }
+                else                   { size = 58; cls = 'xl'; }
+                const label = count >= 1000
+                    ? (count >= 10000 ? Math.floor(count / 1000) + 'K+' : (count / 1000).toFixed(1) + 'K')
+                    : count;
                 return L.divIcon({
-                    html: `<div class="petadigi-cluster-icon" style="width:${size}px;height:${size}px;line-height:${size}px;">${count}</div>`,
+                    html: `<div class="petadigi-cluster-icon petadigi-cluster-icon--${cls}" style="width:${size}px;height:${size}px;">${label}</div>`,
                     className: '',
-                    iconSize: L.point(size, size),
+                    iconSize:   L.point(size, size),
+                    iconAnchor: L.point(size / 2, size / 2),
                 });
             },
         }).addTo(this.map);

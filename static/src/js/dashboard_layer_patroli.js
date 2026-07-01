@@ -1,4 +1,4 @@
-/** @odoo-module **/
+﻿/** @odoo-module **/
 
 import { KRIMINAL_COLORS, getKriminalColor } from './dashboard_layer_kriminal';
 
@@ -448,7 +448,7 @@ export async function drillDownPatroliKecamatan(ctx, kabProps, kabLayer, filters
         }
 
         const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.75 }),
+            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.45 }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
 
@@ -462,8 +462,8 @@ export async function drillDownPatroliKecamatan(ctx, kabProps, kabLayer, filters
                     ctx.kecamatanLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click',     e  => _showPatroliKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer));
             }
         });
@@ -599,7 +599,7 @@ export async function drillDownPatroliKelurahan(ctx, kecProps, kecLayer, filters
         }
 
         const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.75 }),
+            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.45 }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
 
@@ -613,8 +613,8 @@ export async function drillDownPatroliKelurahan(ctx, kecProps, kecLayer, filters
                     ctx.desaLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click',     e  => _showPatroliDesaPopup(ctx, e, props));
             }
         });

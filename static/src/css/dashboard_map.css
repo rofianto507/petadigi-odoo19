@@ -706,17 +706,45 @@ span.flatpickr-weekday {
     border-color: #34495e;
 }
 
-/* ── Cluster marker custom ── */
+/* ── Cluster marker — Google Maps POI style ── */
 .petadigi-cluster-icon {
-    background: rgba(113, 99, 158, 0.9);
-    color: #ffffff;
-    border: 2px solid #ffffff;
     border-radius: 50%;
-    text-align: center;
-    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
     font-weight: 700;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.45);
     cursor: pointer;
+    color: #ffffff;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.petadigi-cluster-icon:hover { transform: scale(1.15); }
+.petadigi-cluster-icon--sm {
+    background: radial-gradient(circle at 38% 35%, #f1948a, #c0392b);
+    border: 3px solid rgba(255,255,255,0.65);
+    box-shadow: 0 2px 6px rgba(192,57,43,0.5), 0 0 0 3px rgba(192,57,43,0.18);
+    font-size: 12px;
+}
+.petadigi-cluster-icon--md {
+    background: radial-gradient(circle at 38% 35%, #e74c3c, #922b21);
+    border: 3px solid rgba(255,255,255,0.6);
+    box-shadow: 0 2px 8px rgba(146,43,33,0.55), 0 0 0 4px rgba(146,43,33,0.18);
+    font-size: 13px;
+}
+.petadigi-cluster-icon--lg {
+    background: radial-gradient(circle at 38% 35%, #c0392b, #6e1212);
+    border: 3px solid rgba(255,255,255,0.55);
+    box-shadow: 0 3px 10px rgba(110,18,18,0.6), 0 0 0 5px rgba(110,18,18,0.15);
+    font-size: 13px;
+    font-weight: 800;
+}
+.petadigi-cluster-icon--xl {
+    background: radial-gradient(circle at 38% 35%, #922b21, #4a0a0a);
+    border: 3px solid rgba(255,255,255,0.5);
+    box-shadow: 0 3px 12px rgba(74,10,10,0.65), 0 0 0 6px rgba(74,10,10,0.15);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
 }
 
 /* ── Popup foto lazy-load (shared) ── */

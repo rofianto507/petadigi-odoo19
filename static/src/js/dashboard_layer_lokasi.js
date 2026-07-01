@@ -1,4 +1,4 @@
-/** @odoo-module **/
+﻿/** @odoo-module **/
 
 /**
  * Peta Lokasi Penting
@@ -211,7 +211,7 @@ export async function loadModeLokasi(ctx) {
         if (!features.length) return;
 
         const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.75 }),
+            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.45 }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
 
@@ -225,8 +225,8 @@ export async function loadModeLokasi(ctx) {
                     ctx.kabupatenLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click',     e  => _showLokasiKabupatenPopup(ctx, e, props, layer, filters));
             }
         });
@@ -343,7 +343,7 @@ export async function drillDownLokasiKecamatan(ctx, kabProps, kabLayer, filters)
         }
 
         const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.75 }),
+            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.45 }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
 
@@ -357,8 +357,8 @@ export async function drillDownLokasiKecamatan(ctx, kabProps, kabLayer, filters)
                     ctx.kecamatanLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click',     e  => _showLokasiKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer));
             }
         });
@@ -478,7 +478,7 @@ export async function drillDownLokasiKelurahan(ctx, kecProps, kecLayer, filters,
         }
 
         const geoLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
-            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.75 }),
+            style: f => ({ color: '#555', weight: 1.5, opacity: 1, fillColor: f.properties.color, fillOpacity: 0.45 }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
 
@@ -492,8 +492,8 @@ export async function drillDownLokasiKelurahan(ctx, kecProps, kecLayer, filters,
                     ctx.desaLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click',     e  => _showLokasiDesaPopup(ctx, e, props));
             }
         });

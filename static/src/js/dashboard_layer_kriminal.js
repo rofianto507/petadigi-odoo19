@@ -1,4 +1,4 @@
-/** @odoo-module **/
+﻿/** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
 import { fmtTanggal } from './dashboard_helpers';
@@ -133,33 +133,37 @@ function _buildDesaKasusMap(groups) {
 }
 
 // ── Helper: load marker titik koordinat kriminalitas ─────────────────────────
-async function _loadKriminalMarkers(ctx, domain) {
+// limit: max records diambil — di kabupaten dibatasi agar tidak berat, desa bebas
+async function _loadKriminalMarkers(ctx, domain, limit) {
     ctx.markerLayerGroup.clearLayers();
 
-    // Ambil icon dari setiap kategori kriminal
-    const categories = await ctx.orm.searchRead('petadigi.kategori_kriminal', [], ['id', 'icon']);
-    const categoryIconMap = {};
-    for (const cat of categories) {
-        categoryIconMap[cat.id] = cat.icon || 'fa-exclamation-triangle';
-    }
+    const markerDomain = [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain];
+    const searchOpts   = limit ? { limit, order: 'tanggal_kejadian desc' } : { order: 'tanggal_kejadian desc' };
 
-    const records = await ctx.orm.searchRead(
-        'petadigi.kriminalitas',
-        [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
-        ['id', 'code', 'no_lp', 'latitude', 'longitude', 'tempat_kejadian',
-         'jenis_tkp_id', 'kategori_id', 'sub_kategori_id', 'status_perkara', 'tanggal_kejadian'],
-    );
+    const [categories, records] = await Promise.all([
+        ctx.orm.searchRead('petadigi.kategori_kriminal', [], ['id', 'icon']),
+        ctx.orm.searchRead(
+            'petadigi.kriminalitas',
+            markerDomain,
+            ['id', 'code', 'no_lp', 'latitude', 'longitude', 'tempat_kejadian',
+             'jenis_tkp_id', 'kategori_id', 'sub_kategori_id', 'status_perkara', 'tanggal_kejadian'],
+            searchOpts,
+        ),
+    ]);
+
+    const categoryIconMap = {};
+    for (const cat of categories) categoryIconMap[cat.id] = cat.icon || 'fa-exclamation-triangle';
 
     records.forEach(r => {
-        const statusColor  = r.status_perkara === 'SELESAI' ? '#27ae60' : '#e74c3c';
-        const statusLabel  = r.status_perkara === 'SELESAI' ? 'Selesai' : 'Proses';
-        const kategori     = Array.isArray(r.kategori_id)     ? r.kategori_id[1]     : '-';
-        const subKategori  = Array.isArray(r.sub_kategori_id) ? r.sub_kategori_id[1] : '-';
-        const jenisTkp     = Array.isArray(r.jenis_tkp_id)    ? r.jenis_tkp_id[1]    : '-';
-        const tglKejadian  = fmtTanggal(r.tanggal_kejadian);
-
-        const katId  = Array.isArray(r.kategori_id) ? r.kategori_id[0] : null;
-        const faIcon = (katId && categoryIconMap[katId]) ? categoryIconMap[katId] : 'fa-exclamation-triangle';
+        const isSelesai   = r.status_perkara === 'SELESAI';
+        const statusColor = isSelesai ? '#27ae60' : '#e74c3c';
+        const statusLabel = isSelesai ? 'Selesai' : 'Proses';
+        const kategori    = Array.isArray(r.kategori_id)     ? r.kategori_id[1]     : '-';
+        const subKategori = Array.isArray(r.sub_kategori_id) ? r.sub_kategori_id[1] : '-';
+        const jenisTkp    = Array.isArray(r.jenis_tkp_id)    ? r.jenis_tkp_id[1]    : '-';
+        const tglKejadian = fmtTanggal(r.tanggal_kejadian);
+        const katId       = Array.isArray(r.kategori_id) ? r.kategori_id[0] : null;
+        const faIcon      = (katId && categoryIconMap[katId]) ? categoryIconMap[katId] : 'fa-exclamation-triangle';
 
         const icon = L.divIcon({
             className: '',
@@ -289,7 +293,7 @@ export async function loadModeKriminal(ctx) {
         const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
             style: (feature) => ({
                 color: '#555555', weight: 1.5, opacity: 1,
-                fillColor: feature.properties.color, fillOpacity: 0.75,
+                fillColor: feature.properties.color, fillOpacity: 0.45,
             }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
@@ -309,8 +313,8 @@ export async function loadModeKriminal(ctx) {
                     ctx.kabupatenLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click', (e) => _showKriminalKabupatenPopup(ctx, e, props, layer, filters));
             }
         });
@@ -318,7 +322,9 @@ export async function loadModeKriminal(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        await _loadKriminalMarkers(ctx, _buildDomain(filters, baseDomain));
+        // Level kabupaten: marker tidak ditampilkan — choropleth sudah cukup menunjukkan density.
+        // Marker baru muncul saat user drill-down ke kecamatan atau desa.
+        ctx.markerLayerGroup.clearLayers();
     } catch (error) {
         console.error("Gagal memuat data kriminalitas:", error);
     }
@@ -435,7 +441,7 @@ export async function drillDownKriminalKecamatan(ctx, kabProps, kabLayer, filter
         const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
             style: (feature) => ({
                 color: '#555555', weight: 1.5, opacity: 1,
-                fillColor: feature.properties.color, fillOpacity: 0.75,
+                fillColor: feature.properties.color, fillOpacity: 0.45,
             }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
@@ -455,14 +461,14 @@ export async function drillDownKriminalKecamatan(ctx, kabProps, kabLayer, filter
                     ctx.kecamatanLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click', (e) => _showKriminalKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer));
             }
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadKriminalMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]));
+        await _loadKriminalMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]), 500);
         _addKriminalBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         // Sinkronkan dropdown kabupaten + KPI + grafik ke scope kabupaten yang dipilih
@@ -584,7 +590,7 @@ export async function drillDownKriminalDesa(ctx, kecProps, kecLayer, filters, ka
         const geoLayer = L.geoJSON({ type: "FeatureCollection", features }, {
             style: (feature) => ({
                 color: '#555555', weight: 1.5, opacity: 1,
-                fillColor: feature.properties.color, fillOpacity: 0.75,
+                fillColor: feature.properties.color, fillOpacity: 0.45,
             }),
             onEachFeature: (feature, layer) => {
                 const props = feature.properties;
@@ -604,14 +610,14 @@ export async function drillDownKriminalDesa(ctx, kecProps, kecLayer, filters, ka
                     ctx.desaLabelGroup.addLayer(label);
                 });
 
-                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.9 }); layer.bringToFront(); });
-                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.75 }); });
+                layer.on('mouseover', () => { layer.setStyle({ weight: 2.5, fillOpacity: 0.65 }); layer.bringToFront(); });
+                layer.on('mouseout',  () => { layer.setStyle({ weight: 1.5, fillOpacity: 0.45 }); });
                 layer.on('click', (e) => _showKriminalDesaPopup(ctx, e, props, filters));
             }
         });
 
         ctx.desaLayerGroup.addLayer(geoLayer);
-        await _loadKriminalMarkers(ctx, _buildDomain(filters, [['kecamatan_id', '=', kecProps.id]]));
+        await _loadKriminalMarkers(ctx, _buildDomain(filters, [['kecamatan_id', '=', kecProps.id]]), null);
         _addKriminalBackButton(ctx, 'kecamatan', { kecProps, kecLayer, filters, kabProps, kabLayer });
 
         // Sinkronkan KPI dan grafik ke scope kecamatan yang dipilih
