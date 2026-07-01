@@ -1,4 +1,4 @@
-/** @odoo-module **/
+﻿/** @odoo-module **/
 
 import { fmtTanggal } from "./dashboard_helpers";
 
@@ -593,7 +593,7 @@ export async function updateKriminalCharts(ctx, mode) {
         ...drillDomain,
         ...(polresId      ? [['kabupaten_id.polres_id',  '=',  polresId]]                       : []),
         ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
-        ...(tahun         ? [['sumber_dokumen_id.tahun', '=',  tahun]]                          : []),
+        ...(tahun         ? [['tahun', '=',  tahun]]                          : []),
         ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
         ...(dateTo        ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']]         : []),
         ...(jenisLp       ? [['jenis_lp',                '=',  jenisLp]]                        : []),
@@ -611,8 +611,8 @@ export async function updateKriminalCharts(ctx, mode) {
         ...(subKategoriId ? [['sub_kategori_id',         '=', subKategoriId]]                  : []),
         ...(polresId      ? [['kabupaten_id.polres_id',  '=', polresId]]                       : []),
     ];
-    const currentYrDom  = [...yearlyBase, ['sumber_dokumen_id.tahun', '=', String(selectedYear)]];
-    const prevYrDom     = [...yearlyBase, ['sumber_dokumen_id.tahun', '=', String(prevYear)]];
+    const currentYrDom  = [...yearlyBase, ['tahun', '=', String(selectedYear)]];
+    const prevYrDom     = [...yearlyBase, ['tahun', '=', String(prevYear)]];
 
     try {
         const [kabGroups, katGroups, allKabupaten, tkpGroups, subKatGroups, trendGroups,
@@ -764,7 +764,7 @@ export async function updateKriminalTable(ctx, mode, page) {
         ...drillDomain,
         ...(polresId      ? [['kabupaten_id.polres_id',  '=',  polresId]]                       : []),
         ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
-        ...(tahun         ? [['sumber_dokumen_id.tahun', '=',  tahun]]                          : []),
+        ...(tahun         ? [['tahun', '=',  tahun]]                          : []),
         ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
         ...(dateTo        ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']]         : []),
         ...(jenisLp       ? [['jenis_lp',                '=',  jenisLp]]                        : []),

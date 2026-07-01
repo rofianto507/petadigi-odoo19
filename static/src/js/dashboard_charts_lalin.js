@@ -1,4 +1,4 @@
-/** @odoo-module **/
+﻿/** @odoo-module **/
 
 import { fmtTanggal } from "./dashboard_helpers";
 
@@ -239,7 +239,7 @@ export async function updateLalinCharts(ctx, mode) {
         ...drillDomain,
         ...(kabupatenId ? [['kabupaten_id',            '=',  kabupatenId]]               : []),
         ...(stateValue  ? [['state',                   '=',  stateValue]]                : []),
-        ...(tahun       ? [['sumber_dokumen_id.tahun', '=',  tahun]]                     : []),
+        ...(tahun       ? [['tahun', '=',  tahun]]                     : []),
         ...(dateFrom    ? [['tanggal_kejadian',         '>=', dateFrom + ' 00:00:00']]   : []),
         ...(dateTo      ? [['tanggal_kejadian',         '<=', dateTo   + ' 23:59:59']]   : []),
         ...(kategoriId  ? [['kategori_id',              '=',  kategoriId]]               : []),
@@ -333,7 +333,7 @@ export async function updateLalinTable(ctx, mode, page) {
         ...drillDomain,
         ...(kabupatenId ? [['kabupaten_id',            '=',  kabupatenId]]            : []),
         ...(stateValue  ? [['state',                   '=',  stateValue]]             : []),
-        ...(tahun       ? [['sumber_dokumen_id.tahun', '=',  tahun]]                  : []),
+        ...(tahun       ? [['tahun', '=',  tahun]]                  : []),
         ...(dateFrom    ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']] : []),
         ...(dateTo      ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']] : []),
         ...(kategoriId  ? [['kategori_id',             '=',  kategoriId]]             : []),

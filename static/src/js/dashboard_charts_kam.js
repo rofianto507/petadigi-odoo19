@@ -1,4 +1,4 @@
-/** @odoo-module **/
+﻿/** @odoo-module **/
 
 import { fmtTanggal } from "./dashboard_helpers";
 
@@ -348,7 +348,7 @@ export async function updateKamCharts(ctx, mode) {
         ...drillDomain,
         ...(kabupatenId ? [['kabupaten_id',             '=',  kabupatenId]]                : []),
         ...(stateValue  ? [['state',                   '=',  stateValue]]                 : []),
-        ...(tahun       ? [['sumber_dokumen_id.tahun', '=',  tahun]]                       : []),
+        ...(tahun       ? [['tahun', '=',  tahun]]                       : []),
         ...(dateFrom    ? [['tanggal_kejadian',         '>=', dateFrom + ' 00:00:00']]     : []),
         ...(dateTo      ? [['tanggal_kejadian',         '<=', dateTo   + ' 23:59:59']]     : []),
         ...(kategoriId  ? [['kategori_id',              '=',  kategoriId]]                 : []),
@@ -363,8 +363,8 @@ export async function updateKamCharts(ctx, mode) {
         ...(kabupatenId ? [['kabupaten_id', '=', kabupatenId]] : []),
         ...(kategoriId  ? [['kategori_id',  '=', kategoriId]]  : []),
     ];
-    const currentYrDom = [...yearlyBase, ['sumber_dokumen_id.tahun', '=', String(selectedYear)]];
-    const prevYrDom    = [...yearlyBase, ['sumber_dokumen_id.tahun', '=', String(prevYear)]];
+    const currentYrDom = [...yearlyBase, ['tahun', '=', String(selectedYear)]];
+    const prevYrDom    = [...yearlyBase, ['tahun', '=', String(prevYear)]];
 
     try {
         const [kabGroups, katGroups, allKabupaten, modusGroups, tkpGroups,
@@ -466,7 +466,7 @@ export async function updateKamTable(ctx, mode, page) {
         ...drillDomain,
         ...(kabupatenId ? [['kabupaten_id',            '=',  kabupatenId]]            : []),
         ...(stateValue  ? [['state',                   '=',  stateValue]]             : []),
-        ...(tahun       ? [['sumber_dokumen_id.tahun', '=',  tahun]]                  : []),
+        ...(tahun       ? [['tahun', '=',  tahun]]                  : []),
         ...(dateFrom    ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']] : []),
         ...(dateTo      ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']] : []),
         ...(kategoriId  ? [['kategori_id',             '=',  kategoriId]]             : []),

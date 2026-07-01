@@ -1,4 +1,4 @@
-/** @odoo-module **/
+﻿/** @odoo-module **/
 
 import { Component, onMounted, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
@@ -682,7 +682,7 @@ export class DashboardMap extends Component {
                 model,
                 'read_group',
                 [
-                    [['sumber_dokumen_id.tahun', '=', tahun]],
+                    [['tahun', '=', tahun]],
                     ['sumber_dokumen_id'],
                     ['sumber_dokumen_id'],
                 ],
@@ -748,7 +748,7 @@ export class DashboardMap extends Component {
         const subKategoriId = parseInt(this.filterSubKategori?.el?.value)  || null;
         const stateValue    = this.filterState?.el?.value          || '';
 
-        const tf  = tahun        ? [['sumber_dokumen_id.tahun', '=', tahun]]        : [];
+        const tf  = tahun        ? [['tahun', '=', tahun]]        : [];
         const df  = [
             ...(dateFrom ? [['tanggal_kejadian', '>=', dateFrom + ' 00:00:00']] : []),
             ...(dateTo   ? [['tanggal_kejadian', '<=', dateTo   + ' 23:59:59']] : []),

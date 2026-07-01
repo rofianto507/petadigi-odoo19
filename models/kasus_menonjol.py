@@ -27,7 +27,7 @@ class KasusMenunjol(models.Model):
         [(str(t), str(t)) for t in range(2020, 2031)],
         string='Tahun',
         related='sumber_dokumen_id.tahun',
-        store=True,
+        store=True, index=True,
     )
     state = fields.Selection([
         ('PROSES', 'PROSES'),

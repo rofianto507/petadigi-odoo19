@@ -82,7 +82,7 @@ function _getActiveFilters(ctx) {
 // ── Helper: build domain dari objek filters ──────────────────────────────────
 function _buildDomain(filters, extraDomain = []) {
     const domain = [...extraDomain];
-    if (filters.tahun)        domain.push(['sumber_dokumen_id.tahun', '=',  filters.tahun]);
+    if (filters.tahun)        domain.push(['tahun', '=',  filters.tahun]);
     if (filters.dateFrom)     domain.push(['tanggal_kejadian',        '>=', filters.dateFrom + ' 00:00:00']);
     if (filters.dateTo)       domain.push(['tanggal_kejadian',        '<=', filters.dateTo   + ' 23:59:59']);
     if (filters.jenisLp)      domain.push(['jenis_lp',                '=',  filters.jenisLp]);
