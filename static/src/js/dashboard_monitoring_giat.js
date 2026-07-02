@@ -387,10 +387,11 @@ class MonitoringGiatDashboard extends Component {
         });
         this.state.tblPolres.page = 1;
 
-        // Map points: records with valid coordinates
-        // Pakai truthy check agar menangkap 0, false, null sekaligus (bukan hanya ===0 yang melewatkan false)
+        // Map points: records with valid coordinates (batas wilayah Indonesia)
         this.state.mapPoints = records
-            .filter(r => r.latitude && r.longitude)
+            .filter(r => r.latitude && r.longitude
+                && r.latitude  >= -11 && r.latitude  <= 6
+                && r.longitude >=  95 && r.longitude <= 141)
             .map(r => ({
                 id:      r.id,
                 lat:     r.latitude,
@@ -631,11 +632,16 @@ class MonitoringGiatDashboard extends Component {
             zoomToBoundsOnClick: true,
             iconCreateFunction: (c) => {
                 const count = c.getChildCount();
-                const size  = count < 10 ? 32 : count < 100 ? 38 : 44;
+                let size, cls;
+                if      (count < 10)   { size = 34; cls = 'giat-sm'; }
+                else if (count < 100)  { size = 42; cls = 'giat-md'; }
+                else if (count < 1000) { size = 50; cls = 'giat-lg'; }
+                else                   { size = 58; cls = 'giat-xl'; }
                 return L.divIcon({
-                    html: `<div class="petadigi-cluster-icon" style="width:${size}px;height:${size}px;line-height:${size}px;">${count}</div>`,
+                    html: `<div class="petadigi-cluster-icon petadigi-cluster-icon--${cls}" style="width:${size}px;height:${size}px;">${count}</div>`,
                     className: '',
-                    iconSize: L.point(size, size),
+                    iconSize:   L.point(size, size),
+                    iconAnchor: L.point(size / 2, size / 2),
                 });
             },
         });

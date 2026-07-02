@@ -1,4 +1,5 @@
 from odoo import models, fields, api
+from odoo.exceptions import ValidationError
 
 
 class HasilGiat(models.Model):
@@ -29,6 +30,18 @@ class HasilGiat(models.Model):
     foto_filename = fields.Char('Nama File Foto')
     latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)
     longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
+
+    @api.constrains('latitude', 'longitude')
+    def _check_koordinat(self):
+        for rec in self:
+            lat, lng = rec.latitude, rec.longitude
+            if lat or lng:
+                if not (-11 <= lat <= 6) or not (95 <= lng <= 141):
+                    raise ValidationError(
+                        "Koordinat tidak valid (lat=%.6f, lng=%.6f). "
+                        "Pastikan latitude antara -11 s/d 6 dan longitude antara 95 s/d 141 "
+                        "(wilayah Indonesia)." % (lat, lng)
+                    )
 
     @api.model
     def default_get(self, fields_list):

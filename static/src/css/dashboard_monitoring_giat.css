@@ -519,6 +519,35 @@
 }
 .petadigi-giat-marker:hover { transform: scale(1.25); }
 
+/* ── Cluster icon giat — hijau (semakin banyak = semakin positif) ── */
+.petadigi-cluster-icon--giat-sm {
+    background: radial-gradient(circle at 38% 35%, #82e0aa, #27ae60);
+    border: 3px solid rgba(255,255,255,0.65);
+    box-shadow: 0 2px 6px rgba(39,174,96,0.5), 0 0 0 3px rgba(39,174,96,0.18);
+    font-size: 12px;
+}
+.petadigi-cluster-icon--giat-md {
+    background: radial-gradient(circle at 38% 35%, #27ae60, #1e8449);
+    border: 3px solid rgba(255,255,255,0.6);
+    box-shadow: 0 2px 8px rgba(30,132,73,0.55), 0 0 0 4px rgba(30,132,73,0.18);
+    font-size: 13px;
+}
+.petadigi-cluster-icon--giat-lg {
+    background: radial-gradient(circle at 38% 35%, #1e8449, #145a32);
+    border: 3px solid rgba(255,255,255,0.55);
+    box-shadow: 0 3px 10px rgba(20,90,50,0.6), 0 0 0 5px rgba(20,90,50,0.15);
+    font-size: 13px;
+    font-weight: 800;
+}
+.petadigi-cluster-icon--giat-xl {
+    background: radial-gradient(circle at 38% 35%, #145a32, #0a2e18);
+    border: 3px solid rgba(255,255,255,0.5);
+    box-shadow: 0 3px 12px rgba(10,46,24,0.65), 0 0 0 6px rgba(10,46,24,0.15);
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
 /* ── Popup foto lazy-load ── */
 .mg-popup-foto {
     background: #f0f2f5;
