@@ -60,6 +60,7 @@
                     <separator/>
                     <filter string="LP A" name="filter_lp_a" domain="[('jenis_lp','=','LP A')]" />
                     <filter string="LP B" name="filter_lp_b" domain="[('jenis_lp','=','LP B')]" />
+                    <filter string="NON-LP" name="filter_non_lp" domain="[('jenis_lp','=','NON-LP')]" />
                     <separator/>
                     <filter string="Tahun Ini" name="filter_tahun_sekarang"
                         domain="[('tahun', '=', context_today().year)]"/>

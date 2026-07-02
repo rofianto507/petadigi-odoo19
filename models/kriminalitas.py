@@ -13,6 +13,7 @@ class Kriminalitas(models.Model):
     jenis_lp= fields.Selection([
         ('LP A', 'LP A'),
         ('LP B', 'LP B'),
+        ('NON-LP', 'NON-LP'),
     ])
     no_lp = fields.Char('No. LP', required=True,tracking=True)
     jenis_tkp_id = fields.Many2one('petadigi.jenis_tkp', string='Jenis TKP', tracking=True)

@@ -388,8 +388,9 @@ class MonitoringGiatDashboard extends Component {
         this.state.tblPolres.page = 1;
 
         // Map points: records with valid coordinates
+        // Pakai truthy check agar menangkap 0, false, null sekaligus (bukan hanya ===0 yang melewatkan false)
         this.state.mapPoints = records
-            .filter(r => !(r.latitude === 0 && r.longitude === 0))
+            .filter(r => r.latitude && r.longitude)
             .map(r => ({
                 id:      r.id,
                 lat:     r.latitude,
