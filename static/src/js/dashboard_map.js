@@ -1057,33 +1057,50 @@ export class DashboardMap extends Component {
         removeLokasiOverlay(this);
     }
 
+    // Zoom in satu tingkat setelah fitBounds — dipakai di level kabupaten & kecamatan.
+    // animate: false wajib agar getZoom() membaca zoom HASIL fitBounds, bukan zoom sebelum animasi.
+    _fitBoundsZoomedIn(bounds, options = {}) {
+        this.map.fitBounds(bounds, { ...options, animate: false });
+        this.map.setZoom(this.map.getZoom() + 1);
+    }
+
     // ─────────────────────────────────────────────
-    // LABEL VISIBILITY (zoom-adaptive)
+    // LABEL VISIBILITY (all-or-nothing per group)
     // ─────────────────────────────────────────────
     _updateLabelVisibility() {
         const map = this.map;
         if (!map) return;
 
+        // Cek ukuran polygon TERKECIL dalam grup.
+        // Jika terkecil sudah memenuhi threshold → tampilkan SEMUA.
+        // Jika tidak → sembunyikan SEMUA (tidak ada label setengah-setengah).
         const applyGroup = (group, minPx) => {
             if (!group) return;
-            group.getLayers().forEach(marker => {
-                const el = marker.getElement();
-                if (!el) return;
+            const layers = group.getLayers();
+            if (!layers.length) return;
+
+            let smallest = Infinity;
+            for (const marker of layers) {
                 const bounds = marker._polygonBounds;
-                if (!bounds) { el.style.visibility = 'visible'; return; }
-                const sw = map.latLngToContainerPoint(bounds.getSouthWest());
-                const ne = map.latLngToContainerPoint(bounds.getNorthEast());
-                const w  = Math.abs(ne.x - sw.x);
-                const h  = Math.abs(ne.y - sw.y);
-                el.style.visibility = (w >= minPx || h >= minPx) ? 'visible' : 'hidden';
+                if (!bounds) continue;
+                const sw   = map.latLngToContainerPoint(bounds.getSouthWest());
+                const ne   = map.latLngToContainerPoint(bounds.getNorthEast());
+                const size = Math.max(Math.abs(ne.x - sw.x), Math.abs(ne.y - sw.y));
+                if (size < smallest) smallest = size;
+            }
+
+            const show = smallest === Infinity || smallest >= minPx;
+            layers.forEach(marker => {
+                const el = marker.getElement();
+                if (el) el.style.visibility = show ? 'visible' : 'hidden';
             });
         };
 
-        // Kabupaten: tampilkan hanya jika polygon ≥ 55px di salah satu dimensi
-        applyGroup(this.kabupatenLabelGroup, 55);
-        // Kecamatan & desa: sudah drill-down, threshold lebih kecil
-        applyGroup(this.kecamatanLabelGroup, 30);
-        applyGroup(this.desaLabelGroup, 20);
+        // Threshold rendah: label tersembunyi hanya ketika polygon sudah sangat kecil (map di-zoom out jauh).
+        // Tumpukan label di zoom normal = OK, yang dilarang adalah sebagian tampil sebagian tidak.
+        applyGroup(this.kabupatenLabelGroup, 15);
+        applyGroup(this.kecamatanLabelGroup, 8);
+        applyGroup(this.desaLabelGroup, 5);
     }
 }
 

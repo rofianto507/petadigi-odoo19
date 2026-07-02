@@ -355,7 +355,7 @@ export async function loadModePatroli(ctx) {
 
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
-        ctx.map.fitBounds(geoLayer.getBounds());
+        ctx._fitBoundsZoomedIn(geoLayer.getBounds());
         if (ctx._patroliPolylineLayer) ctx._patroliPolylineLayer.clearLayers();
         renderKabupatenSummaryMarkers(ctx, geoLayer, filters, 'jumlah_patroli',
             `<i class="fa fa-car"></i> Peta Patroli`,
@@ -427,7 +427,7 @@ export async function drillDownPatroliKecamatan(ctx, kabProps, kabLayer, filters
     ctx.kecamatanLayerGroup.clearLayers();
     ctx.kecamatanLabelGroup.clearLayers();
 
-    ctx.map.fitBounds(kabLayer.getBounds(), { padding: [40, 40] });
+    ctx._fitBoundsZoomedIn(kabLayer.getBounds(), { padding: [40, 40] });
 
     try {
         const geoKab = [['kabupaten_id', '=', kabProps.id]];

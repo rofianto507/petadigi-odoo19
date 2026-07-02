@@ -275,7 +275,7 @@ export async function loadModeKam(ctx) {
 
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
-        ctx.map.fitBounds(geoLayer.getBounds());
+        ctx._fitBoundsZoomedIn(geoLayer.getBounds());
         renderKabupatenSummaryMarkers(ctx, geoLayer, filters, 'jumlah_kasus',
             `<i class="fa fa-shield"></i> Peta Kasus Menonjol`,
             'fa-map-marker', drillDownKamKecamatan);
@@ -344,7 +344,7 @@ export async function drillDownKamKecamatan(ctx, kabProps, kabLayer, filters) {
     ctx.kecamatanLayerGroup.clearLayers();
     ctx.kecamatanLabelGroup.clearLayers();
 
-    ctx.map.fitBounds(kabLayer.getBounds(), { padding: [40, 40] });
+    ctx._fitBoundsZoomedIn(kabLayer.getBounds(), { padding: [40, 40] });
 
     try {
         const domain = _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]);

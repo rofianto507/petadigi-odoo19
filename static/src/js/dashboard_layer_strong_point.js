@@ -308,7 +308,7 @@ export async function loadModeStrong(ctx) {
 
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
-        ctx.map.fitBounds(geoLayer.getBounds());
+        ctx._fitBoundsZoomedIn(geoLayer.getBounds());
         renderSummaryMarkers(ctx, geoLayer, 'jumlah_strong', (props, polygonLayer) => {
             const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
             ctx._updateBreadcrumb(`<i class="fa fa-map-pin"></i> Peta Strong Point`);
@@ -382,7 +382,7 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
     ctx.kecamatanLayerGroup.clearLayers();
     ctx.kecamatanLabelGroup.clearLayers();
 
-    ctx.map.fitBounds(kabLayer.getBounds(), { padding: [40, 40] });
+    ctx._fitBoundsZoomedIn(kabLayer.getBounds(), { padding: [40, 40] });
 
     try {
         const geoKab = [['kabupaten_id', '=', kabProps.id]];

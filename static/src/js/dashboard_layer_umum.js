@@ -74,7 +74,7 @@ export async function loadKabupatenLayer(ctx) {
 
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
-        ctx.map.fitBounds(geoLayer.getBounds());
+        ctx._fitBoundsZoomedIn(geoLayer.getBounds());
 
     } catch (error) {
         console.error("Gagal memuat data kabupaten:", error);
@@ -145,7 +145,7 @@ export async function drillDownKecamatan(ctx, kabProps, kabLayer) {
     ctx.kecamatanLayerGroup.clearLayers();
     ctx.kecamatanLabelGroup.clearLayers();
 
-    ctx.map.fitBounds(kabLayer.getBounds(), { padding: [40, 40] });
+    ctx._fitBoundsZoomedIn(kabLayer.getBounds(), { padding: [40, 40] });
 
     try {
         const records = await ctx.orm.searchRead(
