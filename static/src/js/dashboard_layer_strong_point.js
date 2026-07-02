@@ -1,6 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { LALIN_COLORS, getLalinColor } from './dashboard_layer_lalin';
+import { renderSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Strong Point — Arsiran Lalu Lintas + Titik Konsentrasi Tugas Lapangan
@@ -192,50 +193,6 @@ async function _fetchAndRenderStrongMarkers(ctx, domain, limit) {
     }
 }
 
-// Render satu bubble marker per kabupaten — count dari read_group yang sudah ada,
-// tidak perlu fetch record detail. Klik langsung drill-down ke kecamatan.
-function _renderKabupatenSummaryMarkers(ctx, geoLayer, filters) {
-    ctx.markerLayerGroup.clearLayers();
-    const markers = [];
-
-    geoLayer.eachLayer(polygonLayer => {
-        const props = polygonLayer.feature.properties;
-        const count = props.jumlah_strong || 0;
-        if (!count) return;
-
-        const center = polygonLayer.getBounds().getCenter();
-        let size, cls;
-        if      (count < 10)   { size = 34; cls = 'sm'; }
-        else if (count < 100)  { size = 42; cls = 'md'; }
-        else if (count < 1000) { size = 50; cls = 'lg'; }
-        else                   { size = 58; cls = 'xl'; }
-        const label = count >= 1000
-            ? (count >= 10000 ? Math.floor(count / 1000) + 'K+' : (count / 1000).toFixed(1) + 'K')
-            : count;
-
-        const icon = L.divIcon({
-            html: `<div class="petadigi-cluster-icon petadigi-cluster-icon--${cls}" style="width:${size}px;height:${size}px;">${label}</div>`,
-            className: '',
-            iconSize:   L.point(size, size),
-            iconAnchor: L.point(size / 2, size / 2),
-        });
-
-        const marker = L.marker([center.lat, center.lng], { icon });
-        marker._markerCount = count;
-
-        const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
-        marker.on('click', () => {
-            ctx.map.closePopup();
-            ctx._updateBreadcrumb(`<i class="fa fa-map-pin"></i> Peta Strong Point`);
-            ctx._appendBreadcrumb(`<i class="fa fa-map-pin"></i> ${tipeLabel} ${props.name}`);
-            drillDownStrongKecamatan(ctx, props, polygonLayer, filters);
-        });
-
-        markers.push(marker);
-    });
-
-    ctx.markerLayerGroup.addLayers(markers);
-}
 
 // ════════════════════════════════════════════════════════════════════════════
 // LEVEL 1 — KABUPATEN
@@ -352,7 +309,12 @@ export async function loadModeStrong(ctx) {
         if (ctx._modeVersion !== ver) return;
         ctx.kabupatenLayerGroup.addLayer(geoLayer);
         ctx.map.fitBounds(geoLayer.getBounds());
-        _renderKabupatenSummaryMarkers(ctx, geoLayer, filters);
+        renderSummaryMarkers(ctx, geoLayer, 'jumlah_strong', (props, polygonLayer) => {
+            const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+            ctx._updateBreadcrumb(`<i class="fa fa-map-pin"></i> Peta Strong Point`);
+            ctx._appendBreadcrumb(`<i class="fa fa-map-pin"></i> ${tipeLabel} ${props.name}`);
+            drillDownStrongKecamatan(ctx, props, polygonLayer, filters);
+        });
     } catch (error) {
         console.error('Gagal memuat data strong point:', error);
     }
@@ -498,7 +460,10 @@ export async function drillDownStrongKecamatan(ctx, kabProps, kabLayer, filters)
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        _fetchAndRenderStrongMarkers(ctx, _buildStrongDomain(filters, geoKab));
+        renderSummaryMarkers(ctx, geoLayer, 'jumlah_strong', (props, polygonLayer) => {
+            ctx._appendBreadcrumb(`<i class="fa fa-map"></i> Kec. ${props.name}`);
+            drillDownStrongKelurahan(ctx, props, polygonLayer, filters, kabProps, kabLayer);
+        });
         _addStrongBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         ctx.drillKabupatenId = kabProps.id;

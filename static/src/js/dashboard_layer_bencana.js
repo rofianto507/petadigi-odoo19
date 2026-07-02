@@ -1,7 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
-import { fmtTanggal, renderKabupatenSummaryMarkers } from './dashboard_helpers';
+import { fmtTanggal, renderKabupatenSummaryMarkers, renderSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Bencana
@@ -413,7 +413,10 @@ export async function drillDownBencanaKecamatan(ctx, kabProps, kabLayer, filters
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadBencanaMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]));
+        renderSummaryMarkers(ctx, geoLayer, 'jumlah_kasus', (props, polygonLayer) => {
+            ctx._appendBreadcrumb(`<i class="fa fa-map"></i> Kec. ${props.name}`);
+            drillDownBencanaKelurahan(ctx, props, polygonLayer, filters, kabProps, kabLayer);
+        });
         _addBencanaBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         ctx.drillKabupatenId = kabProps.id;

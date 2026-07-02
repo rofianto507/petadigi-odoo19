@@ -1,6 +1,6 @@
 ﻿/** @odoo-module **/
 
-import { renderKabupatenSummaryMarkers } from './dashboard_helpers';
+import { renderKabupatenSummaryMarkers, renderSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Lokasi Penting
@@ -370,7 +370,10 @@ export async function drillDownLokasiKecamatan(ctx, kabProps, kabLayer, filters)
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadLokasiMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]));
+        renderSummaryMarkers(ctx, geoLayer, 'jumlah_lokasi', (props, polygonLayer) => {
+            ctx._appendBreadcrumb(`<i class="fa fa-map"></i> Kec. ${props.name}`);
+            drillDownLokasiKelurahan(ctx, props, polygonLayer, filters, kabProps, kabLayer);
+        });
         _addLokasiBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         ctx.drillKabupatenId = kabProps.id;

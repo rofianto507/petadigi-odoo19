@@ -149,7 +149,10 @@ export function addBackButton(ctx, targetLevel, backCtx, onBack) {
  * @param {string}       appendIcon    - FontAwesome class untuk append breadcrumb (mis. 'fa-map-marker')
  * @param {Function}     drillDownFn   - fungsi drill-down (ctx, props, polygonLayer, filters)
  */
-export function renderKabupatenSummaryMarkers(ctx, geoLayer, filters, countProp, mainBreadcrumb, appendIcon, drillDownFn) {
+// Base renderer: satu bubble per polygon, callback penuh dari caller.
+// Dipakai oleh renderKabupatenSummaryMarkers (level kabupaten) maupun
+// level kecamatan di masing-masing layer.
+export function renderSummaryMarkers(ctx, geoLayer, countProp, onClickFn) {
     ctx.markerLayerGroup.clearLayers();
     const markers = [];
 
@@ -177,19 +180,20 @@ export function renderKabupatenSummaryMarkers(ctx, geoLayer, filters, countProp,
 
         const marker = L.marker([center.lat, center.lng], { icon });
         marker._markerCount = count;
-
-        const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
-        marker.on('click', () => {
-            ctx.map.closePopup();
-            ctx._updateBreadcrumb(mainBreadcrumb);
-            ctx._appendBreadcrumb(`<i class="fa ${appendIcon}"></i> ${tipeLabel} ${props.name}`);
-            drillDownFn(ctx, props, polygonLayer, filters);
-        });
-
+        marker.on('click', () => { ctx.map.closePopup(); onClickFn(props, polygonLayer); });
         markers.push(marker);
     });
 
     ctx.markerLayerGroup.addLayers(markers);
+}
+
+export function renderKabupatenSummaryMarkers(ctx, geoLayer, filters, countProp, mainBreadcrumb, appendIcon, drillDownFn) {
+    renderSummaryMarkers(ctx, geoLayer, countProp, (props, polygonLayer) => {
+        const tipeLabel = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+        ctx._updateBreadcrumb(mainBreadcrumb);
+        ctx._appendBreadcrumb(`<i class="fa ${appendIcon}"></i> ${tipeLabel} ${props.name}`);
+        drillDownFn(ctx, props, polygonLayer, filters);
+    });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

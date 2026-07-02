@@ -1,7 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { KRIMINAL_COLORS, getKriminalColor } from './dashboard_layer_kriminal';
-import { renderKabupatenSummaryMarkers } from './dashboard_helpers';
+import { renderKabupatenSummaryMarkers, renderSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Patroli — Arsiran Kriminalitas + Titik Lokasi Kegiatan Patroli
@@ -505,7 +505,11 @@ export async function drillDownPatroliKecamatan(ctx, kabProps, kabLayer, filters
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadPatroliMarkers(ctx, filters, geoKab);
+        if (ctx._patroliPolylineLayer) ctx._patroliPolylineLayer.clearLayers();
+        renderSummaryMarkers(ctx, geoLayer, 'jumlah_patroli', (props, polygonLayer) => {
+            ctx._appendBreadcrumb(`<i class="fa fa-map"></i> Kec. ${props.name}`);
+            drillDownPatroliKelurahan(ctx, props, polygonLayer, filters, kabProps, kabLayer);
+        });
         _addPatroliBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         ctx.drillKabupatenId = kabProps.id;

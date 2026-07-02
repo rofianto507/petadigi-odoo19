@@ -1,7 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
-import { fmtTanggal, renderKabupatenSummaryMarkers } from './dashboard_helpers';
+import { fmtTanggal, renderKabupatenSummaryMarkers, renderSummaryMarkers } from './dashboard_helpers';
 
 /**
  * Peta Lalu Lintas
@@ -415,7 +415,10 @@ export async function drillDownLalinKecamatan(ctx, kabProps, kabLayer, filters) 
         });
 
         ctx.kecamatanLayerGroup.addLayer(geoLayer);
-        await _loadLalinMarkers(ctx, _buildDomain(filters, [['kabupaten_id', '=', kabProps.id]]), 500);
+        renderSummaryMarkers(ctx, geoLayer, 'jumlah_kasus', (props, polygonLayer) => {
+            ctx._appendBreadcrumb(`<i class="fa fa-map"></i> Kec. ${props.name}`);
+            drillDownLalinKelurahan(ctx, props, polygonLayer, filters, kabProps, kabLayer);
+        });
         _addLalinBackButton(ctx, 'kabupaten', { kabProps, kabLayer, filters });
 
         ctx.drillKabupatenId = kabProps.id;
