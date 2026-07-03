@@ -44,7 +44,10 @@ class StrongPoint(models.Model):
     longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
     foto = fields.Binary('Foto Dokumentasi', attachment=True)
     foto_filename = fields.Char('Nama File Foto')
+    keterangan_lokasi = fields.Char('Keterangan Lokasi', tracking=True)
     keterangan = fields.Text('Keterangan', tracking=True)
+    subdit_id = fields.Many2one('petadigi.subdit', string='Subdit', tracking=True,
+                                help='Diisi otomatis dari form publik atau user subdit yang input')
     state = fields.Selection([
         ('PROSES', 'PROSES'),
         ('SELESAI', 'SELESAI'),
@@ -74,6 +77,8 @@ class StrongPoint(models.Model):
             defaults.setdefault('polres_id', user.polres_id.id)
         if user.polsek_id and 'polsek_id' in fields_list:
             defaults.setdefault('polsek_id', user.polsek_id.id)
+        if user.subdit_id and 'subdit_id' in fields_list:
+            defaults.setdefault('subdit_id', user.subdit_id.id)
         if 'kabupaten_id' in fields_list and user.polres_id:
             kabs = self.env['petadigi.kabupaten'].search(
                 [('polres_id', '=', user.polres_id.id)], limit=2)

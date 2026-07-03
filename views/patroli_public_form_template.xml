@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="template_patroli_public_form" name="Form Publik Patroli">
+        <html lang="id">
+            <head>
+                <meta charset="UTF-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+                <meta name="theme-color" content="#71639e"/>
+                <meta name="mobile-web-app-capable" content="yes"/>
+                <meta name="apple-mobile-web-app-capable" content="yes"/>
+                <title>Patroli - <t t-out="config.name"/></title>
+                <link rel="stylesheet" href="/petadigi/static/lib/fontawesome/css/font-awesome.css"/>
+                <link rel="stylesheet" type="text/css" href="/petadigi/static/lib/leaflet/leaflet.css"/>
+                <link rel="stylesheet" type="text/css" t-attf-href="/petadigi/static/src/css/sumur_form.css?v=1"/>
+                <style>
+                    :root {
+                        --sf-primary:       #71639e;
+                        --sf-primary-dk:    #5a4f7f;
+                        --sf-primary-lt:    #ede9f6;
+                        --sf-outline-focus: #71639e;
+                        --sf-surface-var:   #f5f3fb;
+                        --sf-bg:            #f4f3f8;
+                        --sf-on-surf-var:   #49454f;
+                        --sf-outline:       #ddd8ef;
+                    }
+                    /* ── Fase banner ── */
+                    .sf-phase-banner {
+                        background: var(--sf-success-lt);
+                        border-left: 4px solid var(--sf-success);
+                        border-radius: var(--sf-radius-sm);
+                        padding: 12px 16px;
+                        margin: 12px 16px 0;
+                        display: flex; align-items: center; gap: 10px;
+                        font-size: 14px; font-weight: 500;
+                        color: var(--sf-success);
+                    }
+                    .sf-phase-banner .sf-phase-banner-icon { font-size: 20px; }
+                    /* ── Personel ── */
+                    .sf-personel-count-badge {
+                        display: inline-flex; align-items: center; justify-content: center;
+                        min-width: 20px; height: 20px; padding: 0 5px;
+                        border-radius: 10px;
+                        background: var(--sf-primary-lt); color: var(--sf-primary-dk);
+                        font-size: 11px; font-weight: 700; margin-left: 6px;
+                    }
+                    .sf-personel-list { margin-bottom: 4px; }
+                    .sf-personel-empty {
+                        font-size: 13px; color: var(--sf-on-surf-var);
+                        padding: 10px 0 6px; font-style: italic;
+                    }
+                    .sf-personel-row {
+                        display: flex; align-items: center; gap: 10px;
+                        padding: 8px 0;
+                        border-bottom: 1px solid var(--sf-outline);
+                    }
+                    .sf-personel-row:last-child { border-bottom: none; }
+                    .sf-personel-avatar {
+                        width: 32px; height: 32px; border-radius: 50%;
+                        background: var(--sf-primary-lt); color: var(--sf-primary);
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 14px; flex-shrink: 0;
+                    }
+                    .sf-personel-name {
+                        flex: 1; font-size: 14px; font-weight: 500;
+                        color: var(--sf-on-surface);
+                    }
+                    .sf-personel-del {
+                        width: 30px; height: 30px; border-radius: 50%;
+                        border: none; background: var(--sf-error-lt); color: var(--sf-error);
+                        cursor: pointer; display: flex; align-items: center;
+                        justify-content: center; font-size: 13px; flex-shrink: 0;
+                        transition: background .15s;
+                    }
+                    .sf-personel-del:disabled { opacity: .5; cursor: default; }
+                    .sf-personel-add-form {
+                        padding-top: 10px;
+                        border-top: 1px dashed var(--sf-outline);
+                        margin-top: 8px;
+                    }
+                    .sf-personel-add-row {
+                        display: flex; gap: 8px; align-items: center; margin-top: 6px;
+                    }
+                    .sf-btn-add-personel {
+                        width: 44px; height: 44px; border-radius: 50%; border: none;
+                        background: var(--sf-primary); color: #fff;
+                        cursor: pointer; display: flex; align-items: center;
+                        justify-content: center; font-size: 16px; flex-shrink: 0;
+                        transition: background .15s;
+                    }
+                    .sf-btn-add-personel:disabled { opacity: .5; cursor: default; }
+                    .sf-personel-err { font-size: 12px; color: var(--sf-error); margin-top: 6px; }
+                    /* ── Section label dengan action button ── */
+                    .sf-section-label-row {
+                        display: flex; align-items: center; justify-content: space-between;
+                        font-size: 11px; font-weight: 700; letter-spacing: 1px;
+                        text-transform: uppercase; color: var(--sf-primary);
+                        padding: 0 16px; margin-bottom: 8px;
+                    }
+                    .sf-btn-pill {
+                        display: inline-flex; align-items: center; gap: 5px;
+                        padding: 6px 14px; border-radius: 20px;
+                        background: var(--sf-primary); color: #fff;
+                        border: none; font-size: 12px; font-weight: 600;
+                        cursor: pointer; letter-spacing: 0; text-transform: none;
+                    }
+                    .sf-btn-pill:active { opacity: .85; }
+                    /* ── Lokasi titik ── */
+                    .sf-lokasi-empty {
+                        font-size: 13px; color: var(--sf-on-surf-var);
+                        padding: 10px 0 6px; font-style: italic;
+                    }
+                    .sf-lokasi-item {
+                        display: flex; align-items: flex-start; gap: 10px;
+                        padding: 10px 0;
+                        border-bottom: 1px solid var(--sf-outline);
+                    }
+                    .sf-lokasi-item:last-child { border-bottom: none; }
+                    .sf-lokasi-numbered {
+                        width: 32px; height: 32px; border-radius: 50%;
+                        background: var(--sf-primary); color: #fff;
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 13px; font-weight: 700; flex-shrink: 0;
+                    }
+                    .sf-lokasi-meta {
+                        display: flex; align-items: center; gap: 8px;
+                        margin-bottom: 2px;
+                    }
+                    .sf-lokasi-meta-time {
+                        font-size: 13px; font-weight: 600; color: var(--sf-on-surface);
+                    }
+                    .sf-lokasi-meta-ico { font-size: 13px; color: var(--sf-primary); }
+                    .sf-lokasi-gps-line {
+                        font-size: 12px; font-family: monospace;
+                        color: var(--sf-on-surf-var); margin-bottom: 2px;
+                    }
+                    .sf-lokasi-catatan {
+                        font-size: 13px; color: var(--sf-on-surface); margin-top: 2px;
+                    }
+                    .sf-lokasi-del {
+                        width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+                        border: none; background: var(--sf-error-lt); color: var(--sf-error);
+                        cursor: pointer; display: flex; align-items: center;
+                        justify-content: center; font-size: 12px; margin-top: 1px;
+                        transition: background .15s;
+                    }
+                    .sf-lokasi-del:disabled { opacity: .5; cursor: default; }
+                    .sf-lokasi-count-badge {
+                        display: inline-flex; align-items: center; justify-content: center;
+                        min-width: 20px; height: 20px; padding: 0 5px;
+                        border-radius: 10px;
+                        background: var(--sf-primary-lt); color: var(--sf-primary-dk);
+                        font-size: 11px; font-weight: 700; margin-left: 6px;
+                    }
+                    /* ── Tambah titik lokasi form (sub-phase) ── */
+                    .sf-appbar-back {
+                        width: 36px; height: 36px; border-radius: 50%;
+                        border: none; background: rgba(255,255,255,.2); color: #fff;
+                        cursor: pointer; display: flex; align-items: center;
+                        justify-content: center; font-size: 16px; flex-shrink: 0;
+                        margin-right: 8px;
+                    }
+                    .sf-gps-posisi {
+                        display: flex; align-items: center; justify-content: space-between;
+                        gap: 10px; margin-bottom: 12px;
+                    }
+                    .sf-gps-posisi-text {
+                        font-size: 14px; font-weight: 500; flex: 1;
+                    }
+                    .sf-gps-posisi-text.ok { color: var(--sf-success); }
+                    .sf-gps-posisi-text.err { color: var(--sf-error); }
+                    .sf-gps-posisi-text.loading { color: var(--sf-on-surf-var); }
+                    .sf-accuracy {
+                        font-size: 12px; color: var(--sf-on-surf-var);
+                        font-weight: 400; margin-left: 4px;
+                    }
+                    .sf-btn-gps {
+                        display: inline-flex; align-items: center; gap: 6px;
+                        padding: 8px 14px; border-radius: var(--sf-radius-sm);
+                        border: 1px solid var(--sf-primary); background: var(--sf-primary-lt);
+                        color: var(--sf-primary); font-size: 13px; font-weight: 500;
+                        cursor: pointer; white-space: nowrap; flex-shrink: 0;
+                    }
+                    .sf-btn-gps:disabled { opacity: .5; cursor: default; }
+                    .sf-coords-grid {
+                        display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+                        margin-top: 12px;
+                    }
+                    .sf-coord-box label {
+                        display: block; font-size: 11px; font-weight: 700;
+                        color: var(--sf-on-surf-var); margin-bottom: 4px;
+                        letter-spacing: 0.5px;
+                    }
+                    .sf-coord-input {
+                        width: 100%; padding: 10px 12px; box-sizing: border-box;
+                        border: 1px solid var(--sf-outline);
+                        border-radius: var(--sf-radius-sm);
+                        background: var(--sf-surface-var);
+                        font-size: 14px; color: var(--sf-on-surface);
+                        font-family: monospace;
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="ppf-app" t-att-data-init="init_data"/>
+                <script type="text/javascript" t-attf-src="/petadigi/static/lib/leaflet/leaflet.js"/>
+                <script type="text/javascript" t-attf-src="/web/static/lib/owl/owl.js"/>
+                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/patroli_public_form.js?v=1"/>
+            </body>
+        </html>
+    </template>
+</odoo>

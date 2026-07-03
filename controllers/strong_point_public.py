@@ -105,6 +105,9 @@ class StrongPointPublicController(http.Controller):
         if not record.exists():
             return None
         if user.has_group('petadigi.group_subdit_strong_point'):
+            if record.subdit_id:
+                return record if record.subdit_id.id == user.subdit_id.id else None
+            # fallback data lama sebelum migrasi
             return record if record.create_uid.id == user.id else None
         if record.polres_id.id != user.polres_id.id:
             return None
@@ -251,7 +254,7 @@ self.addEventListener('fetch', e => {
             return {'error': 'unauthorized'}
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         SP   = request.env['petadigi.strong_point'].sudo()
-        base = ([('create_uid', '=', user.id)] if is_subdit_sp
+        base = ([('subdit_id', '=', user.subdit_id.id)] if is_subdit_sp
                 else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
 
@@ -269,7 +272,7 @@ self.addEventListener('fetch', e => {
         personel_today = groups_today[0]['personel_count'] if groups_today else 0
 
         P      = request.env['petadigi.patroli'].sudo()
-        base_p = ([('create_uid', '=', user.id)] if is_subdit_sp
+        base_p = ([('subdit_id', '=', user.subdit_id.id)] if is_subdit_sp
                   else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                   else [('polres_id', '=', user.polres_id.id)])
         today_domain = base_p + [('tanggal_mulai', '>=', utc_start),
@@ -322,7 +325,7 @@ self.addEventListener('fetch', e => {
             return {'error': 'unauthorized'}
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         SP   = request.env['petadigi.strong_point'].sudo()
-        base = ([('create_uid', '=', user.id)] if is_subdit_sp
+        base = ([('subdit_id', '=', user.subdit_id.id)] if is_subdit_sp
                 else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
 
@@ -398,7 +401,7 @@ self.addEventListener('fetch', e => {
             return []
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         SP   = request.env['petadigi.strong_point'].sudo()
-        base = ([('create_uid', '=', user.id)] if is_subdit_sp
+        base = ([('subdit_id', '=', user.subdit_id.id)] if is_subdit_sp
                 else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
         if filter == 'today':
@@ -450,6 +453,7 @@ self.addEventListener('fetch', e => {
             vals = {
                 'polres_id':     resolved_polres,
                 'polsek_id':     resolved_polsek,
+                'subdit_id':     user.subdit_id.id if is_subdit_sp and user.subdit_id else False,
                 'lokasi_id':     int(kwargs['lokasi_id'])    if kwargs.get('lokasi_id')    else False,
                 'kabupaten_id':  int(kwargs['kabupaten_id']) if kwargs.get('kabupaten_id') else False,
                 'kecamatan_id':  int(kwargs['kecamatan_id']) if kwargs.get('kecamatan_id') else False,
@@ -554,7 +558,10 @@ self.addEventListener('fetch', e => {
             if not p.exists():
                 return {'error': 'unauthorized'}
             if user.has_group('petadigi.group_subdit_strong_point'):
-                if p.strong_point_id.create_uid.id != user.id:
+                sp = p.strong_point_id
+                if sp.subdit_id and sp.subdit_id.id != user.subdit_id.id:
+                    return {'error': 'unauthorized'}
+                elif not sp.subdit_id and sp.create_uid.id != user.id:
                     return {'error': 'unauthorized'}
             elif p.strong_point_id.polres_id.id != user.polres_id.id:
                 return {'error': 'unauthorized'}
@@ -672,6 +679,9 @@ self.addEventListener('fetch', e => {
         if not rec.exists():
             return None
         if user.has_group('petadigi.group_subdit_strong_point'):
+            if rec.subdit_id:
+                return rec if rec.subdit_id.id == user.subdit_id.id else None
+            # fallback data lama sebelum migrasi
             return rec if rec.create_uid.id == user.id else None
         if rec.polres_id.id != user.polres_id.id:
             return None
@@ -683,7 +693,10 @@ self.addEventListener('fetch', e => {
         if not lokasi.exists():
             return False
         if user.has_group('petadigi.group_subdit_strong_point'):
-            return lokasi.patroli_id.create_uid.id == user.id
+            p = lokasi.patroli_id
+            if p.subdit_id:
+                return p.subdit_id.id == user.subdit_id.id
+            return p.create_uid.id == user.id
         return lokasi.patroli_id.polres_id.id == user.polres_id.id
 
     def _get_polda_polres(self):
@@ -697,7 +710,7 @@ self.addEventListener('fetch', e => {
             return []
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
         P    = request.env['petadigi.patroli'].sudo()
-        base = ([('create_uid', '=', user.id)] if is_subdit_sp
+        base = ([('subdit_id', '=', user.subdit_id.id)] if is_subdit_sp
                 else [('polsek_id', '=', user.polsek_id.id)] if user.polsek_id
                 else [('polres_id', '=', user.polres_id.id)])
         if filter == 'today':
@@ -792,6 +805,7 @@ self.addEventListener('fetch', e => {
             vals = {
                 'polres_id':     resolved_polres,
                 'polsek_id':     resolved_polsek,
+                'subdit_id':     user.subdit_id.id if is_subdit_sp and user.subdit_id else False,
                 'kabupaten_id':  int(kwargs['kabupaten_id']) if kwargs.get('kabupaten_id') else False,
                 'kecamatan_id':  int(kwargs['kecamatan_id']) if kwargs.get('kecamatan_id') else False,
                 'desa_id':       int(kwargs['desa_id'])      if kwargs.get('desa_id')      else False,
@@ -852,7 +866,10 @@ self.addEventListener('fetch', e => {
             if not p.exists():
                 return {'error': 'unauthorized'}
             if user.has_group('petadigi.group_subdit_strong_point'):
-                if p.patroli_id.create_uid.id != user.id:
+                pt = p.patroli_id
+                if pt.subdit_id and pt.subdit_id.id != user.subdit_id.id:
+                    return {'error': 'unauthorized'}
+                elif not pt.subdit_id and pt.create_uid.id != user.id:
                     return {'error': 'unauthorized'}
             elif p.patroli_id.polres_id.id != user.polres_id.id:
                 return {'error': 'unauthorized'}
@@ -900,6 +917,391 @@ self.addEventListener('fetch', e => {
             return {'success': True}
         except Exception as e:
             _logger.error('Patroli lokasi_foto error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    # ════════════════════════════════════════════════════════════════════════
+    # PUBLIC FORM STRONG POINT — akses via token, tanpa login
+    # URL: /strong/<token>
+    # ════════════════════════════════════════════════════════════════════════
+
+    def _strong_pub_valid(self, token):
+        """Return form config record jika token valid dan aktif, else False."""
+        return request.env['petadigi.strong_point.form_config'].sudo().search([
+            ('public_token', '=', token),
+            ('is_aktif', '=', True),
+        ], limit=1)
+
+    @http.route('/strong/<string:token>', type='http', auth='public', csrf=False, website=False)
+    def strong_public_form(self, token, **kwargs):
+        config = self._strong_pub_valid(token)
+        if not config:
+            return request.not_found()
+        is_subdit_form = bool(config.subdit_id)
+        auto_polres_id = None
+        if is_subdit_form:
+            polda = self._get_polda_polres()
+            auto_polres_id = polda.id if polda else None
+        polres_list = [] if is_subdit_form else request.env['petadigi.polres'].sudo().search_read(
+            [], ['id', 'name'], order='name asc'
+        )
+        init_data = json.dumps({
+            'token': token,
+            'config_name': config.name,
+            'polres_list': polres_list,
+            'is_subdit_form': is_subdit_form,
+            'auto_polres_id': auto_polres_id,
+        })
+        return request.render('petadigi.template_strong_public_form', {
+            'config': config,
+            'init_data': init_data,
+        })
+
+    @http.route('/strong/api/polsek', type='jsonrpc', auth='public', csrf=False)
+    def strong_pub_polsek(self, polres_id, token=None, **kwargs):
+        if not token or not self._strong_pub_valid(token):
+            return []
+        return request.env['petadigi.polsek'].sudo().search_read(
+            [('polres_id', '=', int(polres_id))], ['id', 'name'], order='name asc'
+        )
+
+    @http.route('/strong/api/kabupaten', type='jsonrpc', auth='public', csrf=False)
+    def strong_pub_kabupaten(self, polres_id, token=None, **kwargs):
+        if not token or not self._strong_pub_valid(token):
+            return []
+        polres = request.env['petadigi.polres'].sudo().browse(int(polres_id))
+        if not polres.exists():
+            return []
+        # Polres tanpa polsek (level Polda) → tampilkan semua kabupaten
+        domain = [] if polres.polsek_count == 0 else [('polres_id', '=', polres.id)]
+        return request.env['petadigi.kabupaten'].sudo().search_read(
+            domain, ['id', 'name'], order='name asc'
+        )
+
+    @http.route('/strong/api/kecamatan', type='jsonrpc', auth='public', csrf=False)
+    def strong_pub_kecamatan(self, kabupaten_id, token=None, **kwargs):
+        if not token or not self._strong_pub_valid(token):
+            return []
+        return request.env['petadigi.kecamatan'].sudo().search_read(
+            [('kabupaten_id', '=', int(kabupaten_id))], ['id', 'name'], order='name asc'
+        )
+
+    @http.route('/strong/api/desa', type='jsonrpc', auth='public', csrf=False)
+    def strong_pub_desa(self, kecamatan_id, token=None, **kwargs):
+        if not token or not self._strong_pub_valid(token):
+            return []
+        return request.env['petadigi.desa'].sudo().search_read(
+            [('kecamatan_id', '=', int(kecamatan_id))], ['id', 'name'], order='name asc'
+        )
+
+    @http.route('/strong/api/submit_public', type='jsonrpc', auth='public', csrf=False)
+    def strong_pub_submit(self, token, data, **kwargs):
+        from odoo import fields as odoo_fields
+        config = self._strong_pub_valid(token)
+        if not config:
+            return {'success': False, 'message': 'Form tidak valid atau sudah tidak aktif'}
+        if config.subdit_id:
+            polda = self._get_polda_polres()
+            if not polda:
+                return {'success': False, 'message': 'Konfigurasi Polda tidak ditemukan'}
+            polres_id = polda.id
+            polsek_id = False
+        else:
+            polres_id = int(data.get('polres_id') or 0) or False
+            if not polres_id:
+                return {'success': False, 'message': 'Polres wajib dipilih'}
+            polres = request.env['petadigi.polres'].sudo().browse(polres_id)
+            if not polres.exists():
+                return {'success': False, 'message': 'Polres tidak ditemukan'}
+            polsek_id = int(data.get('polsek_id') or 0) or False
+            if polsek_id:
+                polsek = request.env['petadigi.polsek'].sudo().browse(polsek_id)
+                if not polsek.exists() or polsek.polres_id.id != polres_id:
+                    polsek_id = False
+        try:
+            vals = {
+                'polres_id':         polres_id,
+                'polsek_id':         polsek_id,
+                'subdit_id':         config.subdit_id.id if config.subdit_id else False,
+                'kabupaten_id':      int(data.get('kabupaten_id') or 0) or False,
+                'kecamatan_id':      int(data.get('kecamatan_id') or 0) or False,
+                'desa_id':           int(data.get('desa_id') or 0) or False,
+                'keterangan_lokasi': (data.get('keterangan_lokasi') or '').strip(),
+                'latitude':          float(data.get('latitude') or 0),
+                'longitude':         float(data.get('longitude') or 0),
+                'keterangan':        (data.get('keterangan') or '').strip(),
+                'tanggal_mulai':     odoo_fields.Datetime.now(),
+                'state':             'PROSES',
+            }
+            foto = data.get('foto')
+            if foto:
+                if isinstance(foto, str) and ',' in foto:
+                    foto = foto.split(',', 1)[1]
+                if len(foto) > 700_000:
+                    return {'success': False, 'message': 'Ukuran foto terlalu besar. Coba pilih foto lain.'}
+                vals['foto'] = foto
+            result = request.env['petadigi.strong_point'].sudo().create(vals)
+            return {'success': True, 'code': result.code, 'record_id': result.id}
+        except Exception as e:
+            _logger.error('strong_pub_submit error (token=%s): %s', token, e, exc_info=True)
+            return {'success': False, 'message': 'Terjadi kesalahan pada server. Silakan coba lagi.'}
+
+    @http.route('/strong/api/personel_add', type='jsonrpc', auth='public', csrf=False)
+    def strong_pub_personel_add(self, token, record_id, nama, pangkat=None, **kwargs):
+        if not token or not self._strong_pub_valid(token):
+            return {'error': 'unauthorized'}
+        if not (nama or '').strip():
+            return {'error': 'Nama personel wajib diisi'}
+        rec = request.env['petadigi.strong_point'].sudo().browse(int(record_id))
+        if not rec.exists():
+            return {'error': 'Data tidak ditemukan'}
+        try:
+            p = request.env['petadigi.personel'].sudo().create({
+                'strong_point_id': rec.id,
+                'nama':    nama.strip(),
+                'pangkat': (pangkat or '').strip(),
+            })
+            return {'success': True, 'id': p.id, 'nama_lengkap': p.nama_lengkap}
+        except Exception as e:
+            _logger.error('strong_pub_personel_add error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/strong/api/personel_remove', type='jsonrpc', auth='public', csrf=False)
+    def strong_pub_personel_remove(self, token, personel_id, **kwargs):
+        if not token or not self._strong_pub_valid(token):
+            return {'error': 'unauthorized'}
+        try:
+            p = request.env['petadigi.personel'].sudo().browse(int(personel_id))
+            if not p.exists():
+                return {'error': 'not found'}
+            p.sudo().unlink()
+            return {'success': True}
+        except Exception as e:
+            _logger.error('strong_pub_personel_remove error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/strong/api/set_selesai', type='jsonrpc', auth='public', csrf=False)
+    def strong_pub_set_selesai(self, token, record_id, tanggal_selesai, **kwargs):
+        if not token or not self._strong_pub_valid(token):
+            return {'error': 'unauthorized'}
+        if not tanggal_selesai:
+            return {'error': 'Tanggal selesai harus diisi'}
+        try:
+            rec = request.env['petadigi.strong_point'].sudo().browse(int(record_id))
+            if not rec.exists():
+                return {'error': 'Data tidak ditemukan'}
+            rec.sudo().write({
+                'state': 'SELESAI',
+                'tanggal_selesai': _wib_to_utc(tanggal_selesai.replace('T', ' ')),
+            })
+            return {'success': True}
+        except Exception as e:
+            _logger.error('strong_pub_set_selesai error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    # ── PUBLIC PATROLI FORM ───────────────────────────────────────────────────
+
+    def _patroli_pub_valid(self, token):
+        if not token:
+            return False
+        return request.env['petadigi.patroli.form_config'].sudo().search(
+            [('public_token', '=', token), ('is_aktif', '=', True)], limit=1
+        )
+
+    @http.route('/patroli/<string:token>', type='http', auth='public', csrf=False, website=False)
+    def patroli_public_form(self, token, **kwargs):
+        config = self._patroli_pub_valid(token)
+        if not config:
+            return request.not_found()
+        is_subdit_form = bool(config.subdit_id)
+        auto_polres_id = None
+        if is_subdit_form:
+            polda = self._get_polda_polres()
+            auto_polres_id = polda.id if polda else None
+        polres_list = [] if is_subdit_form else request.env['petadigi.polres'].sudo().search_read(
+            [], ['id', 'name'], order='name asc'
+        )
+        init_data = json.dumps({
+            'token':          token,
+            'config_name':    config.name,
+            'polres_list':    polres_list,
+            'is_subdit_form': is_subdit_form,
+            'auto_polres_id': auto_polres_id,
+        })
+        return request.render('petadigi.template_patroli_public_form', {
+            'config':    config,
+            'init_data': init_data,
+        })
+
+    @http.route('/patroli/api/polsek', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_polsek(self, polres_id, token=None, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return []
+        return request.env['petadigi.polsek'].sudo().search_read(
+            [('polres_id', '=', int(polres_id))], ['id', 'name'], order='name asc'
+        )
+
+    @http.route('/patroli/api/kabupaten', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_kabupaten(self, polres_id, token=None, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return []
+        polres = request.env['petadigi.polres'].sudo().browse(int(polres_id))
+        if not polres.exists():
+            return []
+        domain = [] if polres.polsek_count == 0 else [('polres_id', '=', polres.id)]
+        return request.env['petadigi.kabupaten'].sudo().search_read(
+            domain, ['id', 'name'], order='name asc'
+        )
+
+    @http.route('/patroli/api/kecamatan', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_kecamatan(self, kabupaten_id, token=None, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return []
+        return request.env['petadigi.kecamatan'].sudo().search_read(
+            [('kabupaten_id', '=', int(kabupaten_id))], ['id', 'name'], order='name asc'
+        )
+
+    @http.route('/patroli/api/desa', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_desa(self, kecamatan_id, token=None, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return []
+        return request.env['petadigi.desa'].sudo().search_read(
+            [('kecamatan_id', '=', int(kecamatan_id))], ['id', 'name'], order='name asc'
+        )
+
+    @http.route('/patroli/api/submit', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_submit(self, token, data, **kwargs):
+        config = token and self._patroli_pub_valid(token)
+        if not config:
+            return {'error': 'unauthorized'}
+        kabupaten_id = data.get('kabupaten_id')
+        if not kabupaten_id:
+            return {'error': 'Kabupaten/Kota wajib dipilih'}
+        try:
+            if config.subdit_id:
+                polda = self._get_polda_polres()
+                if not polda:
+                    return {'error': 'Konfigurasi Polda tidak ditemukan'}
+                polres_id = polda.id
+                polsek_id = False
+            else:
+                polres_id = data.get('polres_id')
+                if not polres_id:
+                    return {'error': 'Polres wajib dipilih'}
+                polres = request.env['petadigi.polres'].sudo().browse(int(polres_id))
+                if not polres.exists():
+                    return {'error': 'Polres tidak valid'}
+                polres_id = polres.id
+                polsek_id = int(data['polsek_id']) if data.get('polsek_id') else False
+            vals = {
+                'polres_id':    polres_id,
+                'polsek_id':    polsek_id,
+                'subdit_id':    config.subdit_id.id if config.subdit_id else False,
+                'kabupaten_id': int(kabupaten_id),
+                'kecamatan_id': int(data['kecamatan_id']) if data.get('kecamatan_id') else False,
+                'desa_id':      int(data['desa_id'])      if data.get('desa_id')      else False,
+                'keterangan':   data.get('keterangan') or '',
+                'state':        'PROSES',
+            }
+            result = request.env['petadigi.patroli'].sudo().create(vals)
+            return {'success': True, 'code': result.code, 'record_id': result.id}
+        except Exception as e:
+            _logger.error('patroli_pub_submit error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/patroli/api/personel_add', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_personel_add(self, token, record_id, nama, pangkat=None, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return {'error': 'unauthorized'}
+        if not (nama or '').strip():
+            return {'error': 'Nama personel wajib diisi'}
+        rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
+        if not rec.exists():
+            return {'error': 'Data tidak ditemukan'}
+        try:
+            p = request.env['petadigi.personel_patroli'].sudo().create({
+                'patroli_id': rec.id,
+                'nama':       nama.strip(),
+                'pangkat':    (pangkat or '').strip(),
+            })
+            return {'success': True, 'id': p.id, 'nama_lengkap': p.nama_lengkap}
+        except Exception as e:
+            _logger.error('patroli_pub_personel_add error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/patroli/api/personel_remove', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_personel_remove(self, token, personel_id, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return {'error': 'unauthorized'}
+        try:
+            p = request.env['petadigi.personel_patroli'].sudo().browse(int(personel_id))
+            if not p.exists():
+                return {'error': 'not found'}
+            p.sudo().unlink()
+            return {'success': True}
+        except Exception as e:
+            _logger.error('patroli_pub_personel_remove error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/patroli/api/lokasi_add', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_lokasi_add(self, token, record_id, latitude, longitude,
+                                tanggal=None, catatan=None, foto=None, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return {'error': 'unauthorized'}
+        rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
+        if not rec.exists():
+            return {'error': 'Data tidak ditemukan'}
+        try:
+            tgl_str = (tanggal or '').replace('T', ' ')
+            tgl_utc = _wib_to_utc(tgl_str) if tgl_str else datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            # Display: ambil HH:MM dari input (sudah WIB)
+            tanggal_display = tgl_str[11:16] if len(tgl_str) >= 16 else (datetime.utcnow() + timedelta(hours=7)).strftime('%H:%M')
+            vals = {
+                'patroli_id': rec.id,
+                'tanggal':    tgl_utc,
+                'latitude':   float(latitude)  if latitude  else 0.0,
+                'longitude':  float(longitude) if longitude else 0.0,
+                'catatan':    catatan or '',
+            }
+            if foto:
+                vals['foto']          = foto
+                vals['foto_filename'] = 'patroli_lokasi.jpg'
+            l = request.env['petadigi.lokasi_patroli'].sudo().create(vals)
+            return {'success': True, 'id': l.id, 'tanggal_display': tanggal_display}
+        except Exception as e:
+            _logger.error('patroli_pub_lokasi_add error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/patroli/api/lokasi_remove', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_lokasi_remove(self, token, lokasi_id, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return {'error': 'unauthorized'}
+        try:
+            l = request.env['petadigi.lokasi_patroli'].sudo().browse(int(lokasi_id))
+            if not l.exists():
+                return {'error': 'not found'}
+            l.sudo().unlink()
+            return {'success': True}
+        except Exception as e:
+            _logger.error('patroli_pub_lokasi_remove error: %s', e, exc_info=True)
+            return {'error': str(e)}
+
+    @http.route('/patroli/api/set_selesai', type='jsonrpc', auth='public', csrf=False)
+    def patroli_pub_set_selesai(self, token, record_id, tanggal_selesai, **kwargs):
+        if not token or not self._patroli_pub_valid(token):
+            return {'error': 'unauthorized'}
+        if not tanggal_selesai:
+            return {'error': 'Tanggal selesai harus diisi'}
+        try:
+            rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
+            if not rec.exists():
+                return {'error': 'Data tidak ditemukan'}
+            rec.sudo().write({
+                'state':           'SELESAI',
+                'tanggal_selesai': _wib_to_utc(tanggal_selesai.replace('T', ' ')),
+            })
+            return {'success': True}
+        except Exception as e:
+            _logger.error('patroli_pub_set_selesai error: %s', e, exc_info=True)
             return {'error': str(e)}
 
     @http.route('/petadigi/api/patroli/lokasi_remove', type='jsonrpc', auth='public', csrf=False)

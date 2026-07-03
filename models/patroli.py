@@ -38,6 +38,8 @@ class Patroli(models.Model):
     lokasi_ids = fields.One2many('petadigi.lokasi_patroli', 'patroli_id', string='Lokasi Patroli')
     lokasi_count = fields.Integer('Total Lokasi', compute='_compute_lokasi_count', store=True)
     keterangan = fields.Text('Keterangan', tracking=True)
+    subdit_id = fields.Many2one('petadigi.subdit', string='Subdit', tracking=True,
+                                help='Diisi otomatis dari form publik atau user subdit yang input')
     state = fields.Selection([
         ('PROSES', 'PROSES'),
         ('SELESAI', 'SELESAI'),
@@ -72,6 +74,8 @@ class Patroli(models.Model):
             defaults.setdefault('polres_id', user.polres_id.id)
         if user.polsek_id and 'polsek_id' in fields_list:
             defaults.setdefault('polsek_id', user.polsek_id.id)
+        if user.subdit_id and 'subdit_id' in fields_list:
+            defaults.setdefault('subdit_id', user.subdit_id.id)
         if 'kabupaten_id' in fields_list and user.polres_id:
             kabs = self.env['petadigi.kabupaten'].search(
                 [('polres_id', '=', user.polres_id.id)], limit=2)

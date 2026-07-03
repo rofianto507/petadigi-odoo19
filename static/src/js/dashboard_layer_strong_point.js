@@ -109,7 +109,7 @@ function _fetchStrongRecords(ctx, domain, limit) {
     return ctx.orm.searchRead(
         'petadigi.strong_point',
         [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
-        ['id', 'code', 'polres_id', 'polsek_id', 'kabupaten_id', 'lokasi_id',
+        ['id', 'code', 'polres_id', 'polsek_id', 'kabupaten_id', 'lokasi_id', 'keterangan_lokasi',
          'tanggal_mulai', 'tanggal_selesai', 'personel_count', 'state', 'latitude', 'longitude'],
         opts,
     );
@@ -132,7 +132,7 @@ function _createStrongMarker(r, ctx) {
         const polres = Array.isArray(r.polres_id)    ? r.polres_id[1]    : '-';
         const polsek = Array.isArray(r.polsek_id)    ? r.polsek_id[1]    : '-';
         const kab    = Array.isArray(r.kabupaten_id) ? r.kabupaten_id[1] : '-';
-        const lokasi = Array.isArray(r.lokasi_id)    ? r.lokasi_id[1]    : '-';
+        const lokasi = Array.isArray(r.lokasi_id) ? r.lokasi_id[1] : (r.keterangan_lokasi || '-');
         marker.bindPopup(`
             <div class="petadigi-popup">
                 <div class="petadigi-popup-header" style="background:${color};">

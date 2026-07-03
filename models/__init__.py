@@ -31,4 +31,6 @@ from . import personel
 from . import patroli
 from . import personel_patroli
 from . import lokasi_patroli
+from . import strong_point_form_config
+from . import patroli_form_config
 from . import res_users

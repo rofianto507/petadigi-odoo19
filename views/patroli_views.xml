@@ -8,7 +8,8 @@
             <field name="arch" type="xml">
                 <list string="Patroli">
                     <field name="code"/>
-                    <field name="create_uid" string="Penginput" optional="show"/>
+                    <field name="subdit_id" optional="show"/>
+                    <field name="create_uid" string="Penginput" optional="hide"/>
                     <field name="tanggal_mulai"/>
                     <field name="tanggal_selesai"/>
                     <field name="polres_id"/>
@@ -30,20 +31,20 @@
             <field name="arch" type="xml">
                 <search string="Cari Patroli">
                     <field name="code"/>
+                    <field name="subdit_id"/>
                     <field name="create_uid" string="Penginput"/>
                     <field name="polres_id"/>
                     <field name="polsek_id"/>
                     <field name="kabupaten_id"/>
                     <field name="kecamatan_id"/>
                     <separator/>
-                    <filter string="Dataku" name="filter_mine" domain="[('create_uid', '=', uid)]"/>
-                    <separator/>
                     <filter string="PROSES" name="filter_proses" domain="[('state','=','PROSES')]"/>
                     <filter string="SELESAI" name="filter_selesai" domain="[('state','=','SELESAI')]"/>
                     <separator/>
                     <filter string="Tanggal Mulai" name="filter_tanggal_mulai" date="tanggal_mulai"/>
                     <group>
-                        <filter string="Penginput" name="groupby_user" context="{'group_by': 'create_uid'}"/>
+                        <filter string="Subdit" name="groupby_subdit" context="{'group_by': 'subdit_id'}"/>
+                        
                         <filter string="Polres" name="groupby_polres" context="{'group_by': 'polres_id'}"/>
                         <filter string="Polsek" name="groupby_polsek" context="{'group_by': 'polsek_id'}"/>
                         <filter string="Kabupaten" name="groupby_kabupaten" context="{'group_by': 'kabupaten_id'}"/>
@@ -129,6 +130,10 @@
                                     domain="[('kecamatan_id', '=', kecamatan_id)]"/>
                             </group>
                             <group string="PELAKSANAAN">
+                                <field name="subdit_id" readonly="1"
+                                    groups="petadigi.group_subdit_strong_point"/>
+                                <field name="subdit_id"
+                                    groups="petadigi.group_admin"/>
                                 <field name="tanggal_mulai"/>
                                 <field name="tanggal_selesai"/>
                             </group>

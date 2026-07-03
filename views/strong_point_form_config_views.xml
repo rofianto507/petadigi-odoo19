@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- LIST VIEW -->
+        <record id="view_strong_point_form_config_list" model="ir.ui.view">
+            <field name="name">strong_point.form_config.list.petadigi</field>
+            <field name="model">petadigi.strong_point.form_config</field>
+            <field name="arch" type="xml">
+                <list string="Form Publik Strong Point">
+                    <field name="name"/>
+                    <field name="public_url"/>
+                    <field name="subdit_id"/>
+                    <field name="is_aktif" widget="boolean_toggle"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- FORM VIEW -->
+        <record id="view_strong_point_form_config_form" model="ir.ui.view">
+            <field name="name">strong_point.form_config.form.petadigi</field>
+            <field name="model">petadigi.strong_point.form_config</field>
+            <field name="arch" type="xml">
+                <form string="Form Publik Strong Point">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name" placeholder="Nama Form..."/></h1>
+                        </div>
+
+                        <group>
+                            <group string="Konfigurasi">
+                                <field name="subdit_id"/>
+                                <field name="is_aktif"/>
+                                <field name="public_token"/>
+                            </group>
+                            <group string="QR Code" invisible="not public_token">
+                                <field name="qr_code_image" widget="image" nolabel="1"
+                                       options="{'size': [160, 160]}"/>
+                            </group>
+                        </group>
+
+                        <group string="URL Form Publik" invisible="not public_token">
+                            <field name="public_url" widget="CopyClipboardChar" readonly="1" nolabel="1"/>
+                        </group>
+
+                        <div class="o_form_buttons_view mt-3 d-flex gap-2 flex-wrap">
+                            <button name="action_generate_token" type="object"
+                                    string="Generate Token Baru"
+                                    class="btn btn-secondary"
+                                    confirm="Token lama akan diganti dan URL form lama tidak bisa dipakai lagi. Lanjutkan?"/>
+                            <button name="action_open_form" type="object"
+                                    string="Buka Form"
+                                    class="btn btn-info"
+                                    invisible="not public_token"
+                                    target="new"/>
+                            <button name="action_toggle_aktif" type="object"
+                                    string="Nonaktifkan Form"
+                                    class="btn btn-warning"
+                                    invisible="not is_aktif"/>
+                            <button name="action_toggle_aktif" type="object"
+                                    string="Aktifkan Form"
+                                    class="btn btn-success"
+                                    invisible="is_aktif"/>
+                        </div>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- ACTION -->
+        <record id="action_strong_point_form_config" model="ir.actions.act_window">
+            <field name="name">Form Publik Strong Point</field>
+            <field name="res_model">petadigi.strong_point.form_config</field>
+            <field name="view_mode">list,form</field>
+        </record>
+
+    </data>
+</odoo>

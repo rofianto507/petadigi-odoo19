@@ -327,7 +327,85 @@ petadigi.subdit                   petadigi.sub_status_perkara
 
 ---
 
-## 7. Strong Point Mobile Web Client — Arsitektur
+## 7. Strong Point & Patroli — Public Form
+
+### Arsitektur Umum
+
+Public form berbasis OWL 2.x, berjalan standalone tanpa Odoo backend session. Akses via QR code yang di-generate dari `form_config` record.
+
+**Model konfigurasi:**
+- `petadigi.strong_point.form_config` → route `/strong/<token>`
+- `petadigi.patroli.form_config` → route `/patroli/<token>`
+
+Field konfigurasi: `name`, `subdit_id` (opsional), `public_token`, `is_aktif`, `public_url` (computed), `qr_code_image` (computed QR).
+
+### Strong Point Public Form (`/strong/<token>`)
+
+**File:** `static/src/js/strong_public_form.js`, `views/strong_public_form_template.xml`
+
+**Phase state machine:** `'form' → 'personel' → 'selesai' → 'done'`
+
+**`is_subdit_form` flag** (dari `init_data` JSON di HTML):
+- Aktif jika `config.subdit_id` diset
+- Section "Satuan" (Polres + Polsek) **disembunyikan** via `<t t-if="!initData.is_subdit_form">`
+- `state.polres_id` di-set otomatis ke `auto_polres_id` (Polda) di `setup()`
+- `_loadKabupaten(polresId)` dipanggil di `onMounted()` dan `resetForm()`
+- Validasi `polres_id` dilewati
+- Controller `strong_pub_submit` auto-assign polres via `_get_polda_polres()`
+
+**API endpoints:**
+- `GET /strong/<token>` → render form
+- `POST /strong/api/submit_public` → create record, return `{code, record_id}`
+- `POST /strong/api/polsek` / `kabupaten` / `kecamatan` / `desa`
+- `POST /strong/api/personel_add` / `personel_remove`
+- `POST /strong/api/set_selesai`
+
+### Patroli Public Form (`/patroli/<token>`)
+
+**File:** `static/src/js/patroli_public_form.js`, `views/patroli_public_form_template.xml`
+
+**Phase state machine:** `'form' → 'operasional' → 'tambah_lokasi' → 'selesai' → 'done'`
+
+Logika `is_subdit_form` identik dengan Strong Point public form.
+
+**API endpoints:**
+- `GET /patroli/<token>` → render form
+- `POST /patroli/api/submit` → create record patroli
+- `POST /patroli/api/polsek` / `kabupaten` / `kecamatan` / `desa`
+- `POST /patroli/api/personel_add` / `personel_remove`
+- `POST /patroli/api/lokasi_add` / `lokasi_remove`
+- `POST /patroli/api/set_selesai`
+
+> **⚠️ BUG PATTERN**: Di `patroli_pub_submit`, `_patroli_pub_valid(token)` harus di-assign ke `config`: `config = token and self._patroli_pub_valid(token)`. Jika hanya dipakai sebagai boolean (`if not self._patroli_pub_valid(token):`), maka `config` tidak terdefinisi dan `config.subdit_id` akan raise `NameError`.
+
+### Subdit_id Tagging System
+
+Field `subdit_id` pada `petadigi.strong_point` dan `petadigi.patroli` untuk membedakan data antar subdit yang sama-sama input di Polda Sumsel.
+
+**Auto-fill:**
+- **Via public form:** `config.subdit_id` → ditulis ke record baru
+- **Via mobile app:** `default_get` cek `user.subdit_id` → isi default
+
+**Access control (mobile app, `is_subdit_sp`):**
+```python
+# Pattern fallback di semua access check:
+if user.has_group('petadigi.group_subdit_strong_point'):
+    if record.subdit_id:
+        return record if record.subdit_id.id == user.subdit_id.id else None
+    return record if record.create_uid.id == user.id else None
+```
+Berlaku di: `_check_record_access`, `_check_patroli_access`, `_lokasi_patroli_authorized`, `api_kpi`, `api_weekly`, `api_list`, `api_patroli_list`, `api_personel_remove`, `api_patroli_personel_remove`.
+
+**Migrasi data lama:** `tools/migrate_subdit.py`
+```bash
+# Jalankan setelah set subdit_id pada user di backend Odoo
+python odoo-bin shell -d petadigi --no-http < addons/petadigi/tools/migrate_subdit.py
+```
+Script mencari record `subdit_id=False` + `create_uid.subdit_id != False` → backfill. Record dari public form lama (`create_uid=superuser`) tidak ter-backfill otomatis.
+
+---
+
+## 8. Strong Point Mobile Web Client — Arsitektur
 
 ### URL & Entry Point
 - **App**: `GET /petadigi` → redirect ke `/petadigi/form` (jika auth) atau `/petadigi/login`
@@ -346,12 +424,13 @@ petadigi.subdit                   petadigi.sub_status_perkara
 - Class: `StrongPointPublicController`
 - Auth helper: `_auth_check()` — return None jika public atau (tidak punya `polres_id` DAN bukan `group_subdit_strong_point`)
 - Context builder: `_build_user_ctx(user)` — return dict ctx user; subdit_sp mendapat `ctx.polres_id`/`ctx.polres_name` auto-isi dari `_get_polda_polres()`, `polres_list`/`polsek_list` selalu `[]` (field disembunyikan di form), `kabupaten_list` semua kabupaten (tanpa filter polres)
-- Access check: `_check_record_access(user, record_id)` — subdit_sp hanya boleh akses record milik sendiri (`record.create_uid.id == user.id`); polres/polsek pakai ownership check
-- Patroli access: `_check_patroli_access(user, record_id)` — pola sama dengan `_check_record_access`
-- Lokasi patroli access: `_lokasi_patroli_authorized(user, lokasi)` — helper untuk endpoint `lokasi_foto`/`lokasi_remove`, subdit_sp dicek via `lokasi.patroli_id.create_uid`
-- Auto-resolve polres create: `_get_polda_polres()` — cari satu-satunya polres dengan `polsek_count = 0` (level Polda, mis. "Polda Sumatera Selatan"); dipanggil langsung di `api_submit`/`api_patroli_create` untuk subdit_sp tanpa perlu input dari user (field Polres & Polsek dihidden di form mobile, `resolved_polsek` dipaksa `False`)
+- Access check: `_check_record_access(user, record_id)` — subdit_sp: jika record punya `subdit_id`, cek `subdit_id == user.subdit_id`; fallback ke `create_uid == user.id` untuk record lama tanpa `subdit_id`
+- Patroli access: `_check_patroli_access(user, record_id)` — pola fallback sama
+- Lokasi patroli access: `_lokasi_patroli_authorized(user, lokasi)` — helper untuk endpoint `lokasi_foto`/`lokasi_remove`, subdit_sp dicek via fallback `subdit_id → create_uid`
+- Auto-resolve polres create: `_get_polda_polres()` — cari satu-satunya polres dengan `polsek_count = 0` (level Polda); dipanggil di `api_submit`/`api_patroli_create` (mobile) DAN `strong_pub_submit`/`patroli_pub_submit` (public form) untuk subdit/subdit_form
+- Public form token validator: `_strong_pub_valid(token)` / `_patroli_pub_valid(token)` — return `form_config` record (bukan True/False); **wajib assign ke `config`** sebelum cek `config.subdit_id`
 
-> **Filosofi akses subdit_sp (2026-06-29)**: petugas subdit terkonsentrasi di Polda — agar tidak terdistrak data dari seluruh polres/polsek, SEMUA visibilitas data (list, KPI, weekly chart, detail, lokasi picker, CRUD personel/lokasi) dibatasi ke **data yang mereka input sendiri** (`create_uid = user.id`). Dropdown polres saat create dibatasi ke polres tanpa polsek (level Polda). Kabupaten/kecamatan/desa TETAP bebas akses (tidak dibatasi).
+> **Filosofi akses subdit_sp (update 2026-07-03)**: domain data berubah dari `create_uid = user.id` → `subdit_id = user.subdit_id.id` dengan **fallback** ke `create_uid` untuk record lama (sebelum fitur `subdit_id` ditambahkan). Kabupaten/kecamatan/desa TETAP bebas akses.
 
 **Timezone helpers** (module-level di controller):
 ```python
@@ -418,7 +497,8 @@ if att and att.datas:
 - `code` (auto-sequence, readonly)
 - `state`: `PROSES` / `SELESAI`
 - `polres_id`, `polsek_id`
-- `lokasi_id` → `petadigi.lokasi_strong_point`, `lokasi_nama` (related/computed)
+- `subdit_id` → `petadigi.subdit` (opsional) — diisi otomatis dari `create_uid.subdit_id` (mobile app) atau dari `config.subdit_id` (public form)
+- `lokasi_id` → `petadigi.lokasi_strong_point`, `lokasi_nama` (related/computed), `keterangan_lokasi` (Text)
 - `kabupaten_id`, `kecamatan_id`, `desa_id`
 - `latitude`, `longitude` (Float 10,6)
 - `tanggal_mulai`, `tanggal_selesai` (Datetime)
@@ -443,11 +523,12 @@ if att and att.datas:
 **`petadigi.patroli`** — data patroli wilayah
 - `code` (auto-sequence readonly, prefix `PTL`, padding 5 → PTL00001)
 - `polres_id` (required), `polsek_id` (opsional, domain filtered)
+- `subdit_id` → `petadigi.subdit` (opsional) — diisi otomatis dari `create_uid.subdit_id` (mobile app) atau dari `config.subdit_id` (public form)
 - `kabupaten_id`, `kecamatan_id`, `desa_id` (cascading domain)
 - `tanggal_mulai` (Datetime, required, default now), `tanggal_selesai` (Datetime)
 - `personel_ids` (One2many → `petadigi.personel_patroli`), `personel_count` (Integer, computed stored)
 - `keterangan` (Text), `state`: `PROSES` / `SELESAI`
-- Methods: `action_set_selesai`, `action_set_proses`, `action_view_personel`, `default_get` (pre-fill dari user login)
+- Methods: `action_set_selesai`, `action_set_proses`, `action_view_personel`, `default_get` (pre-fill dari user login + auto-fill `subdit_id`)
 - Sequence code: `petadigi.patroli.sequence`
 
 **`petadigi.personel_patroli`** — personel terkait patroli
@@ -1379,6 +1460,20 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - `_build_user_ctx`: `ctx.polres_id`/`ctx.polres_name` auto-isi dari Polda yang sama (dipakai juga di Profil/header); `polres_list`/`polsek_list` selalu `[]` — filter panel polres otomatis tidak tampil untuk subdit_sp karena `polres_list` kosong (memang tidak relevan, datanya selalu 1 polres yang sama)
 - Cache bust JS: `?v=20260629b` di `strong_point_login_template.xml`
 
+**Public Form Strong Point & Patroli (2026-07-03)**
+- OWL 2.x SPA standalone untuk input lapangan via QR code (tanpa login)
+- Strong Point: `/strong/<token>` — phase `form→personel→selesai→done`; foto GPS, personel CRUD, set selesai
+- Patroli: `/patroli/<token>` — phase `form→operasional→tambah_lokasi→selesai→done`; personel + titik lokasi GPS
+- Konfigurasi via backend: `strong_point.form_config` / `patroli.form_config` — generate token + QR code
+- Nginx ModSecurity: wajib tambah `modsecurity off` untuk `/strong/` dan `/patroli/` (ada upload foto base64)
+
+**Subdit_id Tagging (2026-07-03)**
+- Field `subdit_id` baru di `petadigi.strong_point` dan `petadigi.patroli` — identifikasi data per subdit
+- Form config (`strong_point.form_config` & `patroli.form_config`) punya optional `subdit_id` — jika diset, public form otomatis menyembunyikan field Polres/Polsek (`is_subdit_form` flag), polres di-auto-assign ke Polda
+- Access control mobile diupdate: `subdit_id = user.subdit_id` (dengan fallback ke `create_uid` untuk record lama)
+- Backend views: kolom `subdit_id` di list (optional="show"), search filter + group by
+- Migration script: `tools/migrate_subdit.py` — backfill `subdit_id` dari `create_uid.subdit_id`
+
 ### Potensial Berikutnya
 - Export/report Monitoring Giat ke PDF/Excel
 - Notifikasi real-time kasus baru
@@ -1387,4 +1482,4 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 
 ---
 
-*Dokumen diperbarui: 2026-06-29*
+*Dokumen diperbarui: 2026-07-03*
