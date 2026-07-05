@@ -1,6 +1,6 @@
 ﻿/** @odoo-module **/
 
-import { fmtTanggal } from "./dashboard_helpers";
+import { fmtTanggal, wibDateStartUtc, wibDateEndUtc } from "./dashboard_helpers";
 
 const TIME_LABELS = ['00:00-02:59', '03:00-05:59', '06:00-08:59', '09:00-11:59',
                      '12:00-14:59', '15:00-17:59', '18:00-20:59', '21:00-23:59'];
@@ -240,8 +240,8 @@ export async function updateLalinCharts(ctx, mode) {
         ...(kabupatenId ? [['kabupaten_id',            '=',  kabupatenId]]               : []),
         ...(stateValue  ? [['state',                   '=',  stateValue]]                : []),
         ...(tahun       ? [['tahun', '=',  tahun]]                     : []),
-        ...(dateFrom    ? [['tanggal_kejadian',         '>=', dateFrom + ' 00:00:00']]   : []),
-        ...(dateTo      ? [['tanggal_kejadian',         '<=', dateTo   + ' 23:59:59']]   : []),
+        ...(dateFrom    ? [['tanggal_kejadian',         '>=', wibDateStartUtc(dateFrom)]]   : []),
+        ...(dateTo      ? [['tanggal_kejadian',         '<=', wibDateEndUtc(dateTo)]]   : []),
         ...(kategoriId  ? [['kategori_id',              '=',  kategoriId]]               : []),
     ];
 
@@ -334,8 +334,8 @@ export async function updateLalinTable(ctx, mode, page) {
         ...(kabupatenId ? [['kabupaten_id',            '=',  kabupatenId]]            : []),
         ...(stateValue  ? [['state',                   '=',  stateValue]]             : []),
         ...(tahun       ? [['tahun', '=',  tahun]]                  : []),
-        ...(dateFrom    ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']] : []),
-        ...(dateTo      ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']] : []),
+        ...(dateFrom    ? [['tanggal_kejadian',        '>=', wibDateStartUtc(dateFrom)]] : []),
+        ...(dateTo      ? [['tanggal_kejadian',        '<=', wibDateEndUtc(dateTo)]] : []),
         ...(kategoriId  ? [['kategori_id',             '=',  kategoriId]]             : []),
     ];
 

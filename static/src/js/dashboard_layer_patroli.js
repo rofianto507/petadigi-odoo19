@@ -1,7 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { KRIMINAL_COLORS, getKriminalColor } from './dashboard_layer_kriminal';
-import { renderKabupatenSummaryMarkers, renderSummaryMarkers } from './dashboard_helpers';
+import { renderKabupatenSummaryMarkers, renderSummaryMarkers, fmtTanggalJam, wibDateStartUtc, wibDateEndUtc } from './dashboard_helpers';
 
 /**
  * Peta Patroli — Arsiran Kriminalitas + Titik Lokasi Kegiatan Patroli
@@ -72,16 +72,16 @@ function _buildPatroliDomain(filters, geoConditions = []) {
     const domain = [...geoConditions];
     if (filters.polresId)   domain.push(['polres_id',     '=',  filters.polresId]);
     if (filters.stateValue) domain.push(['state',         '=',  filters.stateValue]);
-    if (filters.dateFrom)   domain.push(['tanggal_mulai', '>=', filters.dateFrom + ' 00:00:00']);
-    if (filters.dateTo)     domain.push(['tanggal_mulai', '<=', filters.dateTo   + ' 23:59:59']);
+    if (filters.dateFrom)   domain.push(['tanggal_mulai', '>=', wibDateStartUtc(filters.dateFrom)]);
+    if (filters.dateTo)     domain.push(['tanggal_mulai', '<=', wibDateEndUtc(filters.dateTo)]);
     return domain;
 }
 
 function _buildKriminalDomain(filters, geoConditions = []) {
     const domain = [...geoConditions];
     if (filters.polresId) domain.push(['kabupaten_id.polres_id', '=', filters.polresId]);
-    if (filters.dateFrom) domain.push(['tanggal_kejadian', '>=', filters.dateFrom + ' 00:00:00']);
-    if (filters.dateTo)   domain.push(['tanggal_kejadian', '<=', filters.dateTo   + ' 23:59:59']);
+    if (filters.dateFrom) domain.push(['tanggal_kejadian', '>=', wibDateStartUtc(filters.dateFrom)]);
+    if (filters.dateTo)   domain.push(['tanggal_kejadian', '<=', wibDateEndUtc(filters.dateTo)]);
     return domain;
 }
 
@@ -89,8 +89,8 @@ function _buildLokasiDomain(filters, geoConditions = []) {
     const domain = [['latitude', '!=', 0], ['longitude', '!=', 0]];
     if (filters.polresId)   domain.push(['patroli_id.polres_id',     '=',  filters.polresId]);
     if (filters.stateValue) domain.push(['patroli_id.state',         '=',  filters.stateValue]);
-    if (filters.dateFrom)   domain.push(['patroli_id.tanggal_mulai', '>=', filters.dateFrom + ' 00:00:00']);
-    if (filters.dateTo)     domain.push(['patroli_id.tanggal_mulai', '<=', filters.dateTo   + ' 23:59:59']);
+    if (filters.dateFrom)   domain.push(['patroli_id.tanggal_mulai', '>=', wibDateStartUtc(filters.dateFrom)]);
+    if (filters.dateTo)     domain.push(['patroli_id.tanggal_mulai', '<=', wibDateEndUtc(filters.dateTo)]);
     for (const cond of geoConditions) {
         domain.push([`patroli_id.${cond[0]}`, cond[1], cond[2]]);
     }
@@ -108,8 +108,7 @@ function _buildCountMap(groups, field) {
 }
 
 function _fmtDt(val) {
-    if (!val) return '-';
-    return val.slice(0, 16).replace('T', ' ');
+    return fmtTanggalJam(val);
 }
 
 function _fmtNum(n) {

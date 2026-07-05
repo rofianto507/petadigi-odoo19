@@ -36,6 +36,28 @@ export function fmtTanggalJam(s) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// WIB DATE → UTC DATETIME (for Odoo domain filters)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Convert WIB date string "YYYY-MM-DD" to UTC datetime string for Odoo domain.
+ * WIB 00:00:00 = UTC 17:00:00 previous day.
+ */
+export function wibDateStartUtc(dateStr) {
+    if (!dateStr) return null;
+    return new Date(dateStr + 'T00:00:00+07:00').toISOString().slice(0, 19).replace('T', ' ');
+}
+
+/**
+ * Convert WIB date string "YYYY-MM-DD" to UTC datetime string for Odoo domain.
+ * WIB 23:59:59 = UTC 16:59:59 same day.
+ */
+export function wibDateEndUtc(dateStr) {
+    if (!dateStr) return null;
+    return new Date(dateStr + 'T23:59:59+07:00').toISOString().slice(0, 19).replace('T', ' ');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // FILTER INIT
 // ─────────────────────────────────────────────────────────────────────────────
 

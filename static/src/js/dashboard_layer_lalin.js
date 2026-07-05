@@ -1,7 +1,7 @@
 ﻿/** @odoo-module **/
 
 import { initLokasiOverlay, updateLokasiOverlayMarkers } from './dashboard_overlay_lokasi';
-import { fmtTanggal, renderKabupatenSummaryMarkers, renderSummaryMarkers } from './dashboard_helpers';
+import { fmtTanggal, renderKabupatenSummaryMarkers, renderSummaryMarkers, wibDateStartUtc, wibDateEndUtc } from './dashboard_helpers';
 
 /**
  * Peta Lalu Lintas
@@ -71,8 +71,8 @@ function _getActiveFilters(ctx) {
 function _buildDomain(filters, extraDomain = []) {
     const domain = [...extraDomain];
     if (filters.tahun)      domain.push(['tahun', '=',  filters.tahun]);
-    if (filters.dateFrom)   domain.push(['tanggal_kejadian',        '>=', filters.dateFrom + ' 00:00:00']);
-    if (filters.dateTo)     domain.push(['tanggal_kejadian',        '<=', filters.dateTo   + ' 23:59:59']);
+    if (filters.dateFrom)   domain.push(['tanggal_kejadian',        '>=', wibDateStartUtc(filters.dateFrom)]);
+    if (filters.dateTo)     domain.push(['tanggal_kejadian',        '<=', wibDateEndUtc(filters.dateTo)]);
     if (filters.kategoriId) domain.push(['kategori_id',             '=',  filters.kategoriId]);
     if (filters.stateValue) domain.push(['state',                   '=',  filters.stateValue]);
     return domain;

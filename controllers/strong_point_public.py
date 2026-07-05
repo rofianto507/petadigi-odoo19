@@ -25,11 +25,13 @@ def _wib_to_utc(dt_str):
     """Convert naive WIB datetime string to UTC datetime string for Odoo storage."""
     if not dt_str:
         return dt_str
-    try:
-        dt = datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')
-        return (dt - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
-    except (ValueError, TypeError):
-        return dt_str
+    for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+        try:
+            dt = datetime.strptime(dt_str, fmt)
+            return (dt - _WIB_OFFSET).strftime('%Y-%m-%d %H:%M:%S')
+        except (ValueError, TypeError):
+            continue
+    return dt_str
 
 
 class StrongPointPublicController(http.Controller):
@@ -1029,7 +1031,7 @@ self.addEventListener('fetch', e => {
                 'latitude':          float(data.get('latitude') or 0),
                 'longitude':         float(data.get('longitude') or 0),
                 'keterangan':        (data.get('keterangan') or '').strip(),
-                'tanggal_mulai':     odoo_fields.Datetime.now(),
+                'tanggal_mulai':     _wib_to_utc((data.get('tanggal_mulai') or '').replace('T', ' ')) or odoo_fields.Datetime.now(),
                 'state':             'PROSES',
             }
             foto = data.get('foto')
@@ -1200,6 +1202,7 @@ self.addEventListener('fetch', e => {
                 'kecamatan_id': int(data['kecamatan_id']) if data.get('kecamatan_id') else False,
                 'desa_id':      int(data['desa_id'])      if data.get('desa_id')      else False,
                 'keterangan':   data.get('keterangan') or '',
+                'tanggal_mulai': _wib_to_utc((data.get('tanggal_mulai') or '').replace('T', ' ')) or False,
                 'state':        'PROSES',
             }
             result = request.env['petadigi.patroli'].sudo().create(vals)

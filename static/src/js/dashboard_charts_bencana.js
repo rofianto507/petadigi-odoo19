@@ -1,6 +1,6 @@
 ﻿/** @odoo-module **/
 
-import { fmtTanggal } from "./dashboard_helpers";
+import { fmtTanggal, wibDateStartUtc, wibDateEndUtc } from "./dashboard_helpers";
 
 // ─── Bar chart: total per kabupaten ──────────────────────────────────────────
 function _renderBencanaBarChart(ctx, names, values) {
@@ -125,8 +125,8 @@ export async function updateBencanaCharts(ctx, mode) {
         ...(kabupatenId ? [['kabupaten_id',             '=',  kabupatenId]]                : []),
         ...(stateValue  ? [['state',                    '=',  stateValue]]                 : []),
         ...(tahun       ? [['tahun',  '=',  tahun]]                      : []),
-        ...(dateFrom    ? [['tanggal_kejadian',          '>=', dateFrom + ' 00:00:00']]    : []),
-        ...(dateTo      ? [['tanggal_kejadian',          '<=', dateTo   + ' 23:59:59']]    : []),
+        ...(dateFrom    ? [['tanggal_kejadian',          '>=', wibDateStartUtc(dateFrom)]]    : []),
+        ...(dateTo      ? [['tanggal_kejadian',          '<=', wibDateEndUtc(dateTo)]]    : []),
         ...(kategoriId  ? [['kategori_id',               '=',  kategoriId]]                : []),
     ];
     const donutDomain = [...baseDomain];
@@ -208,8 +208,8 @@ export async function updateBencanaTable(ctx, mode, page) {
         ...(kabupatenId ? [['kabupaten_id',            '=',  kabupatenId]]            : []),
         ...(stateValue  ? [['state',                   '=',  stateValue]]             : []),
         ...(tahun       ? [['tahun', '=',  tahun]]                  : []),
-        ...(dateFrom    ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']] : []),
-        ...(dateTo      ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']] : []),
+        ...(dateFrom    ? [['tanggal_kejadian',        '>=', wibDateStartUtc(dateFrom)]] : []),
+        ...(dateTo      ? [['tanggal_kejadian',        '<=', wibDateEndUtc(dateTo)]] : []),
         ...(kategoriId  ? [['kategori_id',             '=',  kategoriId]]             : []),
     ];
 

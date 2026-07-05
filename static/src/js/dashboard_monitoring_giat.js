@@ -2,6 +2,7 @@
 /** @odoo-module **/
 
 import { Component, useState, onMounted, onWillDestroy, useRef } from "@odoo/owl";
+import { wibDateStartUtc, wibDateEndUtc } from "./dashboard_helpers";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
@@ -208,8 +209,8 @@ class MonitoringGiatDashboard extends Component {
     // ── Filters & data loading ───────────────────────────────────────────────
     _buildDomain() {
         const d = [];
-        if (this.state.dateFrom)  d.push(["tanggal", ">=", `${this.state.dateFrom} 00:00:00`]);
-        if (this.state.dateTo)    d.push(["tanggal", "<=", `${this.state.dateTo} 23:59:59`]);
+        if (this.state.dateFrom)  d.push(["tanggal", ">=", wibDateStartUtc(this.state.dateFrom)]);
+        if (this.state.dateTo)    d.push(["tanggal", "<=", wibDateEndUtc(this.state.dateTo)]);
         if (this.state.jenisId)   d.push(["jenis_laporan_id", "=", parseInt(this.state.jenisId)]);
         if (this.state.polresId)  d.push(["polres_id",        "=", parseInt(this.state.polresId)]);
         return d;

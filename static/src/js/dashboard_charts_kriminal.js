@@ -1,6 +1,6 @@
 ﻿/** @odoo-module **/
 
-import { fmtTanggal } from "./dashboard_helpers";
+import { fmtTanggal, wibDateStartUtc, wibDateEndUtc } from "./dashboard_helpers";
 
 // ─── Internal render functions ────────────────────────────────────────────────
 
@@ -594,8 +594,8 @@ export async function updateKriminalCharts(ctx, mode) {
         ...(polresId      ? [['kabupaten_id.polres_id',  '=',  polresId]]                       : []),
         ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
         ...(tahun         ? [['tahun', '=',  tahun]]                          : []),
-        ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
-        ...(dateTo        ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']]         : []),
+        ...(dateFrom      ? [['tanggal_kejadian',        '>=', wibDateStartUtc(dateFrom)]]         : []),
+        ...(dateTo        ? [['tanggal_kejadian',        '<=', wibDateEndUtc(dateTo)]]         : []),
         ...(jenisLp       ? [['jenis_lp',                '=',  jenisLp]]                        : []),
         ...(kategoriId    ? [['kategori_id',             '=',  kategoriId]]                     : []),
         ...(subKategoriId ? [['sub_kategori_id',         '=',  subKategoriId]]                  : []),
@@ -765,8 +765,8 @@ export async function updateKriminalTable(ctx, mode, page) {
         ...(polresId      ? [['kabupaten_id.polres_id',  '=',  polresId]]                       : []),
         ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
         ...(tahun         ? [['tahun', '=',  tahun]]                          : []),
-        ...(dateFrom      ? [['tanggal_kejadian',        '>=', dateFrom + ' 00:00:00']]         : []),
-        ...(dateTo        ? [['tanggal_kejadian',        '<=', dateTo   + ' 23:59:59']]         : []),
+        ...(dateFrom      ? [['tanggal_kejadian',        '>=', wibDateStartUtc(dateFrom)]]         : []),
+        ...(dateTo        ? [['tanggal_kejadian',        '<=', wibDateEndUtc(dateTo)]]         : []),
         ...(jenisLp       ? [['jenis_lp',                '=',  jenisLp]]                        : []),
         ...(kategoriId    ? [['kategori_id',             '=',  kategoriId]]                     : []),
         ...(subKategoriId ? [['sub_kategori_id',         '=',  subKategoriId]]                  : []),

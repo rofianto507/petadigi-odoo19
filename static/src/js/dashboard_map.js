@@ -4,7 +4,7 @@ import { Component, onMounted, useRef, useState } from "@odoo/owl";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 
-import { initFilters } from "./dashboard_helpers";
+import { initFilters, wibDateStartUtc, wibDateEndUtc } from "./dashboard_helpers";
 import { loadKabupatenLayer } from "./dashboard_layer_umum";
 import { loadModeKriminal, removeKriminalLegend } from "./dashboard_layer_kriminal";
 import { loadModeKam, removeKamLegend } from "./dashboard_layer_kam";
@@ -750,8 +750,8 @@ export class DashboardMap extends Component {
 
         const tf  = tahun        ? [['tahun', '=', tahun]]        : [];
         const df  = [
-            ...(dateFrom ? [['tanggal_kejadian', '>=', dateFrom + ' 00:00:00']] : []),
-            ...(dateTo   ? [['tanggal_kejadian', '<=', dateTo   + ' 23:59:59']] : []),
+            ...(dateFrom ? [['tanggal_kejadian', '>=', wibDateStartUtc(dateFrom)]] : []),
+            ...(dateTo   ? [['tanggal_kejadian', '<=', wibDateEndUtc(dateTo)]] : []),
         ];
         const jenisLpValue  = this.filterJenisLP?.el?.value          || '';
         const polresf = polresId ? [['kabupaten_id.polres_id', '=', polresId]] : [];
@@ -870,8 +870,8 @@ export class DashboardMap extends Component {
                 ];
             } else if (mode === 'strong') {
                 const df_s = [
-                    ...(dateFrom ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']] : []),
-                    ...(dateTo   ? [['tanggal_mulai', '<=', dateTo   + ' 23:59:59']] : []),
+                    ...(dateFrom ? [['tanggal_mulai', '>=', wibDateStartUtc(dateFrom)]] : []),
+                    ...(dateTo   ? [['tanggal_mulai', '<=', wibDateEndUtc(dateTo)]] : []),
                 ];
                 const polresf_sp = polresId ? [['polres_id', '=', polresId]] : [];
                 const d = [...df_s, ...polresf_sp, ...drillDomain];
@@ -893,15 +893,15 @@ export class DashboardMap extends Component {
                 ];
             } else if (mode === 'patroli') {
                 const df_p = [
-                    ...(dateFrom ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']] : []),
-                    ...(dateTo   ? [['tanggal_mulai', '<=', dateTo   + ' 23:59:59']] : []),
+                    ...(dateFrom ? [['tanggal_mulai', '>=', wibDateStartUtc(dateFrom)]] : []),
+                    ...(dateTo   ? [['tanggal_mulai', '<=', wibDateEndUtc(dateTo)]] : []),
                 ];
                 const polresf_p   = polresId ? [['polres_id',            '=', polresId]] : [];
                 const polresf_lok = polresId ? [['patroli_id.polres_id', '=', polresId]] : [];
                 const d = [...df_p, ...polresf_p, ...drillDomain];
                 const dLokasi = [
-                    ...(dateFrom ? [['patroli_id.tanggal_mulai', '>=', dateFrom + ' 00:00:00']] : []),
-                    ...(dateTo   ? [['patroli_id.tanggal_mulai', '<=', dateTo   + ' 23:59:59']] : []),
+                    ...(dateFrom ? [['patroli_id.tanggal_mulai', '>=', wibDateStartUtc(dateFrom)]] : []),
+                    ...(dateTo   ? [['patroli_id.tanggal_mulai', '<=', wibDateEndUtc(dateTo)]] : []),
                     ...drillDomain.map(([f, op, v]) => [`patroli_id.${f}`, op, v]),
                     ...polresf_lok,
                 ];

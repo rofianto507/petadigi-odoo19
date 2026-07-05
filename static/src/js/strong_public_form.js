@@ -262,15 +262,13 @@
                                         </label>
                                         <select class="sf-input sf-select"
                                                 t-att-disabled="!state.polres_id || state.loadingPolsek"
-                                                t-on-change="ev => state.polsek_id = parseInt(ev.target.value) || null">
+                                                t-model="state.polsek_id">
                                             <option value="">
                                                 <t t-if="state.loadingPolsek">Memuat...</t>
                                                 <t t-else="">Pilih Polsek</t>
                                             </option>
                                             <t t-foreach="state.polsek_list" t-as="polsek" t-key="polsek.id">
-                                                <option t-att-value="polsek.id"
-                                                        t-att-selected="state.polsek_id === polsek.id"
-                                                        t-out="polsek.name"/>
+                                                <option t-att-value="polsek.id" t-out="polsek.name"/>
                                             </t>
                                         </select>
                                     </div>
@@ -336,7 +334,7 @@
                                         </label>
                                         <select class="sf-input sf-select"
                                                 t-att-disabled="!state.kecamatan_id || state.loadingDesa"
-                                                t-on-change="ev => state.desa_id = parseInt(ev.target.value) || null">
+                                                t-on-change="ev => state.desa_id = +ev.target.value || null">
                                             <option value="">
                                                 <t t-if="state.loadingDesa">Memuat...</t>
                                                 <t t-else="">Pilih Desa/Kelurahan</t>
@@ -432,6 +430,15 @@
                                 <div class="sf-card-body">
                                     <div class="sf-field">
                                         <label class="sf-label">
+                                            Tanggal &amp; Jam Mulai
+                                            <span class="sf-req">*</span>
+                                        </label>
+                                        <input class="sf-input" type="datetime-local"
+                                               t-att-value="state.tanggalMulai"
+                                               t-on-input="ev => state.tanggalMulai = ev.target.value"/>
+                                    </div>
+                                    <div class="sf-field">
+                                        <label class="sf-label">
                                             Keterangan
                                             <span class="sf-opt">Opsional</span>
                                         </label>
@@ -475,8 +482,9 @@
                 /* ── data form ── */
                 keterangan_lokasi: '',
                 keterangan: '',
+                tanggalMulai: '',
                 polres_id: null,
-                polsek_id: null,
+                polsek_id: '',
                 polsek_list: [],
                 kabupaten_id: null,
                 kabupaten_list: [],
@@ -516,6 +524,7 @@
             });
             this._map = null;
             this._marker = null;
+            this.state.tanggalMulai = this._nowLocalDt();
 
             if (this.initData.is_subdit_form && this.initData.auto_polres_id) {
                 this.state.polres_id = this.initData.auto_polres_id;
@@ -528,6 +537,7 @@
                     this._loadKabupaten(this.initData.auto_polres_id);
                 }
             });
+
         }
 
         /* ── Map ─────────────────────────────────────────── */
@@ -575,7 +585,7 @@
             const id = parseInt(ev.target.value) || null;
             Object.assign(this.state, {
                 polres_id: id,
-                polsek_id: null, polsek_list: [],
+                polsek_id: '', polsek_list: [],
                 kabupaten_id: null, kabupaten_list: [],
                 kecamatan_id: null, kecamatan_list: [],
                 desa_id: null, desa_list: [],
@@ -796,10 +806,11 @@
                 const resp = await this._jsonRpc('/strong/api/submit_public', {
                     token: this.initData.token,
                     data: {
+                        tanggal_mulai:     this.state.tanggalMulai,
                         keterangan_lokasi: this.state.keterangan_lokasi,
                         keterangan:        this.state.keterangan,
                         polres_id:         this.state.polres_id,
-                        polsek_id:         this.state.polsek_id,
+                        polsek_id:         parseInt(this.state.polsek_id) || null,
                         kabupaten_id:      this.state.kabupaten_id,
                         kecamatan_id:      this.state.kecamatan_id,
                         desa_id:           this.state.desa_id,
@@ -938,7 +949,8 @@
             Object.assign(this.state, {
                 phase: 'form',
                 keterangan_lokasi: '', keterangan: '',
-                polres_id: autoPolres, polsek_id: null, polsek_list: [],
+                tanggalMulai: this._nowLocalDt(),
+                polres_id: autoPolres, polsek_id: '', polsek_list: [],
                 kabupaten_id: null, kabupaten_list: [],
                 kecamatan_id: null, kecamatan_list: [],
                 desa_id: null, desa_list: [],
@@ -959,6 +971,14 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
             setTimeout(() => this.getGPS(), 200);
             if (autoPolres) this._loadKabupaten(autoPolres);
+        }
+
+        /* ── Helpers ─────────────────────────────────────── */
+        _nowLocalDt() {
+            const pad = n => String(n).padStart(2, '0');
+            const now = new Date();
+            return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+                   `T${pad(now.getHours())}:${pad(now.getMinutes())}`;
         }
 
         /* ── JSON-RPC ────────────────────────────────────── */

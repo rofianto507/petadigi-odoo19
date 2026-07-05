@@ -1,6 +1,6 @@
 /** @odoo-module **/
 
-import { fmtTanggalJam } from "./dashboard_helpers";
+import { fmtTanggalJam, wibDateStartUtc, wibDateEndUtc } from "./dashboard_helpers";
 
 const MONTHS_ID = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
@@ -180,8 +180,8 @@ export async function updatePatroliCharts(ctx, mode) {
         ...(polresId    ? [['polres_id',    '=',  polresId]]                   : []),
         ...(kabupatenId ? [['kabupaten_id', '=',  kabupatenId]]               : []),
         ...(stateValue  ? [['state',        '=',  stateValue]]                : []),
-        ...(dateFrom    ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']]   : []),
-        ...(dateTo      ? [['tanggal_mulai', '<=', dateTo   + ' 23:59:59']]   : []),
+        ...(dateFrom    ? [['tanggal_mulai', '>=', wibDateStartUtc(dateFrom)]]   : []),
+        ...(dateTo      ? [['tanggal_mulai', '<=', wibDateEndUtc(dateTo)]]   : []),
     ];
 
     const lokasiBaseDomain = [
@@ -189,8 +189,8 @@ export async function updatePatroliCharts(ctx, mode) {
         ...(polresId    ? [['patroli_id.polres_id',    '=',  polresId]]                      : []),
         ...(kabupatenId ? [['patroli_id.kabupaten_id', '=',  kabupatenId]]                   : []),
         ...(stateValue  ? [['patroli_id.state',        '=',  stateValue]]                    : []),
-        ...(dateFrom    ? [['patroli_id.tanggal_mulai', '>=', dateFrom + ' 00:00:00']]       : []),
-        ...(dateTo      ? [['patroli_id.tanggal_mulai', '<=', dateTo   + ' 23:59:59']]       : []),
+        ...(dateFrom    ? [['patroli_id.tanggal_mulai', '>=', wibDateStartUtc(dateFrom)]]       : []),
+        ...(dateTo      ? [['patroli_id.tanggal_mulai', '<=', wibDateEndUtc(dateTo)]]       : []),
     ];
 
     try {
@@ -275,8 +275,8 @@ export async function updatePatroliTable(ctx, mode, page) {
         ...(polresId    ? [['polres_id',    '=',  polresId]]                   : []),
         ...(kabupatenId ? [['kabupaten_id', '=',  kabupatenId]]               : []),
         ...(stateValue  ? [['state',        '=',  stateValue]]                : []),
-        ...(dateFrom    ? [['tanggal_mulai', '>=', dateFrom + ' 00:00:00']]   : []),
-        ...(dateTo      ? [['tanggal_mulai', '<=', dateTo   + ' 23:59:59']]   : []),
+        ...(dateFrom    ? [['tanggal_mulai', '>=', wibDateStartUtc(dateFrom)]]   : []),
+        ...(dateTo      ? [['tanggal_mulai', '<=', wibDateEndUtc(dateTo)]]   : []),
     ];
 
     bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Memuat data...</div>`;
