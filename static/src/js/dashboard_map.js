@@ -379,6 +379,12 @@ export class DashboardMap extends Component {
         // Peta umum: map mengisi sisa ruang. Mode lain: tinggi tetap agar konten di bawah bisa muncul
         const mapWrapper = this.mapWrapperRef?.el;
         if (mapWrapper) {
+            // Reset expanded setiap mode change
+            mapWrapper.classList.remove('petadigi-map-wrapper--expanded');
+            if (this._expandControl) {
+                this._expandControl.btn.title = 'Perbesar Peta';
+                this._expandControl.btn.innerHTML = '<i class="fa fa-expand"></i>';
+            }
             if (mode === 'umum') {
                 mapWrapper.classList.remove('petadigi-map-wrapper--fixed');
             } else {
@@ -1026,6 +1032,36 @@ export class DashboardMap extends Component {
 
         // Layer terpisah untuk overlay lokasi penting (tidak ikut cluster)
         this.lokasiOverlayLayerGroup = L.layerGroup().addTo(this.map);
+
+        // Tombol expand/restore tinggi map (500px ↔ 700px)
+        const ExpandControl = L.Control.extend({
+            options: { position: 'topleft' },
+            onAdd: () => {
+                const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control petadigi-map-expand-btn');
+                const a = L.DomUtil.create('a', '', container);
+                a.href = '#';
+                a.title = 'Perbesar Peta';
+                a.setAttribute('role', 'button');
+                a.innerHTML = '<i class="fa fa-expand"></i>';
+                L.DomEvent.disableClickPropagation(container);
+                L.DomEvent.on(a, 'click', (e) => {
+                    L.DomEvent.preventDefault(e);
+                    const wrapper = this.mapWrapperRef?.el;
+                    if (!wrapper) return;
+                    const expanded = wrapper.classList.toggle('petadigi-map-wrapper--expanded');
+                    a.title = expanded ? 'Kembalikan Ukuran' : 'Perbesar Peta';
+                    a.innerHTML = expanded ? '<i class="fa fa-compress"></i>' : '<i class="fa fa-expand"></i>';
+                    setTimeout(() => {
+                        this.map.invalidateSize();
+                        if (expanded) this.map.zoomIn(1);
+                        else this.map.zoomOut(1);
+                    }, 50);
+                });
+                this._expandControl = { el: container, btn: a };
+                return container;
+            },
+        });
+        new ExpandControl().addTo(this.map);
 
         // Label visibility: update setiap zoom berubah atau label baru ditambahkan
         this.map.on('zoomend', () => this._updateLabelVisibility());

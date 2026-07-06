@@ -570,6 +570,25 @@ span.flatpickr-weekday {
     height: 500px;
 }
 
+/* Expanded: tinggi diperbesar ke 700px */
+.petadigi-map-wrapper--fixed.petadigi-map-wrapper--expanded {
+    height: 700px;
+}
+
+/* Tombol expand/restore di kiri atas map */
+.petadigi-map-expand-btn a {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: #333;
+    text-decoration: none;
+}
+.petadigi-map-expand-btn a:hover {
+    background-color: #f4f4f4;
+    color: #000;
+}
+
 .petadigi-map-container {
     flex: 1;
     width: 100%;

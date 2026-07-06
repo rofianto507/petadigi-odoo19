@@ -17,6 +17,8 @@
                     <field name="kabupaten_id"/>
                     <field name="kecamatan_id"/>
                     <field name="desa_id"/>
+                    <field name="personel_count" string="Personel"/>
+                    <field name="lokasi_count" string="Titik Lokasi"/>
                     <field name="state" widget="badge"
                         decoration-warning="state == 'PROSES'"
                         decoration-success="state == 'SELESAI'"/>
