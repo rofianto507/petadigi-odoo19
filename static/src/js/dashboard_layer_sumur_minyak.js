@@ -81,6 +81,23 @@ function _buildCountMap(groups, field) {
     return m;
 }
 
+// ── Minyak popup rows helper ─────────────────────────────────────────────────
+function _buildMinyakRows(r) {
+    const fmt = v => (v ? v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-');
+    const kode = r.kategori_kode;
+    if (kode === 'sumur_masyarakat') return `
+        <tr><td><i class="fa fa-tint"></i> Produksi</td><td><strong>${fmt(r.minyak_produksi)}</strong></td></tr>
+        <tr><td><i class="fa fa-tint"></i> Keluar</td><td><strong>${fmt(r.minyak_keluar)}</strong></td></tr>`;
+    if (kode === 'bku') return `
+        <tr><td><i class="fa fa-tint"></i> Masuk</td><td><strong>${fmt(r.minyak_masuk)}</strong></td></tr>
+        <tr><td><i class="fa fa-tint"></i> Tersedia</td><td><strong>${fmt(r.minyak_tersedia)}</strong></td></tr>
+        <tr><td><i class="fa fa-tint"></i> Keluar</td><td><strong>${fmt(r.minyak_keluar)}</strong></td></tr>`;
+    if (kode === 'k3s') return `
+        <tr><td><i class="fa fa-tint"></i> Masuk</td><td><strong>${fmt(r.minyak_masuk)}</strong></td></tr>
+        <tr><td><i class="fa fa-tint"></i> Ditolak</td><td><strong>${fmt(r.minyak_ditolak)}</strong></td></tr>`;
+    return '';
+}
+
 // ── Marker ───────────────────────────────────────────────────────────────────
 async function _loadSumurMarkers(ctx, domain) {
     ctx.markerLayerGroup.clearLayers();
@@ -89,7 +106,9 @@ async function _loadSumurMarkers(ctx, domain) {
         'petadigi.sumur_minyak',
         [['latitude', '!=', 0], ['longitude', '!=', 0], ...domain],
         ['id', 'code', 'name', 'latitude', 'longitude',
-         'kecamatan_id', 'jumlah_minyak', 'is_data_lengkap', 'state', 'kategori_id'],
+         'kecamatan_id', 'kategori_id', 'kategori_kode',
+         'minyak_produksi', 'minyak_masuk', 'minyak_tersedia', 'minyak_keluar', 'minyak_ditolak',
+         'is_data_lengkap', 'state'],
     );
 
     records.forEach(r => {
@@ -100,6 +119,7 @@ async function _loadSumurMarkers(ctx, domain) {
         const lengkapIcon = r.is_data_lengkap
             ? '<i class="fa fa-check-circle" style="color:#27AE60;"></i> Lengkap'
             : '<i class="fa fa-times-circle" style="color:#E74C3C;"></i> Tidak Lengkap';
+        const minyakRows  = _buildMinyakRows(r);
 
         const icon = L.divIcon({
             className: '',
@@ -122,7 +142,7 @@ async function _loadSumurMarkers(ctx, domain) {
                         <tr><td><i class="fa fa-tag"></i> Nama</td><td><strong>${r.name || '-'}</strong></td></tr>
                         <tr><td><i class="fa fa-map"></i> Kecamatan</td><td><strong>${kecamatan}</strong></td></tr>
                         <tr><td><i class="fa fa-list"></i> Kategori</td><td><strong>${kategori}</strong></td></tr>
-                        <tr><td><i class="fa fa-tint"></i> Jml. Minyak</td><td><strong>${r.jumlah_minyak ? r.jumlah_minyak.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</strong></td></tr>
+                        ${minyakRows}
                         <tr><td><i class="fa fa-check"></i> Data</td><td><strong>${lengkapIcon}</strong></td></tr>
                         <tr><td><i class="fa fa-flag"></i> Status</td><td><strong style="color:${stateColor};">${stateLabel}</strong></td></tr>
                     </table>

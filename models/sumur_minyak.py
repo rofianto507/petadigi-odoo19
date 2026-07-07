@@ -11,6 +11,16 @@ class SumurMinyak(models.Model):
     code = fields.Char('Kode', readonly=True, copy=False, default='New', tracking=True)
     name = fields.Char('Nama Sumur', required=True, tracking=True)
     kategori_id = fields.Many2one('petadigi.kategori_sumur_minyak', string='Kategori', tracking=True)
+    kategori_kode = fields.Selection(
+        related='kategori_id.kode',
+        selection=[
+            ('sumur_masyarakat', 'Sumur Masyarakat'),
+            ('bku', 'BKU'),
+            ('k3s', 'K3S'),
+        ],
+        string='Kode Kategori',
+        store=True,
+    )
 
     desa_id = fields.Many2one('petadigi.desa', string='Desa/Kelurahan', tracking=True)
     kecamatan_id = fields.Many2one(
@@ -33,11 +43,18 @@ class SumurMinyak(models.Model):
         tracking=True,
     )
 
-    jumlah_minyak = fields.Float(
-        'Jumlah Minyak',
+    minyak_produksi = fields.Float('Minyak Produksi', digits=(10, 2), tracking=True)
+    minyak_masuk = fields.Float('Minyak Masuk', digits=(10, 2), tracking=True)
+    minyak_tersedia = fields.Float('Minyak Tersedia', digits=(10, 2), tracking=True)
+    minyak_keluar = fields.Float('Minyak Keluar', digits=(10, 2), tracking=True)
+    minyak_ditolak = fields.Float('Minyak Ditolak', digits=(10, 2), tracking=True)
+
+    total_minyak = fields.Float(
+        'Total Minyak',
         digits=(10, 2),
-        help='Jumlah minyak produksi/Minyak masuk',
-        tracking=True,
+        compute='_compute_total_minyak',
+        store=True,
+        aggregator='sum',
     )
 
     nama_surveyor = fields.Char('Nama Surveyor', tracking=True)
@@ -53,6 +70,21 @@ class SumurMinyak(models.Model):
         compute='_compute_data_lengkap',
         store=True,
     )
+
+    @api.depends('kategori_kode',
+                 'minyak_produksi', 'minyak_masuk', 'minyak_tersedia',
+                 'minyak_keluar', 'minyak_ditolak')
+    def _compute_total_minyak(self):
+        for rec in self:
+            kode = rec.kategori_kode
+            if kode == 'sumur_masyarakat':
+                rec.total_minyak = rec.minyak_produksi + rec.minyak_keluar
+            elif kode == 'bku':
+                rec.total_minyak = rec.minyak_masuk + rec.minyak_tersedia + rec.minyak_keluar
+            elif kode == 'k3s':
+                rec.total_minyak = rec.minyak_masuk + rec.minyak_ditolak
+            else:
+                rec.total_minyak = 0.0
 
     @api.depends('latitude', 'longitude', 'foto')
     def _compute_data_lengkap(self):

@@ -3,8 +3,8 @@
 // sumur_minyak tidak punya kategori, sumber_dokumen_id, atau tanggal_kejadian.
 // Domain hanya pakai kabupaten_id, state, dan drill-down context.
 
-// ─── Bar chart: total per kabupaten ──────────────────────────────────────────
-function _renderSumurBarChart(ctx, names, values) {
+// ─── Combo chart: bar (total sumur) + line (total minyak) per kabupaten ───────
+function _renderSumurBarChart(ctx, names, counts, minyakVals) {
     const el = ctx.chartSumurBarRef?.el;
     if (!el || typeof echarts === 'undefined') return;
     if (ctx._echartsSumurBar) ctx._echartsSumurBar.dispose();
@@ -17,11 +17,21 @@ function _renderSumurBarChart(ctx, names, values) {
             borderWidth: 1,
             textStyle: { color: '#2c3e50', fontSize: 12 },
             formatter: params => {
-                const p = params[0];
-                return `${p.name}<br/><b>Total Sumur: ${p.value.toLocaleString('id-ID')}</b>`;
+                return params.map(p =>
+                    `${p.marker} ${p.seriesName}: <b>${Number(p.value).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</b>`
+                ).join('<br/>');
             },
         },
-        grid: { left: 10, right: 16, top: 10, bottom: 55, containLabel: true },
+        legend: {
+            data: ['Total Sumur', 'Total Minyak'],
+            bottom: 0,
+            left: 'center',
+            textStyle: { fontSize: 10, color: '#555' },
+            icon: 'roundRect',
+            itemWidth: 10,
+            itemHeight: 10,
+        },
+        grid: { left: 10, right: 50, top: 10, bottom: 70, containLabel: true },
         xAxis: {
             type: 'category',
             data: names,
@@ -29,24 +39,56 @@ function _renderSumurBarChart(ctx, names, values) {
             axisLine: { lineStyle: { color: '#d0d7de' } },
             axisTick: { show: false },
         },
-        yAxis: {
-            type: 'value',
-            axisLabel: { fontSize: 10, color: '#888' },
-            splitLine: { lineStyle: { color: '#f5ece4', type: 'dashed' } },
-        },
-        series: [{
-            type: 'bar',
-            data: values,
-            barMaxWidth: 36,
-            itemStyle: {
-                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                    { offset: 0, color: '#E59866' },
-                    { offset: 1, color: '#A04000' },
-                ]),
-                borderRadius: [4, 4, 0, 0],
+        yAxis: [
+            {
+                type: 'value',
+                name: 'Sumur',
+                nameTextStyle: { fontSize: 9, color: '#A04000' },
+                axisLabel: { fontSize: 9, color: '#A04000' },
+                splitLine: { lineStyle: { color: '#f5ece4', type: 'dashed' } },
             },
-            emphasis: { itemStyle: { color: '#7E5109' } },
-        }],
+            {
+                type: 'value',
+                name: 'Minyak',
+                nameTextStyle: { fontSize: 9, color: '#1a6b9a' },
+                axisLabel: { fontSize: 9, color: '#1a6b9a' },
+                splitLine: { show: false },
+            },
+        ],
+        series: [
+            {
+                name: 'Total Sumur',
+                type: 'bar',
+                yAxisIndex: 0,
+                data: counts,
+                barMaxWidth: 32,
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: '#E59866' },
+                        { offset: 1, color: '#A04000' },
+                    ]),
+                    borderRadius: [4, 4, 0, 0],
+                },
+                emphasis: { itemStyle: { color: '#7E5109' } },
+            },
+            {
+                name: 'Total Minyak',
+                type: 'line',
+                yAxisIndex: 1,
+                data: minyakVals,
+                smooth: true,
+                symbol: 'circle',
+                symbolSize: 6,
+                lineStyle: { color: '#1a6b9a', width: 2 },
+                itemStyle: { color: '#1a6b9a' },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(26,107,154,0.18)' },
+                        { offset: 1, color: 'rgba(26,107,154,0.01)' },
+                    ]),
+                },
+            },
+        ],
     });
 }
 
@@ -65,7 +107,7 @@ function _renderSumurDonutChart(ctx, data) {
             borderColor: '#e5e7eb',
             borderWidth: 1,
             textStyle: { color: '#2c3e50', fontSize: 12 },
-            formatter: '{b}: {c} ({d}%)',
+            formatter: p => `${p.name}: ${Number(p.value).toLocaleString('id-ID', { maximumFractionDigits: 2 })} (${p.percent}%)`,
         },
         legend: {
             orient: 'horizontal',
@@ -127,27 +169,36 @@ export async function updateSumurCharts(ctx, mode) {
     try {
         const [kabGroups, allKabupaten, kategoriGroups] = await Promise.all([
             ctx.orm.call('petadigi.sumur_minyak', 'read_group',
-                [baseDomain, ['kabupaten_id'], ['kabupaten_id']], { lazy: false }),
+                [baseDomain, ['kabupaten_id', 'total_minyak:sum'], ['kabupaten_id']], { lazy: false }),
             ctx.orm.searchRead('petadigi.kabupaten', [], ['id', 'name'], { order: 'name asc' }),
             ctx.orm.call('petadigi.sumur_minyak', 'read_group',
-                [baseDomain, ['kategori_id'], ['kategori_id']], { lazy: false }),
+                [baseDomain, ['kategori_id', 'total_minyak:sum'], ['kategori_id']], { lazy: false }),
         ]);
 
-        // Bar — semua kabupaten termasuk yang 0, sort desc
-        const kabCountMap = {};
+        // Combo bar+line — semua kabupaten termasuk yang 0, sort desc by count
+        const kabCountMap = {}, kabMinyakMap = {};
         kabGroups.forEach(g => {
             if (!g.kabupaten_id) return;
             kabCountMap[g.kabupaten_id[0]] = g.__count || 0;
+            kabMinyakMap[g.kabupaten_id[0]] = g.total_minyak || 0;
         });
-        const kabList = allKabupaten.map(k => ({ name: k.name, val: kabCountMap[k.id] || 0 }));
+        const kabList = allKabupaten.map(k => ({
+            name: k.name,
+            val: kabCountMap[k.id] || 0,
+            minyak: kabMinyakMap[k.id] || 0,
+        }));
         kabList.sort((a, b) => b.val - a.val);
         if (ctx._modeVersion !== ver) return;
-        _renderSumurBarChart(ctx, kabList.map(k => k.name), kabList.map(k => k.val));
+        _renderSumurBarChart(ctx,
+            kabList.map(k => k.name),
+            kabList.map(k => k.val),
+            kabList.map(k => k.minyak),
+        );
 
-        // Donut — per kategori
+        // Donut — per kategori berdasarkan total minyak
         const donutData = kategoriGroups.map(g => ({
             name:  Array.isArray(g.kategori_id) ? g.kategori_id[1] : 'Tanpa Kategori',
-            value: g.__count || 0,
+            value: g.total_minyak || 0,
         })).filter(d => d.value > 0);
 
         _renderSumurDonutChart(ctx, donutData.length ? donutData : [
@@ -196,7 +247,9 @@ export async function updateSumurTable(ctx, mode, page) {
         const [records, total] = await Promise.all([
             ctx.orm.searchRead('petadigi.sumur_minyak', domain,
                 ['id', 'code', 'name', 'desa_id', 'kecamatan_id', 'kabupaten_id',
-                 'jumlah_minyak', 'kategori_id', 'state'],
+                 'kategori_id', 'kategori_kode',
+                 'minyak_produksi', 'minyak_masuk', 'minyak_tersedia', 'minyak_keluar', 'minyak_ditolak',
+                 'state'],
                 { order: 'name asc', limit: PAGE_SIZE, offset }),
             ctx.orm.searchCount('petadigi.sumur_minyak', domain),
         ]);
@@ -212,6 +265,14 @@ export async function updateSumurTable(ctx, mode, page) {
             const desa     = Array.isArray(r.desa_id)      ? r.desa_id[1]      : '-';
             const kategori = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
             const cls      = r.state === 'AKTIF' ? '--green' : '--gray';
+            const fmt      = v => (v ? v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-');
+            let minyakCell = '-';
+            if (r.kategori_kode === 'sumur_masyarakat')
+                minyakCell = `P: ${fmt(r.minyak_produksi)} / K: ${fmt(r.minyak_keluar)}`;
+            else if (r.kategori_kode === 'bku')
+                minyakCell = `M: ${fmt(r.minyak_masuk)} / T: ${fmt(r.minyak_tersedia)} / K: ${fmt(r.minyak_keluar)}`;
+            else if (r.kategori_kode === 'k3s')
+                minyakCell = `M: ${fmt(r.minyak_masuk)} / D: ${fmt(r.minyak_ditolak)}`;
             return `
                 <tr class="petadigi-table-row" data-id="${r.id}" style="cursor:pointer;">
                     <td class="petadigi-td">${offset + i + 1}</td>
@@ -221,7 +282,7 @@ export async function updateSumurTable(ctx, mode, page) {
                     <td class="petadigi-td">${kec}</td>
                     <td class="petadigi-td">${kab}</td>
                     <td class="petadigi-td">${kategori}</td>
-                    <td class="petadigi-td">${r.jumlah_minyak ? r.jumlah_minyak.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'}</td>
+                    <td class="petadigi-td">${minyakCell}</td>
                     <td class="petadigi-td"><span class="petadigi-badge petadigi-badge${cls}">${r.state || '-'}</span></td>
                 </tr>`;
         }).join('');
@@ -234,10 +295,19 @@ export async function updateSumurTable(ctx, mode, page) {
                         ? `Menampilkan&nbsp;<b>${fromRow}–${toRow}</b>&nbsp;dari&nbsp;<b>${total.toLocaleString('id-ID')}</b>&nbsp;data`
                         : 'Tidak ada data'}
                 </span>
-                <div class="petadigi-table-pagination">
-                    <button class="petadigi-page-btn" data-action="prev" ${curPage <= 1 ? 'disabled' : ''}><i class="fa fa-chevron-left"></i></button>
-                    <span class="petadigi-page-info">Hal. ${curPage} / ${totalPages}</span>
-                    <button class="petadigi-page-btn" data-action="next" ${curPage >= totalPages ? 'disabled' : ''}><i class="fa fa-chevron-right"></i></button>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:10px;color:#888;background:#fdf6ee;border:1px solid #f0d9b5;border-radius:4px;padding:2px 8px;white-space:nowrap;">
+                        <b style="color:#A04000;">P</b>=Produksi &nbsp;
+                        <b style="color:#A04000;">M</b>=Masuk &nbsp;
+                        <b style="color:#A04000;">T</b>=Tersedia &nbsp;
+                        <b style="color:#A04000;">K</b>=Keluar &nbsp;
+                        <b style="color:#A04000;">D</b>=Ditolak
+                    </span>
+                    <div class="petadigi-table-pagination">
+                        <button class="petadigi-page-btn" data-action="prev" ${curPage <= 1 ? 'disabled' : ''}><i class="fa fa-chevron-left"></i></button>
+                        <span class="petadigi-page-info">Hal. ${curPage} / ${totalPages}</span>
+                        <button class="petadigi-page-btn" data-action="next" ${curPage >= totalPages ? 'disabled' : ''}><i class="fa fa-chevron-right"></i></button>
+                    </div>
                 </div>
             </div>
             <div class="petadigi-table-wrapper">
@@ -250,7 +320,7 @@ export async function updateSumurTable(ctx, mode, page) {
                         <th class="petadigi-th">Kecamatan</th>
                         <th class="petadigi-th">Kabupaten</th>
                         <th class="petadigi-th">Kategori</th>
-                        <th class="petadigi-th">Jml. Minyak Produksi/Masuk</th>
+                        <th class="petadigi-th">Volume Minyak</th>
                         <th class="petadigi-th">Status</th>
                     </tr></thead>
                     <tbody>

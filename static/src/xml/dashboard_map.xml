@@ -256,13 +256,13 @@
                 <div class="petadigi-chart-row" t-ref="chartSumurRow">
                     <div class="petadigi-chart-card">
                         <div class="petadigi-chart-title">
-                            <i class="fa fa-bar-chart"/> Grafik Total Sumur Minyak per Kabupaten
+                            <i class="fa fa-bar-chart"/> Total Sumur &amp; Minyak per Kabupaten
                         </div>
                         <div class="petadigi-chart-body" t-ref="chartSumurBar"/>
                     </div>
                     <div class="petadigi-chart-card">
                         <div class="petadigi-chart-title">
-                            <i class="fa fa-pie-chart"/> Kategori Sumur Minyak
+                            <i class="fa fa-pie-chart"/> Total Minyak per Kategori
                         </div>
                         <div class="petadigi-chart-body" t-ref="chartSumurDonut"/>
                     </div>

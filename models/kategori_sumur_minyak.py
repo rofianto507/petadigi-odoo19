@@ -14,6 +14,11 @@ class KategoriSumurMinyak(models.Model):
     _order = 'name asc'
 
     name = fields.Char('Nama Kategori', required=True)
+    kode = fields.Selection([
+        ('sumur_masyarakat', 'Sumur Masyarakat'),
+        ('bku', 'BKU'),
+        ('k3s', 'K3S'),
+    ], string='Kode Kategori')
     keterangan = fields.Text('Keterangan')
     state = fields.Selection([
         ('draft', 'Draft'),
@@ -26,6 +31,11 @@ class KategoriSumurMinyak(models.Model):
 
     sumur_ids = fields.One2many('petadigi.sumur_minyak', 'kategori_id', string='Data Sumur')
     jumlah_sumur = fields.Integer(string='Total Sumur', compute='_compute_jumlah_sumur')
+    total_minyak = fields.Float(
+        string='Total Minyak',
+        digits=(10, 2),
+        compute='_compute_total_minyak',
+    )
 
     @api.depends('public_token')
     def _compute_public_url(self):
@@ -62,6 +72,17 @@ class KategoriSumurMinyak(models.Model):
         counts = {d['kategori_id'][0]: d['kategori_id_count'] for d in data}
         for rec in self:
             rec.jumlah_sumur = counts.get(rec.id, 0)
+
+    @api.depends()
+    def _compute_total_minyak(self):
+        data = self.env['petadigi.sumur_minyak'].read_group(
+            [('kategori_id', 'in', self.ids)],
+            ['kategori_id', 'total_minyak:sum'],
+            ['kategori_id'],
+        )
+        totals = {d['kategori_id'][0]: d['total_minyak'] for d in data}
+        for rec in self:
+            rec.total_minyak = totals.get(rec.id, 0.0)
 
     def action_view_sumur(self):
         self.ensure_one()

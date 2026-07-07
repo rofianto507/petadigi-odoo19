@@ -13,7 +13,7 @@
                     <field name="kabupaten_id"/>
                     <field name="kecamatan_id"/>
                     <field name="desa_id"/>
-                    <field name="jumlah_minyak"/>
+                    <field name="total_minyak" string="Total Minyak"/>
                     <field name="is_data_lengkap" widget="boolean" string="Lengkap"/>
                     <field name="state" widget="badge"
                         decoration-success="state == 'AKTIF'"
@@ -80,12 +80,30 @@
                         <div class="oe_title">
                             <h1><field name="code" readonly="1"/></h1>
                         </div>
+                        <field name="kategori_kode" invisible="1"/>
                         <group>
                             <group>
                                 <field name="name"/>
                                 <field name="kategori_id"/>
                                 <field name="sumber_dokumen_id"/>
-                                <field name="jumlah_minyak"/>
+                                <!-- Sumur Masyarakat -->
+                                <field name="minyak_produksi"
+                                    invisible="kategori_kode != 'sumur_masyarakat'"/>
+                                <!-- BKU + K3S -->
+                                <field name="minyak_masuk"
+                                    invisible="kategori_kode not in ('bku', 'k3s')"/>
+                                <!-- BKU -->
+                                <field name="minyak_tersedia"
+                                    invisible="kategori_kode != 'bku'"/>
+                                <!-- Sumur Masyarakat + BKU -->
+                                <field name="minyak_keluar"
+                                    invisible="kategori_kode not in ('sumur_masyarakat', 'bku')"/>
+                                <!-- K3S -->
+                                <field name="minyak_ditolak"
+                                    invisible="kategori_kode != 'k3s'"/>
+                                <field name="total_minyak" readonly="1"
+                                    invisible="not kategori_kode"
+                                    string="Total Minyak"/>
                             </group>
                             <group>
                                 <field name="foto" widget="image_popup" nolabel="1"/>

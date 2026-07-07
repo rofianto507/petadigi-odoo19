@@ -861,18 +861,29 @@ export class DashboardMap extends Component {
                 ];
             } else if (mode === 'sumur') {
                 // sumur_minyak tidak punya sumber_dokumen_id & tanggal_kejadian
-                const sumurSts = stateValue ? [['state', '=', stateValue]] : [];
-                const sumurBase = [...sumurSts, ...drillDomain];
-                const [total, aktif, lengkap] = await Promise.all([
+                const sumurKategoriId = parseInt(this.filterKategoriSumur?.el?.value) || null;
+                const sumurSts  = stateValue      ? [['state',       '=', stateValue]]      : [];
+                const sumurKat  = sumurKategoriId ? [['kategori_id', '=', sumurKategoriId]] : [];
+                const sumurBase = [...sumurSts, ...sumurKat, ...drillDomain];
+                const [total, aktif, minyakGroups, surveyorList] = await Promise.all([
                     this.orm.searchCount('petadigi.sumur_minyak', sumurBase),
                     this.orm.searchCount('petadigi.sumur_minyak', [...sumurBase, ['state','=','AKTIF']]),
-                    this.orm.searchCount('petadigi.sumur_minyak', [...sumurBase, ['is_data_lengkap','=',true]]),
+                    this.orm.call('petadigi.sumur_minyak', 'read_group',
+                        [sumurBase, ['total_minyak:sum'], []], { lazy: false }),
+                    this.orm.searchRead('petadigi.sumur_minyak',
+                        [...sumurBase, ['nama_surveyor', '!=', false]],
+                        ['nama_surveyor', 'hp_surveyor']),
                 ]);
+                const totalMinyak     = minyakGroups[0]?.total_minyak || 0;
+                const uniqueSurveyors = new Set(
+                    surveyorList.map(r => `${r.nama_surveyor}||${r.hp_surveyor || ''}`)
+                ).size;
+                const fmtMinyak = totalMinyak.toLocaleString('id-ID', { maximumFractionDigits: 2 });
                 cards = [
-                    { icon: 'fa-database',    color: '#A04000', value: total,        label: 'Total Sumur' },
-                    { icon: 'fa-check-circle',color: '#27ae60', value: aktif,        label: 'Sumur Aktif' },
-                    { icon: 'fa-times-circle',color: '#7F8C8D', value: total - aktif,label: 'Tidak Aktif' },
-                    { icon: 'fa-tint',        color: '#CA6F1E', value: lengkap,      label: 'Data Lengkap' },
+                    { icon: 'fa-database',    color: '#A04000', value: total,          label: 'Total Sumur' },
+                    { icon: 'fa-check-circle',color: '#27ae60', value: aktif,          label: 'Sumur Aktif' },
+                    { icon: 'fa-tint',        color: '#CA6F1E', value: fmtMinyak,      label: 'Total Minyak' },
+                    { icon: 'fa-user',        color: '#8e44ad', value: uniqueSurveyors,label: 'Surveyor Unik' },
                 ];
             } else if (mode === 'strong') {
                 const df_s = [
@@ -880,7 +891,7 @@ export class DashboardMap extends Component {
                     ...(dateTo   ? [['tanggal_mulai', '<=', wibDateEndUtc(dateTo)]] : []),
                 ];
                 const polresf_sp = polresId ? [['polres_id', '=', polresId]] : [];
-                const d = [...df_s, ...polresf_sp, ...drillDomain];
+                const d = [...df_s, ...polresf_sp, ...sts, ...drillDomain];
                 const [total, proses, lokasiGroups, personelGroups] = await Promise.all([
                     this.orm.searchCount('petadigi.strong_point', d),
                     this.orm.searchCount('petadigi.strong_point', [...d, ['state','=','PROSES']]),
@@ -904,7 +915,7 @@ export class DashboardMap extends Component {
                 ];
                 const polresf_p   = polresId ? [['polres_id',            '=', polresId]] : [];
                 const polresf_lok = polresId ? [['patroli_id.polres_id', '=', polresId]] : [];
-                const d = [...df_p, ...polresf_p, ...drillDomain];
+                const d = [...df_p, ...polresf_p, ...sts, ...drillDomain];
                 const dLokasi = [
                     ...(dateFrom ? [['patroli_id.tanggal_mulai', '>=', wibDateStartUtc(dateFrom)]] : []),
                     ...(dateTo   ? [['patroli_id.tanggal_mulai', '<=', wibDateEndUtc(dateTo)]] : []),

@@ -91,17 +91,64 @@
                                              t-out="state.errors.nama_sumur"/>
                                     </div>
 
-                                    <div class="sf-field">
-                                        <label class="sf-label">
-                                            Jumlah Minyak
-                                            <span class="sf-opt">Opsional</span>
-                                        </label>
-                                        <input class="sf-input" type="number" inputmode="decimal"
-                                               step="any" min="0"
-                                               t-att-value="state.jumlah_minyak"
-                                               t-on-input="onJumlahMinyakInput"
-                                               placeholder="Produksi/masuk (liter atau barel)"/>
-                                    </div>
+                                    <!-- Sumur Masyarakat -->
+                                    <t t-if="initData.kategori.kode === 'sumur_masyarakat'">
+                                        <div class="sf-field">
+                                            <label class="sf-label">Minyak Produksi <span class="sf-opt">Opsional</span></label>
+                                            <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
+                                                   t-att-value="state.minyak_produksi"
+                                                   t-on-input="ev => state.minyak_produksi = ev.target.value"
+                                                   placeholder="Jumlah minyak produksi (liter/barel)"/>
+                                        </div>
+                                        <div class="sf-field">
+                                            <label class="sf-label">Minyak Keluar <span class="sf-opt">Opsional</span></label>
+                                            <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
+                                                   t-att-value="state.minyak_keluar"
+                                                   t-on-input="ev => state.minyak_keluar = ev.target.value"
+                                                   placeholder="Jumlah minyak keluar (liter/barel)"/>
+                                        </div>
+                                    </t>
+                                    <!-- BKU -->
+                                    <t t-elif="initData.kategori.kode === 'bku'">
+                                        <div class="sf-field">
+                                            <label class="sf-label">Minyak Masuk <span class="sf-opt">Opsional</span></label>
+                                            <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
+                                                   t-att-value="state.minyak_masuk"
+                                                   t-on-input="ev => state.minyak_masuk = ev.target.value"
+                                                   placeholder="Jumlah minyak masuk (liter/barel)"/>
+                                        </div>
+                                        <div class="sf-field">
+                                            <label class="sf-label">Minyak Tersedia <span class="sf-opt">Opsional</span></label>
+                                            <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
+                                                   t-att-value="state.minyak_tersedia"
+                                                   t-on-input="ev => state.minyak_tersedia = ev.target.value"
+                                                   placeholder="Jumlah minyak tersedia (liter/barel)"/>
+                                        </div>
+                                        <div class="sf-field">
+                                            <label class="sf-label">Minyak Keluar <span class="sf-opt">Opsional</span></label>
+                                            <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
+                                                   t-att-value="state.minyak_keluar"
+                                                   t-on-input="ev => state.minyak_keluar = ev.target.value"
+                                                   placeholder="Jumlah minyak keluar (liter/barel)"/>
+                                        </div>
+                                    </t>
+                                    <!-- K3S -->
+                                    <t t-elif="initData.kategori.kode === 'k3s'">
+                                        <div class="sf-field">
+                                            <label class="sf-label">Minyak Masuk <span class="sf-opt">Opsional</span></label>
+                                            <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
+                                                   t-att-value="state.minyak_masuk"
+                                                   t-on-input="ev => state.minyak_masuk = ev.target.value"
+                                                   placeholder="Jumlah minyak masuk (liter/barel)"/>
+                                        </div>
+                                        <div class="sf-field">
+                                            <label class="sf-label">Minyak Ditolak <span class="sf-opt">Opsional</span></label>
+                                            <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
+                                                   t-att-value="state.minyak_ditolak"
+                                                   t-on-input="ev => state.minyak_ditolak = ev.target.value"
+                                                   placeholder="Jumlah minyak ditolak (liter/barel)"/>
+                                        </div>
+                                    </t>
 
                                 </div>
                             </div>
@@ -327,7 +374,8 @@
                 nama_surveyor: cache.nama_surveyor || '',
                 hp_surveyor: cache.hp_surveyor || '',
                 nama_sumur: '',
-                jumlah_minyak: '',
+                minyak_produksi: '', minyak_masuk: '', minyak_tersedia: '',
+                minyak_keluar: '', minyak_ditolak: '',
                 kabupaten_id: null,
                 kecamatan_id: null,
                 desa_id: null,
@@ -631,7 +679,11 @@
                         nama_surveyor: this.state.nama_surveyor,
                         hp_surveyor: this.state.hp_surveyor,
                         nama_sumur: this.state.nama_sumur,
-                        jumlah_minyak: parseFloat(this.state.jumlah_minyak) || 0,
+                        minyak_produksi: parseFloat(this.state.minyak_produksi) || 0,
+                        minyak_masuk: parseFloat(this.state.minyak_masuk) || 0,
+                        minyak_tersedia: parseFloat(this.state.minyak_tersedia) || 0,
+                        minyak_keluar: parseFloat(this.state.minyak_keluar) || 0,
+                        minyak_ditolak: parseFloat(this.state.minyak_ditolak) || 0,
                         kabupaten_id: this.state.kabupaten_id,
                         kecamatan_id: this.state.kecamatan_id,
                         desa_id: this.state.desa_id,
@@ -677,7 +729,9 @@
             Object.assign(this.state, {
                 nama_surveyor: cache.nama_surveyor || '',
                 hp_surveyor: cache.hp_surveyor || '',
-                nama_sumur: '', jumlah_minyak: '',
+                nama_sumur: '',
+                minyak_produksi: '', minyak_masuk: '', minyak_tersedia: '',
+                minyak_keluar: '', minyak_ditolak: '',
                 kabupaten_id: null, kecamatan_id: null, desa_id: null,
                 kecamatan_list: [], desa_list: [],
                 latitude: null, longitude: null,
