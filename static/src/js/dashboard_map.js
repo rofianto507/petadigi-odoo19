@@ -865,25 +865,23 @@ export class DashboardMap extends Component {
                 const sumurSts  = stateValue      ? [['state',       '=', stateValue]]      : [];
                 const sumurKat  = sumurKategoriId ? [['kategori_id', '=', sumurKategoriId]] : [];
                 const sumurBase = [...sumurSts, ...sumurKat, ...drillDomain];
-                const [total, aktif, minyakGroups, surveyorList] = await Promise.all([
+                const [total, minyakGroups] = await Promise.all([
                     this.orm.searchCount('petadigi.sumur_minyak', sumurBase),
-                    this.orm.searchCount('petadigi.sumur_minyak', [...sumurBase, ['state','=','AKTIF']]),
                     this.orm.call('petadigi.sumur_minyak', 'read_group',
-                        [sumurBase, ['total_minyak:sum'], []], { lazy: false }),
-                    this.orm.searchRead('petadigi.sumur_minyak',
-                        [...sumurBase, ['nama_surveyor', '!=', false]],
-                        ['nama_surveyor', 'hp_surveyor']),
+                        [sumurBase,
+                         ['minyak_produksi:sum', 'minyak_masuk:sum', 'minyak_tersedia:sum',
+                          'minyak_keluar:sum', 'minyak_ditolak:sum'],
+                         []], { lazy: false }),
                 ]);
-                const totalMinyak     = minyakGroups[0]?.total_minyak || 0;
-                const uniqueSurveyors = new Set(
-                    surveyorList.map(r => `${r.nama_surveyor}||${r.hp_surveyor || ''}`)
-                ).size;
-                const fmtMinyak = totalMinyak.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+                const g = minyakGroups[0] || {};
+                const fmtM = v => (v || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
                 cards = [
-                    { icon: 'fa-database',    color: '#A04000', value: total,          label: 'Total Sumur' },
-                    { icon: 'fa-check-circle',color: '#27ae60', value: aktif,          label: 'Sumur Aktif' },
-                    { icon: 'fa-tint',        color: '#CA6F1E', value: fmtMinyak,      label: 'Total Minyak' },
-                    { icon: 'fa-user',        color: '#8e44ad', value: uniqueSurveyors,label: 'Surveyor Unik' },
+                    { icon: 'fa-database',  color: '#A04000', value: total,                    label: 'Total Sumur' },
+                    { icon: 'fa-arrow-up',  color: '#27ae60', value: fmtM(g.minyak_produksi),  label: 'Total Produksi' },
+                    { icon: 'fa-sign-in',   color: '#2980b9', value: fmtM(g.minyak_masuk),     label: 'Total Masuk' },
+                    { icon: 'fa-tint',      color: '#1a6b9a', value: fmtM(g.minyak_tersedia),  label: 'Total Tersedia' },
+                    { icon: 'fa-arrow-down',color: '#d35400', value: fmtM(g.minyak_keluar),    label: 'Total Keluar' },
+                    { icon: 'fa-ban',       color: '#c0392b', value: fmtM(g.minyak_ditolak),   label: 'Total Ditolak' },
                 ];
             } else if (mode === 'strong') {
                 const df_s = [
@@ -939,6 +937,7 @@ export class DashboardMap extends Component {
             }
 
             if (this._modeVersion !== myVersion) return;
+            row.setAttribute('data-cols', cards.length);
             row.innerHTML = cards.map(c => `
                 <div class="petadigi-kpi-card">
                     <div class="petadigi-kpi-icon" style="color:${c.color};">

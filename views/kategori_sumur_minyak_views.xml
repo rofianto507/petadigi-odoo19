@@ -58,13 +58,54 @@
                             statusbar_visible="draft,aktif,non_aktif"/>
                     </header>
                     <sheet>
+                        <field name="kode" invisible="1"/>
                         <div class="oe_button_box" name="button_box">
                             <button class="oe_stat_button" icon="fa-tint"
                                     type="object" name="action_view_sumur">
                                 <field name="jumlah_sumur" widget="statinfo" string="Total Sumur"/>
                             </button>
+                            <!-- Sumur Masyarakat -->
+                            <button class="oe_stat_button" icon="fa-arrow-up" type="object"
+                                    name="action_view_sumur"
+                                    invisible="kode != 'sumur_masyarakat'">
+                                <field name="total_minyak_produksi" widget="statinfo" string="Produksi"/>
+                            </button>
+                            <button class="oe_stat_button" icon="fa-arrow-down" type="object"
+                                    name="action_view_sumur"
+                                    invisible="kode != 'sumur_masyarakat'">
+                                <field name="total_minyak_keluar" widget="statinfo" string="Keluar"/>
+                            </button>
+                            <!-- BKU -->
+                            <button class="oe_stat_button" icon="fa-arrow-up" type="object"
+                                    name="action_view_sumur"
+                                    invisible="kode != 'bku'">
+                                <field name="total_minyak_masuk" widget="statinfo" string="Masuk"/>
+                            </button>
+                            <button class="oe_stat_button" icon="fa-database" type="object"
+                                    name="action_view_sumur"
+                                    invisible="kode != 'bku'">
+                                <field name="total_minyak_tersedia" widget="statinfo" string="Tersedia"/>
+                            </button>
+                            <button class="oe_stat_button" icon="fa-arrow-down" type="object"
+                                    name="action_view_sumur"
+                                    invisible="kode != 'bku'">
+                                <field name="total_minyak_keluar" widget="statinfo" string="Keluar"/>
+                            </button>
+                            <!-- K3S -->
+                            <button class="oe_stat_button" icon="fa-arrow-up" type="object"
+                                    name="action_view_sumur"
+                                    invisible="kode != 'k3s'">
+                                <field name="total_minyak_masuk" widget="statinfo" string="Masuk"/>
+                            </button>
+                            <button class="oe_stat_button" icon="fa-ban" type="object"
+                                    name="action_view_sumur"
+                                    invisible="kode != 'k3s'">
+                                <field name="total_minyak_ditolak" widget="statinfo" string="Ditolak"/>
+                            </button>
+                            <!-- Fallback jika kode belum diset -->
                             <button class="oe_stat_button" icon="fa-flask" type="object"
-                                    name="action_view_sumur">
+                                    name="action_view_sumur"
+                                    invisible="kode in ('sumur_masyarakat', 'bku', 'k3s')">
                                 <field name="total_minyak" widget="statinfo" string="Total Minyak"/>
                             </button>
                         </div>
@@ -126,7 +167,18 @@
                                         <field name="kabupaten_id" string="Kabupaten"/>
                                         <field name="kecamatan_id" string="Kecamatan"/>
                                         <field name="desa_id" string="Desa"/>
-                                        <field name="total_minyak" string="Total Minyak"/>
+                                        <field name="minyak_produksi" string="Produksi"
+                                            column_invisible="parent.kode != 'sumur_masyarakat'"/>
+                                        <field name="minyak_masuk" string="Masuk"
+                                            column_invisible="parent.kode not in ('bku', 'k3s')"/>
+                                        <field name="minyak_tersedia" string="Tersedia"
+                                            column_invisible="parent.kode != 'bku'"/>
+                                        <field name="minyak_keluar" string="Keluar"
+                                            column_invisible="parent.kode not in ('sumur_masyarakat', 'bku')"/>
+                                        <field name="minyak_ditolak" string="Ditolak"
+                                            column_invisible="parent.kode != 'k3s'"/>
+                                        <field name="total_minyak" string="Total Minyak"
+                                            column_invisible="parent.kode in ('sumur_masyarakat', 'bku', 'k3s')"/>
                                         <field name="state" widget="badge"
                                             decoration-success="state == 'AKTIF'"
                                             decoration-danger="state == 'TIDAK AKTIF'"/>

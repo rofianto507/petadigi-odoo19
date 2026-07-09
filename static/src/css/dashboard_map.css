@@ -502,9 +502,34 @@ span.flatpickr-weekday {
     gap: 12px;
     flex-shrink: 0;
 }
+.petadigi-kpi-row[data-cols="6"] {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+}
+.petadigi-kpi-row[data-cols="6"] .petadigi-kpi-card {
+    padding: 10px 12px;
+    gap: 10px;
+}
+.petadigi-kpi-row[data-cols="6"] .petadigi-kpi-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 15px;
+    border-radius: 6px;
+}
+.petadigi-kpi-row[data-cols="6"] .petadigi-kpi-value {
+    font-size: 20px;
+}
+.petadigi-kpi-row[data-cols="6"] .petadigi-kpi-label {
+    font-size: 10px;
+    margin-top: 3px;
+}
 
 @media (max-width: 1100px) {
     .petadigi-kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .petadigi-kpi-row[data-cols="6"] { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 700px) {
+    .petadigi-kpi-row[data-cols="6"] { grid-template-columns: repeat(2, 1fr); }
 }
 
 /* KPI Card (dibuat oleh JS) */

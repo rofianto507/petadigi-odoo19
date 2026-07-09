@@ -32,9 +32,22 @@ class KategoriSumurMinyak(models.Model):
     sumur_ids = fields.One2many('petadigi.sumur_minyak', 'kategori_id', string='Data Sumur')
     jumlah_sumur = fields.Integer(string='Total Sumur', compute='_compute_jumlah_sumur')
     total_minyak = fields.Float(
-        string='Total Minyak',
-        digits=(10, 2),
-        compute='_compute_total_minyak',
+        string='Total Minyak', digits=(10, 2), compute='_compute_total_minyak',
+    )
+    total_minyak_produksi = fields.Float(
+        string='Total Produksi', digits=(10, 2), compute='_compute_total_minyak_detail',
+    )
+    total_minyak_masuk = fields.Float(
+        string='Total Masuk', digits=(10, 2), compute='_compute_total_minyak_detail',
+    )
+    total_minyak_tersedia = fields.Float(
+        string='Total Tersedia', digits=(10, 2), compute='_compute_total_minyak_detail',
+    )
+    total_minyak_keluar = fields.Float(
+        string='Total Keluar', digits=(10, 2), compute='_compute_total_minyak_detail',
+    )
+    total_minyak_ditolak = fields.Float(
+        string='Total Ditolak', digits=(10, 2), compute='_compute_total_minyak_detail',
     )
 
     @api.depends('public_token')
@@ -83,6 +96,24 @@ class KategoriSumurMinyak(models.Model):
         totals = {d['kategori_id'][0]: d['total_minyak'] for d in data}
         for rec in self:
             rec.total_minyak = totals.get(rec.id, 0.0)
+
+    @api.depends()
+    def _compute_total_minyak_detail(self):
+        data = self.env['petadigi.sumur_minyak'].read_group(
+            [('kategori_id', 'in', self.ids)],
+            ['kategori_id',
+             'minyak_produksi:sum', 'minyak_masuk:sum',
+             'minyak_tersedia:sum', 'minyak_keluar:sum', 'minyak_ditolak:sum'],
+            ['kategori_id'],
+        )
+        sums = {d['kategori_id'][0]: d for d in data}
+        for rec in self:
+            d = sums.get(rec.id, {})
+            rec.total_minyak_produksi = d.get('minyak_produksi', 0.0)
+            rec.total_minyak_masuk    = d.get('minyak_masuk',    0.0)
+            rec.total_minyak_tersedia = d.get('minyak_tersedia', 0.0)
+            rec.total_minyak_keluar   = d.get('minyak_keluar',   0.0)
+            rec.total_minyak_ditolak  = d.get('minyak_ditolak',  0.0)
 
     def action_view_sumur(self):
         self.ensure_one()
