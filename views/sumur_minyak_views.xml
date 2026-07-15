@@ -13,6 +13,11 @@
                     <field name="kabupaten_id"/>
                     <field name="kecamatan_id"/>
                     <field name="desa_id"/>
+                    <field name="minyak_produksi" string="Total Produksi" optional="hide"/>
+                    <field name="minyak_keluar"   string="Total Keluar"   optional="hide"/>
+                    <field name="minyak_masuk"    string="Total Masuk"    optional="hide"/>
+                    <field name="minyak_tersedia" string="Total Tersedia" optional="hide"/>
+                    <field name="minyak_ditolak"  string="Total Ditolak"  optional="hide"/>
                     <field name="total_minyak" string="Total Minyak"/>
                     <field name="is_data_lengkap" widget="boolean" string="Lengkap"/>
                     <field name="state" widget="badge"
@@ -34,6 +39,8 @@
                     <field name="desa_id"/>
                     <field name="kecamatan_id"/>
                     <field name="kabupaten_id"/>
+                    <separator/>
+                    <filter string="Tanggal Input" name="filter_tanggal_input" date="create_date"/>
                     <separator/>
                     <filter string="AKTIF" name="filter_aktif" domain="[('state','=','AKTIF')]"/>
                     <filter string="TIDAK AKTIF" name="filter_tidak_aktif" domain="[('state','=','TIDAK AKTIF')]"/>

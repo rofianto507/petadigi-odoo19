@@ -98,14 +98,14 @@
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_produksi"
                                                    t-on-input="ev => state.minyak_produksi = ev.target.value"
-                                                   placeholder="Jumlah minyak produksi (liter/barel)"/>
+                                                   placeholder="Jumlah minyak produksi (liter)"/>
                                         </div>
                                         <div class="sf-field">
                                             <label class="sf-label">Minyak Keluar <span class="sf-opt">Opsional</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_keluar"
                                                    t-on-input="ev => state.minyak_keluar = ev.target.value"
-                                                   placeholder="Jumlah minyak keluar (liter/barel)"/>
+                                                   placeholder="Jumlah minyak keluar (liter)"/>
                                         </div>
                                     </t>
                                     <!-- BKU -->
@@ -115,21 +115,21 @@
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_masuk"
                                                    t-on-input="ev => state.minyak_masuk = ev.target.value"
-                                                   placeholder="Jumlah minyak masuk (liter/barel)"/>
+                                                   placeholder="Jumlah minyak masuk (liter)"/>
                                         </div>
                                         <div class="sf-field">
                                             <label class="sf-label">Minyak Tersedia <span class="sf-opt">Opsional</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_tersedia"
                                                    t-on-input="ev => state.minyak_tersedia = ev.target.value"
-                                                   placeholder="Jumlah minyak tersedia (liter/barel)"/>
+                                                   placeholder="Jumlah minyak tersedia (liter)"/>
                                         </div>
                                         <div class="sf-field">
                                             <label class="sf-label">Minyak Keluar <span class="sf-opt">Opsional</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_keluar"
                                                    t-on-input="ev => state.minyak_keluar = ev.target.value"
-                                                   placeholder="Jumlah minyak keluar (liter/barel)"/>
+                                                   placeholder="Jumlah minyak keluar (liter)"/>
                                         </div>
                                     </t>
                                     <!-- K3S -->
@@ -139,14 +139,14 @@
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_masuk"
                                                    t-on-input="ev => state.minyak_masuk = ev.target.value"
-                                                   placeholder="Jumlah minyak masuk (liter/barel)"/>
+                                                   placeholder="Jumlah minyak masuk (liter)"/>
                                         </div>
                                         <div class="sf-field">
                                             <label class="sf-label">Minyak Ditolak <span class="sf-opt">Opsional</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_ditolak"
                                                    t-on-input="ev => state.minyak_ditolak = ev.target.value"
-                                                   placeholder="Jumlah minyak ditolak (liter/barel)"/>
+                                                   placeholder="Jumlah minyak ditolak (liter)"/>
                                         </div>
                                     </t>
 

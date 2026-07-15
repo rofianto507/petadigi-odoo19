@@ -874,7 +874,7 @@ export class DashboardMap extends Component {
                          []], { lazy: false }),
                 ]);
                 const g = minyakGroups[0] || {};
-                const fmtM = v => (v || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+                const fmtM = v => `${(v || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} L`;
                 cards = [
                     { icon: 'fa-database',  color: '#A04000', value: total,                    label: 'Total Sumur' },
                     { icon: 'fa-arrow-up',  color: '#27ae60', value: fmtM(g.minyak_produksi),  label: 'Total Produksi' },

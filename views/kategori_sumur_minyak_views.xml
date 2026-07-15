@@ -9,7 +9,11 @@
                 <list string="Kategori Sumur Minyak">
                     <field name="name"/>
                     <field name="keterangan"/>
-                    <field name="jumlah_sumur" string="Total Sumur"/>
+                    <field name="total_minyak_produksi" string="Total Produksi" optional="hide"/>
+                    <field name="total_minyak_keluar"   string="Total Keluar"   optional="hide"/>
+                    <field name="total_minyak_masuk"    string="Total Masuk"    optional="hide"/>
+                    <field name="total_minyak_tersedia" string="Total Tersedia" optional="hide"/>
+                    <field name="total_minyak_ditolak"  string="Total Ditolak"  optional="hide"/>
                     <field name="total_minyak" string="Total Minyak"/>
                     <field name="state" widget="badge"
                         decoration-muted="state == 'draft'"

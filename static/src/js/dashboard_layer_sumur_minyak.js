@@ -7,18 +7,30 @@ import { renderKabupatenSummaryMarkers, renderSummaryMarkers } from './dashboard
  * Choropleth per kabupaten/kecamatan/desa — warna coklat/amber berdasarkan jumlah sumur.
  */
 
-// ── Skala warna coklat/amber ─────────────────────────────────────────────────
+// ── Warna marker per kategori sumur ──────────────────────────────────────────
+const MARKER_KATEGORI = {
+    'sumur_masyarakat': { color: '#8E44AD', label: 'Sumur Masyarakat' },
+    'bku':              { color: '#2980B9', label: 'BKU' },
+    'k3s':              { color: '#27AE60', label: 'K3S' },
+};
+const MARKER_DEFAULT_COLOR = '#7F8C8D';
+
+function getKategoriColor(kategori_kode) {
+    return MARKER_KATEGORI[kategori_kode]?.color || MARKER_DEFAULT_COLOR;
+}
+
+// ── Skala warna berdasarkan volume minyak (liter) ────────────────────────────
 const SUMUR_COLORS = [
-    { min: 51, max: Infinity, color: '#7E5109', label: '> 50 Sumur'    },
-    { min: 21, max: 50,       color: '#A04000', label: '21 – 50 Sumur' },
-    { min: 11, max: 20,       color: '#CA6F1E', label: '11 – 20 Sumur' },
-    { min:  1, max: 10,       color: '#E59866', label: '1 – 10 Sumur'  },
-    { min:  0, max:  0,       color: '#FDEBD0', label: 'Tidak Ada Sumur' },
+    { min: 10001, max: Infinity, color: '#7E5109', label: '> 10.000 L'       },
+    { min:  5001, max: 10000,    color: '#A04000', label: '5.001 – 10.000 L' },
+    { min:  1001, max:  5000,    color: '#CA6F1E', label: '1.001 – 5.000 L'  },
+    { min:     1, max:  1000,    color: '#E59866', label: '1 – 1.000 L'      },
+    { min:     0, max:     0,    color: '#FDEBD0', label: 'Tidak Ada Minyak' },
 ];
 
-function getSumurColor(jumlah) {
+function getSumurColor(totalMinyak) {
     for (const tier of SUMUR_COLORS) {
-        if (jumlah >= tier.min) return tier.color;
+        if (totalMinyak >= tier.min) return tier.color;
     }
     return '#FDEBD0';
 }
@@ -31,7 +43,7 @@ export function addSumurLegend(ctx) {
             const div = L.DomUtil.create('div', 'petadigi-legend petadigi-legend--sumur');
             div.innerHTML = `
                 <div class="petadigi-legend-title">
-                    <i class="fa fa-tint"></i> Legenda Sumur Minyak
+                    <i class="fa fa-tint"></i> Jumlah Liter Minyak
                 </div>
                 <ul class="petadigi-legend-list">
                     ${SUMUR_COLORS.map(t => `
@@ -40,6 +52,21 @@ export function addSumurLegend(ctx) {
                             <span class="petadigi-legend-label">${t.label}</span>
                         </li>
                     `).join('')}
+                </ul>
+                <div class="petadigi-legend-title" style="margin-top:8px;">
+                    <i class="fa fa-map-marker"></i> Kategori Sumur
+                </div>
+                <ul class="petadigi-legend-list">
+                    ${Object.entries(MARKER_KATEGORI).map(([, v]) => `
+                        <li>
+                            <span class="petadigi-legend-swatch" style="background:${v.color};border-radius:50%;"></span>
+                            <span class="petadigi-legend-label">${v.label}</span>
+                        </li>
+                    `).join('')}
+                    <li>
+                        <span class="petadigi-legend-swatch" style="background:${MARKER_DEFAULT_COLOR};border-radius:50%;"></span>
+                        <span class="petadigi-legend-label">Tidak Aktif</span>
+                    </li>
                 </ul>`;
             L.DomEvent.disableClickPropagation(div);
             L.DomEvent.disableScrollPropagation(div);
@@ -81,9 +108,19 @@ function _buildCountMap(groups, field) {
     return m;
 }
 
+function _buildSumMap(groups, field) {
+    const m = {};
+    for (const g of groups) {
+        if (!g[field]) continue;
+        const id = Array.isArray(g[field]) ? g[field][0] : g[field];
+        m[id] = g.total_minyak || 0;
+    }
+    return m;
+}
+
 // ── Minyak popup rows helper ─────────────────────────────────────────────────
 function _buildMinyakRows(r) {
-    const fmt = v => (v ? v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-');
+    const fmt = v => v ? `${v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L` : '-';
     const kode = r.kategori_kode;
     if (kode === 'sumur_masyarakat') return `
         <tr><td><i class="fa fa-tint"></i> Produksi</td><td><strong>${fmt(r.minyak_produksi)}</strong></td></tr>
@@ -112,7 +149,8 @@ async function _loadSumurMarkers(ctx, domain) {
     );
 
     records.forEach(r => {
-        const stateColor  = r.state === 'AKTIF' ? '#A04000' : '#7F8C8D';
+        const katColor    = getKategoriColor(r.kategori_kode);
+        const stateColor  = r.state === 'AKTIF' ? katColor : '#7F8C8D';
         const stateLabel  = r.state === 'AKTIF' ? 'Aktif' : 'Tidak Aktif';
         const kecamatan   = Array.isArray(r.kecamatan_id) ? r.kecamatan_id[1] : '-';
         const kategori    = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
@@ -133,7 +171,7 @@ async function _loadSumurMarkers(ctx, domain) {
         const marker = L.marker([r.latitude, r.longitude], { icon });
         marker.bindPopup(`
             <div class="petadigi-popup">
-                <div class="petadigi-popup-header" style="background:#A04000;">
+                <div class="petadigi-popup-header" style="background:${katColor};">
                     <i class="fa fa-tint"></i>
                     <strong>${r.code}</strong>
                 </div>
@@ -189,7 +227,7 @@ export async function loadModeSumur(ctx) {
             ctx.orm.call(
                 'petadigi.sumur_minyak',
                 'read_group',
-                [_buildDomain(filters, baseDomain), ['kabupaten_id'], ['kabupaten_id']],
+                [_buildDomain(filters, baseDomain), ['kabupaten_id', 'total_minyak:sum'], ['kabupaten_id']],
                 { lazy: false }
             ),
             ctx.orm.searchRead(
@@ -198,13 +236,15 @@ export async function loadModeSumur(ctx) {
                 ['id', 'code', 'name', 'type', 'kecamatan_ids', 'geometry'],
             ),
         ]);
-        const countMap = _buildCountMap(groups, 'kabupaten_id');
+        const countMap  = _buildCountMap(groups, 'kabupaten_id');
+        const minyakMap = _buildSumMap(groups, 'kabupaten_id');
 
         const features = records
             .filter(r => r.geometry)
             .map(r => {
                 try {
-                    const jumlah = countMap[r.id] || 0;
+                    const jumlah      = countMap[r.id]  || 0;
+                    const totalMinyak = minyakMap[r.id] || 0;
                     return {
                         type: 'Feature',
                         geometry: JSON.parse(r.geometry),
@@ -212,7 +252,8 @@ export async function loadModeSumur(ctx) {
                             id: r.id, code: r.code, name: r.name, type: r.type,
                             jumlah_kecamatan: r.kecamatan_ids ? r.kecamatan_ids.length : 0,
                             jumlah_sumur: jumlah,
-                            color: getSumurColor(jumlah),
+                            total_minyak: totalMinyak,
+                            color: getSumurColor(totalMinyak),
                         }
                     };
                 } catch (e) {
@@ -258,10 +299,13 @@ export async function loadModeSumur(ctx) {
 
 // ── Popup Kabupaten ──────────────────────────────────────────────────────────
 function _showSumurKabupatenPopup(ctx, e, props, layer, filters) {
-    const tipeLabel  = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
-    const sumurLabel = props.jumlah_sumur > 0
-        ? `<strong style="color:${props.color === '#FDEBD0' ? '#A04000' : props.color};">${props.jumlah_sumur.toLocaleString('id-ID')} Sumur</strong>`
+    const tipeLabel   = props.type === 'KOTA' ? 'Kota' : 'Kabupaten';
+    const sumurLabel  = props.jumlah_sumur > 0
+        ? `<strong style="color:#A04000;">${props.jumlah_sumur.toLocaleString('id-ID')} Sumur</strong>`
         : `<strong style="color:#999;">Tidak Ada Sumur</strong>`;
+    const minyakLabel = props.total_minyak > 0
+        ? `<strong style="color:${props.color === '#FDEBD0' ? '#A04000' : props.color};">${props.total_minyak.toLocaleString('id-ID', { maximumFractionDigits: 2 })} L</strong>`
+        : `<strong style="color:#999;">-</strong>`;
 
     const popup = L.popup({ maxWidth: 280, className: 'petadigi-leaflet-popup' })
         .setLatLng(e.latlng)
@@ -276,6 +320,7 @@ function _showSumurKabupatenPopup(ctx, e, props, layer, filters) {
                         <tr><td><i class="fa fa-barcode"></i> Kode</td><td><strong>${props.code}</strong></td></tr>
                         <tr><td><i class="fa fa-list"></i> Kecamatan</td><td><strong>${props.jumlah_kecamatan} Kecamatan</strong></td></tr>
                         <tr><td><i class="fa fa-tint" style="color:#A04000;"></i> Sumur</td><td>${sumurLabel}</td></tr>
+                        <tr><td><i class="fa fa-flask"></i> Total Minyak</td><td>${minyakLabel}</td></tr>
                     </table>
                 </div>
                 <div class="petadigi-popup-footer">
@@ -321,7 +366,7 @@ export async function drillDownSumurKecamatan(ctx, kabProps, kabLayer, filters) 
             ctx.orm.call(
                 'petadigi.sumur_minyak',
                 'read_group',
-                [domain, ['kecamatan_id'], ['kecamatan_id']],
+                [domain, ['kecamatan_id', 'total_minyak:sum'], ['kecamatan_id']],
                 { lazy: false }
             ),
             ctx.orm.searchRead(
@@ -330,13 +375,15 @@ export async function drillDownSumurKecamatan(ctx, kabProps, kabLayer, filters) 
                 ['id', 'code', 'name', 'desa_ids', 'geometry'],
             ),
         ]);
-        const countMap = _buildCountMap(groups, 'kecamatan_id');
+        const countMap  = _buildCountMap(groups, 'kecamatan_id');
+        const minyakMap = _buildSumMap(groups, 'kecamatan_id');
 
         const features = records
             .filter(r => r.geometry)
             .map(r => {
                 try {
-                    const jumlah = countMap[r.id] || 0;
+                    const jumlah      = countMap[r.id]  || 0;
+                    const totalMinyak = minyakMap[r.id] || 0;
                     return {
                         type: 'Feature',
                         geometry: JSON.parse(r.geometry),
@@ -344,7 +391,8 @@ export async function drillDownSumurKecamatan(ctx, kabProps, kabLayer, filters) 
                             id: r.id, code: r.code, name: r.name,
                             jumlah_desa: r.desa_ids ? r.desa_ids.length : 0,
                             jumlah_sumur: jumlah,
-                            color: getSumurColor(jumlah),
+                            total_minyak: totalMinyak,
+                            color: getSumurColor(totalMinyak),
                         }
                     };
                 } catch (e) {
@@ -400,9 +448,12 @@ export async function drillDownSumurKecamatan(ctx, kabProps, kabLayer, filters) 
 
 // ── Popup Kecamatan ──────────────────────────────────────────────────────────
 function _showSumurKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLayer) {
-    const sumurLabel = props.jumlah_sumur > 0
-        ? `<strong style="color:${props.color === '#FDEBD0' ? '#A04000' : props.color};">${props.jumlah_sumur.toLocaleString('id-ID')} Sumur</strong>`
+    const sumurLabel  = props.jumlah_sumur > 0
+        ? `<strong style="color:#A04000;">${props.jumlah_sumur.toLocaleString('id-ID')} Sumur</strong>`
         : `<strong style="color:#999;">Tidak Ada Sumur</strong>`;
+    const minyakLabel = props.total_minyak > 0
+        ? `<strong style="color:${props.color === '#FDEBD0' ? '#CA6F1E' : props.color};">${props.total_minyak.toLocaleString('id-ID', { maximumFractionDigits: 2 })} L</strong>`
+        : `<strong style="color:#999;">-</strong>`;
 
     const popup = L.popup({ maxWidth: 280, className: 'petadigi-leaflet-popup' })
         .setLatLng(e.latlng)
@@ -417,6 +468,7 @@ function _showSumurKecamatanPopup(ctx, e, props, layer, filters, kabProps, kabLa
                         <tr><td><i class="fa fa-barcode"></i> Kode</td><td><strong>${props.code}</strong></td></tr>
                         <tr><td><i class="fa fa-home"></i> Desa/Kel.</td><td><strong>${props.jumlah_desa} Desa/Kelurahan</strong></td></tr>
                         <tr><td><i class="fa fa-tint" style="color:#A04000;"></i> Sumur</td><td>${sumurLabel}</td></tr>
+                        <tr><td><i class="fa fa-flask"></i> Total Minyak</td><td>${minyakLabel}</td></tr>
                     </table>
                 </div>
                 <div class="petadigi-popup-footer">
@@ -461,7 +513,7 @@ export async function drillDownSumurKelurahan(ctx, kecProps, kecLayer, filters, 
             ctx.orm.call(
                 'petadigi.sumur_minyak',
                 'read_group',
-                [domain, ['desa_id'], ['desa_id']],
+                [domain, ['desa_id', 'total_minyak:sum'], ['desa_id']],
                 { lazy: false }
             ),
             ctx.orm.searchRead(
@@ -470,20 +522,23 @@ export async function drillDownSumurKelurahan(ctx, kecProps, kecLayer, filters, 
                 ['id', 'code', 'name', 'type', 'geometry'],
             ),
         ]);
-        const countMap = _buildCountMap(groups, 'desa_id');
+        const countMap  = _buildCountMap(groups, 'desa_id');
+        const minyakMap = _buildSumMap(groups, 'desa_id');
 
         const features = records
             .filter(r => r.geometry)
             .map(r => {
                 try {
-                    const jumlah = countMap[r.id] || 0;
+                    const jumlah      = countMap[r.id]  || 0;
+                    const totalMinyak = minyakMap[r.id] || 0;
                     return {
                         type: 'Feature',
                         geometry: JSON.parse(r.geometry),
                         properties: {
                             id: r.id, code: r.code, name: r.name, type: r.type,
                             jumlah_sumur: jumlah,
-                            color: getSumurColor(jumlah),
+                            total_minyak: totalMinyak,
+                            color: getSumurColor(totalMinyak),
                         }
                     };
                 } catch (e) {
@@ -533,10 +588,13 @@ export async function drillDownSumurKelurahan(ctx, kecProps, kecLayer, filters, 
 
 // ── Popup Desa ───────────────────────────────────────────────────────────────
 function _showSumurDesaPopup(ctx, e, props) {
-    const tipeLabel  = props.type === 'KELURAHAN' ? 'Kelurahan' : 'Desa';
-    const sumurLabel = props.jumlah_sumur > 0
-        ? `<strong style="color:${props.color === '#FDEBD0' ? '#A04000' : props.color};">${props.jumlah_sumur.toLocaleString('id-ID')} Sumur</strong>`
+    const tipeLabel   = props.type === 'KELURAHAN' ? 'Kelurahan' : 'Desa';
+    const sumurLabel  = props.jumlah_sumur > 0
+        ? `<strong style="color:#A04000;">${props.jumlah_sumur.toLocaleString('id-ID')} Sumur</strong>`
         : `<strong style="color:#999;">Tidak Ada Sumur</strong>`;
+    const minyakLabel = props.total_minyak > 0
+        ? `<strong style="color:${props.color === '#FDEBD0' ? '#CA6F1E' : props.color};">${props.total_minyak.toLocaleString('id-ID', { maximumFractionDigits: 2 })} L</strong>`
+        : `<strong style="color:#999;">-</strong>`;
 
     L.popup({ maxWidth: 280, className: 'petadigi-leaflet-popup' })
         .setLatLng(e.latlng)
@@ -551,6 +609,7 @@ function _showSumurDesaPopup(ctx, e, props) {
                         <tr><td><i class="fa fa-barcode"></i> Kode</td><td><strong>${props.code}</strong></td></tr>
                         <tr><td><i class="fa fa-tag"></i> Tipe</td><td><strong>${tipeLabel}</strong></td></tr>
                         <tr><td><i class="fa fa-tint" style="color:#A04000;"></i> Sumur</td><td>${sumurLabel}</td></tr>
+                        <tr><td><i class="fa fa-flask"></i> Total Minyak</td><td>${minyakLabel}</td></tr>
                     </table>
                 </div>
             </div>

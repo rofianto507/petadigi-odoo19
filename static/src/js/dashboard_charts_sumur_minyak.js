@@ -17,9 +17,11 @@ function _renderSumurBarChart(ctx, names, counts, minyakVals) {
             borderWidth: 1,
             textStyle: { color: '#2c3e50', fontSize: 12 },
             formatter: params => {
-                return params.map(p =>
-                    `${p.marker} ${p.seriesName}: <b>${Number(p.value).toLocaleString('id-ID', { maximumFractionDigits: 2 })}</b>`
-                ).join('<br/>');
+                return params.map(p => {
+                    const val = Number(p.value).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+                    const unit = p.seriesName === 'Total Minyak' ? ' L' : '';
+                    return `${p.marker} ${p.seriesName}: <b>${val}${unit}</b>`;
+                }).join('<br/>');
             },
         },
         legend: {
@@ -49,7 +51,7 @@ function _renderSumurBarChart(ctx, names, counts, minyakVals) {
             },
             {
                 type: 'value',
-                name: 'Minyak',
+                name: 'Minyak (L)',
                 nameTextStyle: { fontSize: 9, color: '#1a6b9a' },
                 axisLabel: { fontSize: 9, color: '#1a6b9a' },
                 splitLine: { show: false },
@@ -107,7 +109,7 @@ function _renderSumurDonutChart(ctx, data) {
             borderColor: '#e5e7eb',
             borderWidth: 1,
             textStyle: { color: '#2c3e50', fontSize: 12 },
-            formatter: p => `${p.name}: ${Number(p.value).toLocaleString('id-ID', { maximumFractionDigits: 2 })} (${p.percent}%)`,
+            formatter: p => `${p.name}: ${Number(p.value).toLocaleString('id-ID', { maximumFractionDigits: 2 })} L (${p.percent}%)`,
         },
         legend: {
             orient: 'horizontal',
@@ -265,7 +267,7 @@ export async function updateSumurTable(ctx, mode, page) {
             const desa     = Array.isArray(r.desa_id)      ? r.desa_id[1]      : '-';
             const kategori = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
             const cls      = r.state === 'AKTIF' ? '--green' : '--gray';
-            const fmt      = v => (v ? v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-');
+            const fmt      = v => v ? `${v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L` : '-';
             let minyakCell = '-';
             if (r.kategori_kode === 'sumur_masyarakat')
                 minyakCell = `P: ${fmt(r.minyak_produksi)} / K: ${fmt(r.minyak_keluar)}`;
