@@ -52,6 +52,8 @@ class StrongPoint(models.Model):
         ('PROSES', 'PROSES'),
         ('SELESAI', 'SELESAI'),
     ], string='Status', required=True, default='PROSES', tracking=True)
+    submitter_ip = fields.Char('IP Pengirim', readonly=True)
+    submitter_ua = fields.Char('User-Agent Pengirim', readonly=True)
 
     @api.depends('personel_ids')
     def _compute_personel_count(self):

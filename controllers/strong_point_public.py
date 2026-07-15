@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import json
 import base64
 import logging
+from .public_utils import check_rate_limit, is_valid_image, parse_user_agent
 
 _logger = logging.getLogger(__name__)
 
@@ -926,6 +927,108 @@ self.addEventListener('fetch', e => {
     # URL: /strong/<token>
     # ════════════════════════════════════════════════════════════════════════
 
+    def _validate_strong_pub_data(self, data, is_subdit_form):
+        """Validasi server-side seluruh field strong point public form."""
+        errors = []
+
+        # keterangan_lokasi
+        keterangan_lokasi = (data.get('keterangan_lokasi') or '').strip()
+        if not keterangan_lokasi:
+            errors.append('Keterangan lokasi wajib diisi')
+        elif len(keterangan_lokasi) > 500:
+            errors.append('Keterangan lokasi terlalu panjang (maks 500 karakter)')
+
+        # Polres wajib jika bukan subdit form
+        if not is_subdit_form:
+            try:
+                polres_id = int(data.get('polres_id') or 0)
+            except (ValueError, TypeError):
+                polres_id = 0
+            if not polres_id:
+                errors.append('Polres wajib dipilih')
+            else:
+                if not request.env['petadigi.polres'].sudo().search_count(
+                        [('id', '=', polres_id)]):
+                    errors.append('Polres tidak valid')
+
+            # Polsek: integritas relasional (opsional)
+            try:
+                polsek_id = int(data.get('polsek_id') or 0)
+            except (ValueError, TypeError):
+                polsek_id = 0
+            if polsek_id and polres_id:
+                if not request.env['petadigi.polsek'].sudo().search_count([
+                    ('id', '=', polsek_id),
+                    ('polres_id', '=', polres_id),
+                ]):
+                    errors.append('Polsek tidak valid untuk Polres yang dipilih')
+
+        # Kabupaten wajib
+        try:
+            kabupaten_id = int(data.get('kabupaten_id') or 0)
+        except (ValueError, TypeError):
+            kabupaten_id = 0
+        if not kabupaten_id:
+            errors.append('Kabupaten/Kota wajib dipilih')
+
+        # Kecamatan wajib
+        try:
+            kecamatan_id = int(data.get('kecamatan_id') or 0)
+        except (ValueError, TypeError):
+            kecamatan_id = 0
+        if not kecamatan_id:
+            errors.append('Kecamatan wajib dipilih')
+        elif kabupaten_id:
+            if not request.env['petadigi.kecamatan'].sudo().search_count([
+                ('id', '=', kecamatan_id),
+                ('kabupaten_id', '=', kabupaten_id),
+            ]):
+                errors.append('Kecamatan tidak valid untuk kabupaten yang dipilih')
+
+        # Desa wajib
+        try:
+            desa_id = int(data.get('desa_id') or 0)
+        except (ValueError, TypeError):
+            desa_id = 0
+        if not desa_id:
+            errors.append('Desa/Kelurahan wajib dipilih')
+        elif kecamatan_id:
+            if not request.env['petadigi.desa'].sudo().search_count([
+                ('id', '=', desa_id),
+                ('kecamatan_id', '=', kecamatan_id),
+            ]):
+                errors.append('Desa/Kelurahan tidak valid untuk kecamatan yang dipilih')
+
+        # GPS wajib
+        try:
+            lat = float(data.get('latitude') or 0)
+            lng = float(data.get('longitude') or 0)
+        except (ValueError, TypeError):
+            lat, lng = 0.0, 0.0
+        if lat == 0.0 and lng == 0.0:
+            errors.append('Lokasi GPS wajib diisi')
+        elif not (-90 <= lat <= 90):
+            errors.append('Nilai latitude tidak valid')
+        elif not (-180 <= lng <= 180):
+            errors.append('Nilai longitude tidak valid')
+
+        # Foto wajib + ukuran + magic bytes
+        foto_raw = data.get('foto')
+        if not foto_raw:
+            errors.append('Foto dokumentasi wajib diisi')
+        else:
+            foto_b64 = (
+                foto_raw.split(',', 1)[1]
+                if isinstance(foto_raw, str) and ',' in foto_raw
+                else foto_raw
+            )
+            if len(foto_b64) > 700_000:
+                errors.append('Ukuran foto terlalu besar. Coba pilih foto lain atau hapus foto.')
+            elif not is_valid_image(foto_b64 or ''):
+                errors.append('Foto harus berupa file gambar (JPEG, PNG, atau WebP)')
+
+        return errors
+
     def _strong_pub_valid(self, token):
         """Return form config record jika token valid dan aktif, else False."""
         return request.env['petadigi.strong_point.form_config'].sudo().search([
@@ -962,64 +1065,106 @@ self.addEventListener('fetch', e => {
     def strong_pub_polsek(self, polres_id, token=None, **kwargs):
         if not token or not self._strong_pub_valid(token):
             return []
-        return request.env['petadigi.polsek'].sudo().search_read(
-            [('polres_id', '=', int(polres_id))], ['id', 'name'], order='name asc'
-        )
+        try:
+            return request.env['petadigi.polsek'].sudo().search_read(
+                [('polres_id', '=', int(polres_id))], ['id', 'name'], order='name asc'
+            )
+        except Exception:
+            return []
 
     @http.route('/strong/api/kabupaten', type='jsonrpc', auth='public', csrf=False)
     def strong_pub_kabupaten(self, polres_id, token=None, **kwargs):
         if not token or not self._strong_pub_valid(token):
             return []
-        polres = request.env['petadigi.polres'].sudo().browse(int(polres_id))
-        if not polres.exists():
+        try:
+            polres = request.env['petadigi.polres'].sudo().browse(int(polres_id))
+            if not polres.exists():
+                return []
+            # Polres tanpa polsek (level Polda) → tampilkan semua kabupaten
+            domain = [] if polres.polsek_count == 0 else [('polres_id', '=', polres.id)]
+            return request.env['petadigi.kabupaten'].sudo().search_read(
+                domain, ['id', 'name'], order='name asc'
+            )
+        except Exception:
             return []
-        # Polres tanpa polsek (level Polda) → tampilkan semua kabupaten
-        domain = [] if polres.polsek_count == 0 else [('polres_id', '=', polres.id)]
-        return request.env['petadigi.kabupaten'].sudo().search_read(
-            domain, ['id', 'name'], order='name asc'
-        )
 
     @http.route('/strong/api/kecamatan', type='jsonrpc', auth='public', csrf=False)
     def strong_pub_kecamatan(self, kabupaten_id, token=None, **kwargs):
         if not token or not self._strong_pub_valid(token):
             return []
-        return request.env['petadigi.kecamatan'].sudo().search_read(
-            [('kabupaten_id', '=', int(kabupaten_id))], ['id', 'name'], order='name asc'
-        )
+        try:
+            return request.env['petadigi.kecamatan'].sudo().search_read(
+                [('kabupaten_id', '=', int(kabupaten_id))], ['id', 'name'], order='name asc'
+            )
+        except Exception:
+            return []
 
     @http.route('/strong/api/desa', type='jsonrpc', auth='public', csrf=False)
     def strong_pub_desa(self, kecamatan_id, token=None, **kwargs):
         if not token or not self._strong_pub_valid(token):
             return []
-        return request.env['petadigi.desa'].sudo().search_read(
-            [('kecamatan_id', '=', int(kecamatan_id))], ['id', 'name'], order='name asc'
-        )
+        try:
+            return request.env['petadigi.desa'].sudo().search_read(
+                [('kecamatan_id', '=', int(kecamatan_id))], ['id', 'name'], order='name asc'
+            )
+        except Exception:
+            return []
 
     @http.route('/strong/api/submit_public', type='jsonrpc', auth='public', csrf=False)
     def strong_pub_submit(self, token, data, **kwargs):
         from odoo import fields as odoo_fields
+
+        # ── Rate limiting ─────────────────────────────────────────────────────
+        client_ip = (
+            request.httprequest.environ.get('HTTP_X_FORWARDED_FOR', '')
+            .split(',')[0].strip()
+            or request.httprequest.remote_addr
+        )
+        if not check_rate_limit(client_ip, 'strong'):
+            _logger.warning('strong_pub_submit: rate limit exceeded (ip=%s)', client_ip)
+            return {'success': False, 'message': 'Terlalu banyak pengiriman. Silakan coba lagi dalam 1 jam.'}
+
+        # ── Sanitasi token & data ─────────────────────────────────────────────
+        if not isinstance(token, str) or len(token) > 200:
+            return {'success': False, 'message': 'Token tidak valid'}
+        if not isinstance(data, dict):
+            return {'success': False, 'message': 'Data tidak valid'}
+
+        # ── Validasi token ────────────────────────────────────────────────────
         config = self._strong_pub_valid(token)
         if not config:
             return {'success': False, 'message': 'Form tidak valid atau sudah tidak aktif'}
-        if config.subdit_id:
-            polda = self._get_polda_polres()
-            if not polda:
-                return {'success': False, 'message': 'Konfigurasi Polda tidak ditemukan'}
-            polres_id = polda.id
-            polsek_id = False
-        else:
-            polres_id = int(data.get('polres_id') or 0) or False
-            if not polres_id:
-                return {'success': False, 'message': 'Polres wajib dipilih'}
-            polres = request.env['petadigi.polres'].sudo().browse(polres_id)
-            if not polres.exists():
-                return {'success': False, 'message': 'Polres tidak ditemukan'}
-            polsek_id = int(data.get('polsek_id') or 0) or False
-            if polsek_id:
-                polsek = request.env['petadigi.polsek'].sudo().browse(polsek_id)
-                if not polsek.exists() or polsek.polres_id.id != polres_id:
-                    polsek_id = False
+
+        # ── Validasi server-side ──────────────────────────────────────────────
+        is_subdit_form = bool(config.subdit_id)
+        errors = self._validate_strong_pub_data(data, is_subdit_form)
+        if errors:
+            _logger.warning('strong_pub_submit: validasi gagal (ip=%s): %s', client_ip, errors)
+            return {'success': False, 'message': '; '.join(errors)}
+
+        # ── Simpan data ───────────────────────────────────────────────────────
         try:
+            foto_raw = data.get('foto', '')
+            foto_b64 = (
+                foto_raw.split(',', 1)[1]
+                if isinstance(foto_raw, str) and ',' in foto_raw
+                else foto_raw
+            )
+
+            if is_subdit_form:
+                polda = self._get_polda_polres()
+                if not polda:
+                    return {'success': False, 'message': 'Konfigurasi Polda tidak ditemukan'}
+                polres_id = polda.id
+                polsek_id = False
+            else:
+                polres_id = int(data.get('polres_id') or 0) or False
+                polsek_id = int(data.get('polsek_id') or 0) or False
+                if polsek_id:
+                    polsek = request.env['petadigi.polsek'].sudo().browse(polsek_id)
+                    if not polsek.exists() or polsek.polres_id.id != polres_id:
+                        polsek_id = False
+
             vals = {
                 'polres_id':         polres_id,
                 'polsek_id':         polsek_id,
@@ -1033,14 +1178,12 @@ self.addEventListener('fetch', e => {
                 'keterangan':        (data.get('keterangan') or '').strip(),
                 'tanggal_mulai':     _wib_to_utc((data.get('tanggal_mulai') or '').replace('T', ' ')) or odoo_fields.Datetime.now(),
                 'state':             'PROSES',
+                'foto':              foto_b64 or False,
+                'submitter_ip':      client_ip,
+                'submitter_ua':      parse_user_agent(
+                    request.httprequest.environ.get('HTTP_USER_AGENT', '')
+                ),
             }
-            foto = data.get('foto')
-            if foto:
-                if isinstance(foto, str) and ',' in foto:
-                    foto = foto.split(',', 1)[1]
-                if len(foto) > 700_000:
-                    return {'success': False, 'message': 'Ukuran foto terlalu besar. Coba pilih foto lain.'}
-                vals['foto'] = foto
             result = request.env['petadigi.strong_point'].sudo().create(vals)
             return {'success': True, 'code': result.code, 'record_id': result.id}
         except Exception as e:
@@ -1051,16 +1194,22 @@ self.addEventListener('fetch', e => {
     def strong_pub_personel_add(self, token, record_id, nama, pangkat=None, **kwargs):
         if not token or not self._strong_pub_valid(token):
             return {'error': 'unauthorized'}
-        if not (nama or '').strip():
+        nama = (nama or '').strip()
+        if not nama:
             return {'error': 'Nama personel wajib diisi'}
-        rec = request.env['petadigi.strong_point'].sudo().browse(int(record_id))
-        if not rec.exists():
-            return {'error': 'Data tidak ditemukan'}
+        if len(nama) > 200:
+            return {'error': 'Nama terlalu panjang (maks 200 karakter)'}
+        pangkat = (pangkat or '').strip()
+        if len(pangkat) > 100:
+            return {'error': 'Pangkat terlalu panjang (maks 100 karakter)'}
         try:
+            rec = request.env['petadigi.strong_point'].sudo().browse(int(record_id))
+            if not rec.exists() or rec.state != 'PROSES':
+                return {'error': 'Data tidak ditemukan atau sudah selesai'}
             p = request.env['petadigi.personel'].sudo().create({
                 'strong_point_id': rec.id,
-                'nama':    nama.strip(),
-                'pangkat': (pangkat or '').strip(),
+                'nama':    nama,
+                'pangkat': pangkat,
             })
             return {'success': True, 'id': p.id, 'nama_lengkap': p.nama_lengkap}
         except Exception as e:
@@ -1075,6 +1224,8 @@ self.addEventListener('fetch', e => {
             p = request.env['petadigi.personel'].sudo().browse(int(personel_id))
             if not p.exists():
                 return {'error': 'not found'}
+            if p.strong_point_id.state != 'PROSES':
+                return {'error': 'Data sudah selesai, tidak dapat dihapus'}
             p.sudo().unlink()
             return {'success': True}
         except Exception as e:
@@ -1087,13 +1238,26 @@ self.addEventListener('fetch', e => {
             return {'error': 'unauthorized'}
         if not tanggal_selesai:
             return {'error': 'Tanggal selesai harus diisi'}
+        tgl_str = (tanggal_selesai or '').replace('T', ' ').strip()
+        parsed_ok = False
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+            try:
+                datetime.strptime(tgl_str, fmt)
+                parsed_ok = True
+                break
+            except ValueError:
+                continue
+        if not parsed_ok:
+            return {'error': 'Format tanggal selesai tidak valid'}
         try:
             rec = request.env['petadigi.strong_point'].sudo().browse(int(record_id))
             if not rec.exists():
                 return {'error': 'Data tidak ditemukan'}
+            if rec.state == 'SELESAI':
+                return {'success': True}
             rec.sudo().write({
                 'state': 'SELESAI',
-                'tanggal_selesai': _wib_to_utc(tanggal_selesai.replace('T', ' ')),
+                'tanggal_selesai': _wib_to_utc(tgl_str),
             })
             return {'success': True}
         except Exception as e:

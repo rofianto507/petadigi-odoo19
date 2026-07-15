@@ -488,7 +488,10 @@ Script mencari record `subdit_id=False` + `create_uid.subdit_id != False` → ba
 ### Controller (`controllers/strong_point_public.py`)
 - Class: `StrongPointPublicController`
 - Auth helper: `_auth_check()` — return None jika public atau (tidak punya `polres_id` DAN bukan `group_subdit_strong_point`)
-- Context builder: `_build_user_ctx(user)` — return dict ctx user; subdit_sp mendapat `ctx.polres_id`/`ctx.polres_name` auto-isi dari `_get_polda_polres()`, `polres_list`/`polsek_list` selalu `[]` (field disembunyikan di form), `kabupaten_list` semua kabupaten (tanpa filter polres)
+- Context builder: `_build_user_ctx(user)` — return dict ctx user:
+  - **subdit_sp**: `polres_id`/`polres_name` auto dari `_get_polda_polres()`; `kabupaten_list` = semua kabupaten; `polres_list`/`polsek_list`/`kecamatan_list` = `[]`
+  - **polsek**: `kabupaten_list` filtered by `polres_id`; `polsek_list` = `[]`; `kecamatan_list` di-pre-load filtered by `polsek_id` (cascade langsung)
+  - **polres**: `kabupaten_list` filtered by `polres_id`; `polsek_list` populated; `kecamatan_list` = `[]`
 - Access check: `_check_record_access(user, record_id)` — subdit_sp: jika record punya `subdit_id`, cek `subdit_id == user.subdit_id`; fallback ke `create_uid == user.id` untuk record lama tanpa `subdit_id`
 - Patroli access: `_check_patroli_access(user, record_id)` — pola fallback sama
 - Lokasi patroli access: `_lokasi_patroli_authorized(user, lokasi)` — helper untuk endpoint `lokasi_foto`/`lokasi_remove`, subdit_sp dicek via fallback `subdit_id → create_uid`
@@ -517,24 +520,51 @@ def _wib_to_utc(dt_str):
 ```
 > Odoo menyimpan Datetime dalam UTC. Semua input dari mobile (`datetime-local`) adalah WIB, jadi perlu `_wib_to_utc()` sebelum write. Filter "hari ini" harus pakai `_today_utc_range_wib()` agar benar saat tengah malam WIB.
 
-**API endpoints** (semua `type='jsonrpc'`):
+**API endpoints** (semua `type='jsonrpc'` kecuali yang GET):
 | Endpoint | Fungsi |
 |---|---|
-| `POST /petadigi/api/kpi` | KPI: `total`, `personel`, `today`, `personel_today` |
-| `POST /petadigi/api/lokasi` | List lokasi SP aktif (filtered by polres/polsek) |
-| `POST /petadigi/api/kecamatan` | Cascading by `kabupaten_id` |
+| `POST /petadigi/api/kpi` | KPI gabungan SP + Patroli + recent activities (lihat struktur di bawah) |
+| `POST /petadigi/api/lokasi` | List lokasi SP aktif (filtered by polres/polsek/subdit) |
+| `POST /petadigi/api/kecamatan` | Cascading by `kabupaten_id` (filter polsek_id jika is_polsek) |
 | `POST /petadigi/api/desa` | Cascading by `kecamatan_id` |
-| `POST /petadigi/api/list` | List SP records — paginated (offset/limit=20), terima `filter='today'`, `polres_id`, `state` |
+| `POST /petadigi/api/list` | List SP records — paginated (offset/limit=20), filter: `'today'`, `kabupaten_id`, `state` |
 | `POST /petadigi/api/submit` | Create SP record baru, `tanggal_mulai` di-`_wib_to_utc()` |
 | `POST /petadigi/api/record` | Detail 1 record: info + personel + `foto_src` (base64 data URL) |
 | `POST /petadigi/api/personel_add` | Tambah personel ke SP |
 | `POST /petadigi/api/personel_remove` | Hapus personel |
 | `POST /petadigi/api/upload_foto` | Upload foto base64 → field `foto` (Binary attachment) |
+| `POST /petadigi/api/update_photo` | Update foto profil user (`res.users.image_1920`) |
 | `POST /petadigi/api/set_selesai` | Set state=SELESAI + `tanggal_selesai` (`_wib_to_utc()`) |
 | `POST /petadigi/api/weekly` | Last 7 days SP count (WIB buckets) — `{days: [{label, date, count}]}` |
 | `GET /petadigi/foto/<id>` | Serve foto binary langsung (HTTP, bukan JSON) |
 | `GET /petadigi/manifest.json` | PWA manifest (Content-Type: application/manifest+json) |
 | `GET /petadigi/sw.js` | PWA service worker (cache static assets, network pass-through API) |
+| `POST /petadigi/api/patroli/list` | List patroli — paginated, filter: `'today'`/`'aktif'`, `kabupaten_id`, `state` |
+| `POST /petadigi/api/patroli/record` | Detail 1 patroli: info + personel + lokasi titik |
+| `POST /petadigi/api/patroli/create` | Create patroli baru |
+| `POST /petadigi/api/patroli/set_selesai` | Set patroli state=SELESAI |
+| `POST /petadigi/api/patroli/personel_add` | Tambah personel ke patroli |
+| `POST /petadigi/api/patroli/personel_remove` | Hapus personel dari patroli |
+| `POST /petadigi/api/patroli/lokasi_add` | Tambah titik lokasi ke patroli (lat/lng/catatan/tanggal/foto inline) |
+| `POST /petadigi/api/patroli/lokasi_remove` | Hapus titik lokasi (auth-checked) |
+| `POST /petadigi/api/patroli/lokasi_foto` | Upload foto ke titik lokasi patroli tertentu |
+
+**Struktur response `api_kpi`:**
+```python
+{
+    'strong_point': {
+        'total': int, 'personel': int,       # keseluruhan
+        'today': int, 'personel_today': int,  # hari ini (WIB)
+    },
+    'patroli': {
+        'total': int, 'today': int,
+        'titik_total': int, 'titik_today': int,  # sum lokasi_count
+    },
+    'recent': [  # 5 aktivitas terbaru gabungan SP + Patroli, sort desc
+        {'type': 'strong_point'|'patroli', 'id', 'code', 'state', 'tanggal', 'lokasi'},
+    ],
+}
+```
 
 **Foto display (KRITIKAL)**:
 ```python
@@ -592,9 +622,18 @@ if att and att.datas:
 - `kabupaten_id`, `kecamatan_id`, `desa_id` (cascading domain)
 - `tanggal_mulai` (Datetime, required, default now), `tanggal_selesai` (Datetime)
 - `personel_ids` (One2many → `petadigi.personel_patroli`), `personel_count` (Integer, computed stored)
+- `lokasi_ids` (One2many → `petadigi.lokasi_patroli`), `lokasi_count` (Integer, computed stored)
 - `keterangan` (Text), `state`: `PROSES` / `SELESAI`
-- Methods: `action_set_selesai`, `action_set_proses`, `action_view_personel`, `default_get` (pre-fill dari user login + auto-fill `subdit_id`)
+- Methods: `action_set_selesai`, `action_set_proses`, `action_view_personel`, `action_view_lokasi`, `default_get` (pre-fill dari user login + auto-fill `subdit_id`)
+- Onchanges: `_onchange_polres_id` (reset polsek/kabupaten), `_onchange_kabupaten_id` (reset kecamatan), `_onchange_kecamatan_id` (reset desa)
 - Sequence code: `petadigi.patroli.sequence`
+
+**`petadigi.lokasi_patroli`** — titik lokasi yang dikunjungi selama patroli
+- `patroli_id` (Many2one, required, ondelete='cascade', indexed)
+- `tanggal` (Datetime, required, default now) — `_order` & `_rec_name` by `tanggal`
+- `latitude`, `longitude` (Float, digits=(10,6))
+- `foto` (Binary, attachment=True), `foto_filename` (Char)
+- `catatan` (Text)
 
 **`petadigi.personel_patroli`** — personel terkait patroli
 - `patroli_id` (Many2one, required, ondelete='cascade')
@@ -660,9 +699,11 @@ if (data.has_foto && data.foto_src) {
 **Input personel**: nama + pangkat selalu `.toUpperCase()` sebelum submit + CSS `text-transform: uppercase` + `autocapitalize="characters"`
 
 **KPI Cards (Beranda)**:
-- 2 card side-by-side (2-column grid `.sp-kpi2-grid`)
-- "SP Hari Ini" — `today` + `personel_today`; klik → masuk tab Strong Point dengan `listFilter = 'today'`
-- "SP Keseluruhan" — `total` + `personel`; klik → masuk tab Strong Point tanpa filter
+- Data dari `api_kpi` yang return gabungan SP + Patroli + recent activities
+- **SP cards**: "SP Hari Ini" (`today` + `personel_today`) + "SP Keseluruhan" (`total` + `personel`)
+- **Patroli cards**: "Patroli Hari Ini" (`today` + `titik_today`) + "Patroli Keseluruhan" (`total` + `titik_total`)
+- **Recent activities**: list 5 aktivitas terbaru gabungan SP dan Patroli
+- Klik SP card → masuk tab Strong Point dengan/tanpa `listFilter = 'today'`
 - Filter badge muncul di header record list ketika `listFilter === 'today'`, ada tombol ✕ untuk clear
 - `_navigateToStrongWithFilter(filter)` — set `_sp.listFilter`, call `switchTab('strong')`, panggil `_showRecordList()` jika tab sudah rendered
 

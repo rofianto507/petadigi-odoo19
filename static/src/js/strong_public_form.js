@@ -81,113 +81,6 @@
                                 <t t-if="state.settingSelesai">Menyimpan...</t>
                                 <t t-else=""><i class="fa fa-flag-checkered"/> Selesai</t>
                             </button>
-                            <button class="sf-btn sf-btn-text sf-btn-block"
-                                    t-on-click="() => state.phase = 'personel'"
-                                    t-att-disabled="state.settingSelesai"
-                                    style="margin-top:8px">
-                                ← Kembali ke Daftar Personel
-                            </button>
-                            <div class="sf-footer">PetaDigi · Strong Point</div>
-                        </div>
-
-                    </div>
-                </t>
-
-                <!-- ═══════════════════════════════════════
-                     FASE: INPUT PERSONEL
-                ═══════════════════════════════════════ -->
-                <t t-elif="state.phase === 'personel'">
-
-                    <!-- App Bar -->
-                    <div class="sf-appbar">
-                        <div class="sf-appbar-icon"><i class="fa fa-users"/></div>
-                        <div class="sf-appbar-content">
-                            <div class="sf-appbar-title">Input Personel</div>
-                            <div class="sf-appbar-sub" t-out="state.submitCode"/>
-                        </div>
-                    </div>
-
-                    <div class="sf-body">
-
-                        <!-- Banner sukses simpan data -->
-                        <div class="sf-phase-banner">
-                            <i class="fa fa-check-circle sf-phase-banner-icon"/>
-                            <span>Data strong point tersimpan · Kode: <strong t-out="state.submitCode"/></span>
-                        </div>
-
-                        <!-- Personel card -->
-                        <div class="sf-section">
-                            <div class="sf-section-label">
-                                <i class="fa fa-users" style="margin-right:6px"/>
-                                Personel
-                                <span class="sf-personel-count-badge" t-out="state.personel.length"/>
-                            </div>
-                            <div class="sf-card">
-                                <div class="sf-card-body">
-
-                                    <!-- Daftar personel -->
-                                    <div class="sf-personel-list">
-                                        <t t-if="state.personel.length === 0">
-                                            <div class="sf-personel-empty">
-                                                Belum ada personel yang ditambahkan
-                                            </div>
-                                        </t>
-                                        <t t-foreach="state.personel" t-as="p" t-key="p.id">
-                                            <div class="sf-personel-row">
-                                                <div class="sf-personel-avatar">
-                                                    <i class="fa fa-user"/>
-                                                </div>
-                                                <div class="sf-personel-name" t-out="p.nama_lengkap"/>
-                                                <button class="sf-personel-del"
-                                                        t-att-data-pid="p.id"
-                                                        t-att-disabled="state.removingId === p.id"
-                                                        t-on-click="onRemovePersonelClick">
-                                                    <i t-att-class="state.removingId === p.id
-                                                        ? 'fa fa-spinner fa-spin'
-                                                        : 'fa fa-times'"/>
-                                                </button>
-                                            </div>
-                                        </t>
-                                    </div>
-
-                                    <!-- Form tambah personel -->
-                                    <div class="sf-personel-add-form">
-                                        <input class="sf-input" type="text"
-                                               placeholder="Nama personel *"
-                                               t-att-value="state.personelNama"
-                                               t-on-input="ev => { state.personelNama = ev.target.value.toUpperCase(); ev.target.value = state.personelNama; }"
-                                               t-att-disabled="state.addingPersonel"/>
-                                        <div class="sf-personel-add-row">
-                                            <input class="sf-input" type="text"
-                                                   placeholder="Pangkat / Jabatan (opsional)"
-                                                   t-att-value="state.personelPangkat"
-                                                   t-on-input="ev => { state.personelPangkat = ev.target.value.toUpperCase(); ev.target.value = state.personelPangkat; }"
-                                                   t-att-disabled="state.addingPersonel"
-                                                   style="flex:1"/>
-                                            <button class="sf-btn-add-personel"
-                                                    t-on-click="addPersonel"
-                                                    t-att-disabled="state.addingPersonel">
-                                                <i t-att-class="state.addingPersonel
-                                                    ? 'fa fa-spinner fa-spin'
-                                                    : 'fa fa-plus'"/>
-                                            </button>
-                                        </div>
-                                        <div t-if="state.personelError"
-                                             class="sf-personel-err"
-                                             t-out="state.personelError"/>
-                                    </div>
-
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Lanjut ke set selesai -->
-                        <div class="sf-submit-area">
-                            <button class="sf-btn sf-btn-filled sf-btn-submit"
-                                    t-on-click="onSelesai"
-                                    t-att-disabled="state.addingPersonel">
-                                <i class="fa fa-flag-checkered"/> Lanjut Set Selesai
-                            </button>
                             <div class="sf-footer">PetaDigi · Strong Point</div>
                         </div>
 
@@ -307,10 +200,10 @@
                                              t-out="state.errors.kabupaten_id"/>
                                     </div>
 
-                                    <div class="sf-field">
+                                    <div t-att-class="'sf-field' + (state.errors.kecamatan_id ? ' has-error' : '')">
                                         <label class="sf-label">
                                             Kecamatan
-                                            <span class="sf-opt">Opsional</span>
+                                            <span class="sf-req">*</span>
                                         </label>
                                         <select class="sf-input sf-select"
                                                 t-att-disabled="!state.kabupaten_id || state.loadingKecamatan"
@@ -325,16 +218,18 @@
                                                         t-out="kec.name"/>
                                             </t>
                                         </select>
+                                        <div t-if="state.errors.kecamatan_id" class="sf-errmsg"
+                                             t-out="state.errors.kecamatan_id"/>
                                     </div>
 
-                                    <div class="sf-field">
+                                    <div t-att-class="'sf-field' + (state.errors.desa_id ? ' has-error' : '')">
                                         <label class="sf-label">
                                             Desa/Kelurahan
-                                            <span class="sf-opt">Opsional</span>
+                                            <span class="sf-req">*</span>
                                         </label>
                                         <select class="sf-input sf-select"
                                                 t-att-disabled="!state.kecamatan_id || state.loadingDesa"
-                                                t-on-change="ev => state.desa_id = +ev.target.value || null">
+                                                t-on-change="ev => { state.desa_id = +ev.target.value || null; }">
                                             <option value="">
                                                 <t t-if="state.loadingDesa">Memuat...</t>
                                                 <t t-else="">Pilih Desa/Kelurahan</t>
@@ -345,6 +240,8 @@
                                                         t-out="desa.name"/>
                                             </t>
                                         </select>
+                                        <div t-if="state.errors.desa_id" class="sf-errmsg"
+                                             t-out="state.errors.desa_id"/>
                                     </div>
 
                                 </div>
@@ -354,7 +251,7 @@
                         <!-- Lokasi GPS -->
                         <div class="sf-section">
                             <div class="sf-section-label">Lokasi GPS</div>
-                            <div class="sf-card">
+                            <div t-att-class="'sf-card' + (state.errors.latitude ? ' has-error' : '')">
                                 <div class="sf-card-body">
                                     <button class="sf-btn sf-btn-tonal sf-btn-block"
                                             t-on-click="getGPS"
@@ -384,6 +281,9 @@
                                         <span>Menunggu izin akses GPS</span>
                                     </div>
 
+                                    <div t-if="state.errors.latitude" class="sf-errmsg" style="margin-top:8px"
+                                         t-out="state.errors.latitude"/>
+
                                     <div id="spf-map" class="sf-map"/>
                                 </div>
                             </div>
@@ -391,7 +291,9 @@
 
                         <!-- Foto Dokumentasi -->
                         <div class="sf-section">
-                            <div class="sf-section-label">Foto Dokumentasi</div>
+                            <div class="sf-section-label">
+                                Foto Dokumentasi <span class="sf-req">*</span>
+                            </div>
                             <div class="sf-card">
                                 <div class="sf-card-body">
                                     <div class="sf-foto-btns">
@@ -419,6 +321,69 @@
                                             <button class="sf-btn sf-btn-text" t-on-click="removeFoto">Hapus Foto</button>
                                         </div>
                                     </div>
+                                    <div t-if="state.errors.foto" class="sf-errmsg" style="margin-top:8px"
+                                         t-out="state.errors.foto"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Personel -->
+                        <div class="sf-section">
+                            <div class="sf-section-label">
+                                <i class="fa fa-users" style="margin-right:6px"/>
+                                Personel
+                                <span class="sf-personel-count-badge" t-out="state.personel.length"/>
+                                <span class="sf-req" style="margin-left:4px">*</span>
+                            </div>
+                            <div class="sf-card">
+                                <div class="sf-card-body">
+
+                                    <!-- Daftar personel lokal -->
+                                    <div class="sf-personel-list">
+                                        <t t-if="state.personel.length === 0">
+                                            <div class="sf-personel-empty">
+                                                Belum ada personel yang ditambahkan
+                                            </div>
+                                        </t>
+                                        <t t-foreach="state.personel" t-as="p" t-key="p.tempId">
+                                            <div class="sf-personel-row">
+                                                <div class="sf-personel-avatar">
+                                                    <i class="fa fa-user"/>
+                                                </div>
+                                                <div class="sf-personel-name" t-out="p.nama_lengkap"/>
+                                                <button class="sf-personel-del"
+                                                        t-att-data-tid="p.tempId"
+                                                        t-on-click="removePersonelLocal">
+                                                    <i class="fa fa-times"/>
+                                                </button>
+                                            </div>
+                                        </t>
+                                    </div>
+
+                                    <!-- Form tambah personel -->
+                                    <div class="sf-personel-add-form">
+                                        <input class="sf-input" type="text"
+                                               placeholder="Nama personel *"
+                                               t-att-value="state.personelNama"
+                                               t-on-input="ev => { state.personelNama = ev.target.value.toUpperCase(); ev.target.value = state.personelNama; }"/>
+                                        <div class="sf-personel-add-row">
+                                            <input class="sf-input" type="text"
+                                                   placeholder="Pangkat / Jabatan (opsional)"
+                                                   t-att-value="state.personelPangkat"
+                                                   t-on-input="ev => { state.personelPangkat = ev.target.value.toUpperCase(); ev.target.value = state.personelPangkat; }"
+                                                   style="flex:1"/>
+                                            <button class="sf-btn-add-personel"
+                                                    t-on-click="addPersonelLocal">
+                                                <i class="fa fa-plus"/>
+                                            </button>
+                                        </div>
+                                        <div t-if="state.personelError"
+                                             class="sf-personel-err"
+                                             t-out="state.personelError"/>
+                                    </div>
+
+                                    <div t-if="state.errors.personel" class="sf-errmsg" style="margin-top:8px"
+                                         t-out="state.errors.personel"/>
                                 </div>
                             </div>
                         </div>
@@ -463,7 +428,7 @@
                                 <t t-if="state.submitting">Mengirim data...</t>
                                 <t t-elif="state.gpsLoading">Menunggu lokasi GPS...</t>
                                 <t t-elif="state.fotoLoading">Memproses foto...</t>
-                                <t t-else=""><i class="fa fa-paper-plane"/> Simpan &amp; Lanjut Input Personel</t>
+                                <t t-else=""><i class="fa fa-paper-plane"/> Simpan &amp; Lanjut Set Selesai</t>
                             </button>
                             <div class="sf-footer">PetaDigi · Strong Point</div>
                         </div>
@@ -478,7 +443,7 @@
             this.initData = JSON.parse(document.getElementById('spf-app').dataset.init);
             this.state = useState({
                 /* ── fase ── */
-                phase: 'form',       // 'form' | 'personel' | 'done'
+                phase: 'form',       // 'form' | 'selesai' | 'done'
                 /* ── data form ── */
                 keterangan_lokasi: '',
                 keterangan: '',
@@ -509,13 +474,11 @@
                 submitCode: null,
                 submitError: null,
                 errors: {},
-                /* ── personel ── */
+                /* ── personel (lokal, dikumpulkan sebelum submit) ── */
                 recordId: null,
                 personel: [],
                 personelNama: '',
                 personelPangkat: '',
-                addingPersonel: false,
-                removingId: null,
                 personelError: null,
                 /* ── selesai ── */
                 tanggalSelesai: '',
@@ -749,6 +712,36 @@
             });
         }
 
+        /* ── Personel lokal ──────────────────────────────── */
+        addPersonelLocal() {
+            const nama = (this.state.personelNama || '').trim();
+            if (!nama) {
+                this.state.personelError = 'Nama personel wajib diisi';
+                return;
+            }
+            this.state.personelError = null;
+            const pangkat     = (this.state.personelPangkat || '').trim();
+            const nama_lengkap = pangkat ? `${pangkat} ${nama}` : nama;
+            this.state.personel = [...this.state.personel, {
+                tempId: Date.now() + Math.random(),
+                nama,
+                pangkat,
+                nama_lengkap,
+            }];
+            this.state.personelNama    = '';
+            this.state.personelPangkat = '';
+            // Hapus error personel jika sudah ada isian
+            if (this.state.errors.personel) {
+                const { personel: _p, ...rest } = this.state.errors;
+                this.state.errors = rest;
+            }
+        }
+
+        removePersonelLocal(ev) {
+            const tid = parseFloat(ev.currentTarget.dataset.tid);
+            this.state.personel = this.state.personel.filter(p => p.tempId !== tid);
+        }
+
         /* ── Validasi ────────────────────────────────────── */
         _validate() {
             const errors = {};
@@ -758,12 +751,23 @@
                 errors.polres_id = 'Polres wajib dipilih';
             if (!this.state.kabupaten_id)
                 errors.kabupaten_id = 'Kabupaten/Kota wajib dipilih';
+            if (!this.state.kecamatan_id)
+                errors.kecamatan_id = 'Kecamatan wajib dipilih';
+            if (!this.state.desa_id)
+                errors.desa_id = 'Desa/Kelurahan wajib dipilih';
+            if (!this.state.latitude)
+                errors.latitude = 'Lokasi GPS wajib diambil terlebih dahulu';
+            if (!this.state.foto)
+                errors.foto = 'Foto dokumentasi wajib diisi';
+            if (this.state.personel.length === 0)
+                errors.personel = 'Minimal 1 personel wajib ditambahkan sebelum menyimpan';
             this.state.errors = errors;
             return Object.keys(errors).length === 0;
         }
 
         /* ── Submit ──────────────────────────────────────── */
         async submit() {
+            // Coba ambil GPS jika belum ada
             if (!this.state.latitude) {
                 this.state.submitError = null;
                 await new Promise((resolve) => {
@@ -781,11 +785,6 @@
                         { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
                     );
                 });
-                if (!this.state.latitude) {
-                    this.state.submitError = 'Lokasi GPS diperlukan. Izinkan akses lokasi lalu coba lagi.';
-                    document.getElementById('spf-map')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
             }
 
             if (!this._validate()) {
@@ -822,10 +821,31 @@
 
                 const result = (resp && resp.result) || {};
                 if (result.success) {
-                    this.state.phase      = 'personel';
                     this.state.submitCode = result.code;
                     this.state.recordId   = result.record_id;
-                    this.state.personel   = [];
+
+                    // Simpan personel ke server (batch, satu per satu)
+                    for (const p of this.state.personel) {
+                        try {
+                            await this._jsonRpc('/strong/api/personel_add', {
+                                token:     this.initData.token,
+                                record_id: result.record_id,
+                                nama:      p.nama,
+                                pangkat:   p.pangkat,
+                            });
+                        } catch (_) {}
+                    }
+
+                    // Lanjut ke fase selesai
+                    if (!this.state.tanggalSelesai) {
+                        const now = new Date();
+                        const pad = n => String(n).padStart(2, '0');
+                        this.state.tanggalSelesai =
+                            `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
+                            `T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                    }
+                    this.state.selesaiError = null;
+                    this.state.phase = 'selesai';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 } else {
                     this.state.submitError = result.message || 'Gagal mengirim data';
@@ -846,75 +866,7 @@
             }
         }
 
-        /* ── Personel ────────────────────────────────────── */
-        async addPersonel() {
-            const nama = (this.state.personelNama || '').trim();
-            if (!nama) {
-                this.state.personelError = 'Nama personel wajib diisi';
-                return;
-            }
-            this.state.addingPersonel = true;
-            this.state.personelError  = null;
-            try {
-                const resp = await this._jsonRpc('/strong/api/personel_add', {
-                    token:     this.initData.token,
-                    record_id: this.state.recordId,
-                    nama:      nama,
-                    pangkat:   (this.state.personelPangkat || '').trim(),
-                });
-                const result = (resp && resp.result) || {};
-                if (result.success) {
-                    this.state.personel      = [...this.state.personel, { id: result.id, nama_lengkap: result.nama_lengkap }];
-                    this.state.personelNama    = '';
-                    this.state.personelPangkat = '';
-                } else {
-                    this.state.personelError = result.error || 'Gagal menambah personel';
-                }
-            } catch (_) {
-                this.state.personelError = 'Koneksi gagal. Coba lagi.';
-            } finally {
-                this.state.addingPersonel = false;
-            }
-        }
-
-        onRemovePersonelClick(ev) {
-            const id = parseInt(ev.currentTarget.dataset.pid);
-            if (!id) return;
-            if (!confirm('Hapus personel ini dari daftar?')) return;
-            this._removePersonel(id);
-        }
-
-        async _removePersonel(id) {
-            this.state.removingId = id;
-            try {
-                const resp = await this._jsonRpc('/strong/api/personel_remove', {
-                    token:       this.initData.token,
-                    personel_id: id,
-                });
-                const result = (resp && resp.result) || {};
-                if (result.success) {
-                    this.state.personel = this.state.personel.filter(p => p.id !== id);
-                }
-            } catch (_) {} finally {
-                this.state.removingId = null;
-            }
-        }
-
-        onSelesai() {
-            // Set default tanggal selesai = now (WIB)
-            if (!this.state.tanggalSelesai) {
-                const now = new Date();
-                // Format: YYYY-MM-DDTHH:MM (local time, displayed in WIB on device)
-                const pad = n => String(n).padStart(2, '0');
-                this.state.tanggalSelesai =
-                    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}` +
-                    `T${pad(now.getHours())}:${pad(now.getMinutes())}`;
-            }
-            this.state.selesaiError = null;
-            this.state.phase = 'selesai';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
+        /* ── Set Selesai ─────────────────────────────────── */
         async submitSelesai() {
             if (!this.state.tanggalSelesai) {
                 this.state.selesaiError = 'Tanggal selesai wajib diisi';
@@ -959,8 +911,7 @@
                 fotoSizeLabel: null, fotoCompressed: false, fotoLoading: false,
                 submitting: false, submitCode: null, submitError: null, errors: {},
                 recordId: null, personel: [],
-                personelNama: '', personelPangkat: '',
-                addingPersonel: false, removingId: null, personelError: null,
+                personelNama: '', personelPangkat: '', personelError: null,
                 tanggalSelesai: '', settingSelesai: false, selesaiError: null,
             });
             if (this._marker) { this._marker.remove(); this._marker = null; }
