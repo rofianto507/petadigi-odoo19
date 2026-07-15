@@ -53,6 +53,44 @@
                             </span>
                         </div>
 
+                        <!-- Foto Dokumentasi -->
+                        <div class="sf-section">
+                            <div class="sf-section-label">
+                                Foto Dokumentasi <span class="sf-req">*</span>
+                            </div>
+                            <div class="sf-card">
+                                <div class="sf-card-body">
+                                    <div class="sf-foto-btns">
+                                        <label class="sf-btn sf-btn-outlined">
+                                            <i class="fa fa-camera"/> Kamera
+                                            <input type="file" accept="image/*" capture="environment"
+                                                   class="sf-file-hidden" t-on-change="handleFoto"/>
+                                        </label>
+                                        <label class="sf-btn sf-btn-outlined">
+                                            <i class="fa fa-image"/> Galeri
+                                            <input type="file" accept="image/*"
+                                                   class="sf-file-hidden" t-on-change="handleFoto"/>
+                                        </label>
+                                    </div>
+                                    <div t-if="state.fotoPreview" class="sf-foto-preview">
+                                        <img t-att-src="state.fotoPreview" class="sf-preview-img" alt="Foto Strong Point"/>
+                                        <div class="sf-foto-meta">
+                                            <t t-if="state.fotoLoading">
+                                                <span class="sf-foto-size sf-foto-size--loading">⏳ Mengompresi...</span>
+                                            </t>
+                                            <t t-elif="state.fotoSizeLabel">
+                                                <span t-att-class="'sf-foto-size ' + (state.fotoCompressed ? 'sf-foto-size--ok' : 'sf-foto-size--info')"
+                                                      t-out="state.fotoSizeLabel"/>
+                                            </t>
+                                            <button class="sf-btn sf-btn-text" t-on-click="removeFoto">Hapus Foto</button>
+                                        </div>
+                                    </div>
+                                    <div t-if="state.selesaiFotoError" class="sf-errmsg" style="margin-top:8px"
+                                         t-out="state.selesaiFotoError"/>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Tanggal Selesai -->
                         <div class="sf-section">
                             <div class="sf-section-label">Waktu Selesai</div>
@@ -77,8 +115,9 @@
                         <div class="sf-submit-area">
                             <button class="sf-btn sf-btn-filled sf-btn-submit"
                                     t-on-click="submitSelesai"
-                                    t-att-disabled="state.settingSelesai">
-                                <t t-if="state.settingSelesai">Menyimpan...</t>
+                                    t-att-disabled="state.settingSelesai || state.fotoLoading">
+                                <t t-if="state.fotoLoading">Memproses foto...</t>
+                                <t t-elif="state.settingSelesai">Menyimpan...</t>
                                 <t t-else=""><i class="fa fa-flag-checkered"/> Selesai</t>
                             </button>
                             <div class="sf-footer">PetaDigi · Strong Point</div>
@@ -289,44 +328,6 @@
                             </div>
                         </div>
 
-                        <!-- Foto Dokumentasi -->
-                        <div class="sf-section">
-                            <div class="sf-section-label">
-                                Foto Dokumentasi <span class="sf-req">*</span>
-                            </div>
-                            <div class="sf-card">
-                                <div class="sf-card-body">
-                                    <div class="sf-foto-btns">
-                                        <label class="sf-btn sf-btn-outlined">
-                                            <i class="fa fa-camera"/> Kamera
-                                            <input type="file" accept="image/*" capture="environment"
-                                                   class="sf-file-hidden" t-on-change="handleFoto"/>
-                                        </label>
-                                        <label class="sf-btn sf-btn-outlined">
-                                            <i class="fa fa-image"/> Galeri
-                                            <input type="file" accept="image/*"
-                                                   class="sf-file-hidden" t-on-change="handleFoto"/>
-                                        </label>
-                                    </div>
-                                    <div t-if="state.fotoPreview" class="sf-foto-preview">
-                                        <img t-att-src="state.fotoPreview" class="sf-preview-img" alt="Foto Strong Point"/>
-                                        <div class="sf-foto-meta">
-                                            <t t-if="state.fotoLoading">
-                                                <span class="sf-foto-size sf-foto-size--loading">⏳ Mengompresi...</span>
-                                            </t>
-                                            <t t-elif="state.fotoSizeLabel">
-                                                <span t-att-class="'sf-foto-size ' + (state.fotoCompressed ? 'sf-foto-size--ok' : 'sf-foto-size--info')"
-                                                      t-out="state.fotoSizeLabel"/>
-                                            </t>
-                                            <button class="sf-btn sf-btn-text" t-on-click="removeFoto">Hapus Foto</button>
-                                        </div>
-                                    </div>
-                                    <div t-if="state.errors.foto" class="sf-errmsg" style="margin-top:8px"
-                                         t-out="state.errors.foto"/>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Data Personel -->
                         <div class="sf-section">
                             <div class="sf-section-label">
@@ -424,10 +425,9 @@
                             </div>
                             <button class="sf-btn sf-btn-filled sf-btn-submit"
                                     t-on-click="submit"
-                                    t-att-disabled="state.submitting || state.gpsLoading || state.fotoLoading">
+                                    t-att-disabled="state.submitting || state.gpsLoading">
                                 <t t-if="state.submitting">Mengirim data...</t>
                                 <t t-elif="state.gpsLoading">Menunggu lokasi GPS...</t>
-                                <t t-elif="state.fotoLoading">Memproses foto...</t>
                                 <t t-else=""><i class="fa fa-paper-plane"/> Simpan &amp; Lanjut Set Selesai</t>
                             </button>
                             <div class="sf-footer">PetaDigi · Strong Point</div>
@@ -482,6 +482,7 @@
                 personelError: null,
                 /* ── selesai ── */
                 tanggalSelesai: '',
+                selesaiFotoError: null,
                 settingSelesai: false,
                 selesaiError: null,
             });
@@ -757,8 +758,6 @@
                 errors.desa_id = 'Desa/Kelurahan wajib dipilih';
             if (!this.state.latitude)
                 errors.latitude = 'Lokasi GPS wajib diambil terlebih dahulu';
-            if (!this.state.foto)
-                errors.foto = 'Foto dokumentasi wajib diisi';
             if (this.state.personel.length === 0)
                 errors.personel = 'Minimal 1 personel wajib ditambahkan sebelum menyimpan';
             this.state.errors = errors;
@@ -793,11 +792,6 @@
                 return;
             }
 
-            if (this.state.foto && this.state.foto.length > 600_000) {
-                this.state.submitError = 'Foto masih terlalu besar. Coba hapus foto atau pilih foto yang lebih sederhana.';
-                return;
-            }
-
             this.state.submitting  = true;
             this.state.submitError = null;
 
@@ -815,9 +809,8 @@
                         desa_id:           this.state.desa_id,
                         latitude:          this.state.latitude,
                         longitude:         this.state.longitude,
-                        foto:              this.state.foto,
                     },
-                }, 90000);
+                }, 30000);
 
                 const result = (resp && resp.result) || {};
                 if (result.success) {
@@ -851,13 +844,9 @@
                     this.state.submitError = result.message || 'Gagal mengirim data';
                 }
             } catch (err) {
-                if (err && err.name === 'AbortError') {
-                    this.state.submitError = 'Pengiriman terlalu lama (timeout). Coba hapus foto lalu kirim ulang.';
-                } else if (err && err.message && err.message.startsWith('HTTP ')) {
+                if (err && err.message && err.message.startsWith('HTTP ')) {
                     const code = err.message.replace('HTTP ', '');
-                    this.state.submitError = code === '413'
-                        ? 'Foto terlalu besar. Hapus foto atau pilih foto yang lebih kecil.'
-                        : `Server error (${code}). Silakan coba beberapa saat lagi.`;
+                    this.state.submitError = `Server error (${code}). Silakan coba beberapa saat lagi.`;
                 } else {
                     this.state.submitError = 'Koneksi gagal. Periksa sinyal internet lalu coba lagi.';
                 }
@@ -868,6 +857,17 @@
 
         /* ── Set Selesai ─────────────────────────────────── */
         async submitSelesai() {
+            // Validasi foto wajib
+            if (!this.state.foto) {
+                this.state.selesaiFotoError = 'Foto dokumentasi wajib diisi sebelum menyelesaikan';
+                return;
+            }
+            if (this.state.foto.length > 600_000) {
+                this.state.selesaiFotoError = 'Foto terlalu besar. Hapus foto dan pilih foto yang lebih kecil.';
+                return;
+            }
+            this.state.selesaiFotoError = null;
+
             if (!this.state.tanggalSelesai) {
                 this.state.selesaiError = 'Tanggal selesai wajib diisi';
                 return;
@@ -879,7 +879,8 @@
                     token:           this.initData.token,
                     record_id:       this.state.recordId,
                     tanggal_selesai: this.state.tanggalSelesai,
-                });
+                    foto:            this.state.foto,
+                }, 90000);
                 const result = (resp && resp.result) || {};
                 if (result.success) {
                     this.state.phase = 'done';
@@ -887,8 +888,15 @@
                 } else {
                     this.state.selesaiError = result.error || 'Gagal menyimpan';
                 }
-            } catch (_) {
-                this.state.selesaiError = 'Koneksi gagal. Coba lagi.';
+            } catch (err) {
+                if (err && err.message && err.message.startsWith('HTTP ')) {
+                    const code = err.message.replace('HTTP ', '');
+                    this.state.selesaiError = code === '413'
+                        ? 'Foto terlalu besar. Hapus foto atau pilih foto yang lebih kecil.'
+                        : `Server error (${code}). Silakan coba beberapa saat lagi.`;
+                } else {
+                    this.state.selesaiError = 'Koneksi gagal. Coba lagi.';
+                }
             } finally {
                 this.state.settingSelesai = false;
             }
@@ -912,7 +920,7 @@
                 submitting: false, submitCode: null, submitError: null, errors: {},
                 recordId: null, personel: [],
                 personelNama: '', personelPangkat: '', personelError: null,
-                tanggalSelesai: '', settingSelesai: false, selesaiError: null,
+                tanggalSelesai: '', settingSelesai: false, selesaiError: null, selesaiFotoError: null,
             });
             if (this._marker) { this._marker.remove(); this._marker = null; }
             if (this._map) {

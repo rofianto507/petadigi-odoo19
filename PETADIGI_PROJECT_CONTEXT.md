@@ -408,7 +408,24 @@ Field konfigurasi: `name`, `subdit_id` (opsional), `public_token`, `is_aktif`, `
 
 **File:** `static/src/js/strong_public_form.js`, `views/strong_public_form_template.xml`
 
-**Phase state machine:** `'form' → 'personel' → 'selesai' → 'done'`
+**Phase state machine:** `'form' → 'selesai' → 'done'`
+(sebelumnya `form → personel → selesai → done`; fase `personel` dihapus — personel dikumpulkan di fase `form` via state lokal, batch-save ke server setelah record ter-create)
+
+**Isian wajib di fase `form`:**
+- `keterangan_lokasi` — teks keterangan lokasi
+- `polres_id` — wajib kecuali `is_subdit_form`
+- `kabupaten_id`, `kecamatan_id`, `desa_id` — ketiganya wajib
+- `latitude` / `longitude` — GPS wajib diambil
+- Minimal 1 personel wajib ditambahkan sebelum submit
+
+**Isian wajib di fase `selesai`:**
+- `foto` — foto dokumentasi **wajib** diisi di sini (bukan di fase `form`) — foto merupakan dokumentasi akhir giat
+- `tanggal_selesai` — tanggal dan jam selesai kegiatan
+
+**Manajemen personel (lokal sebelum submit):**
+- Personel dikumpulkan di state lokal (`tempId`, `nama`, `pangkat`, `nama_lengkap`) sebelum record dibuat
+- `addPersonelLocal()` / `removePersonelLocal()` — tidak memanggil API
+- Setelah `submit_public` berhasil, personel di-loop dan di-POST satu per satu ke `/strong/api/personel_add`
 
 **`is_subdit_form` flag** (dari `init_data` JSON di HTML):
 - Aktif jika `config.subdit_id` diset
@@ -418,9 +435,20 @@ Field konfigurasi: `name`, `subdit_id` (opsional), `public_token`, `is_aktif`, `
 - Validasi `polres_id` dilewati
 - Controller `strong_pub_submit` auto-assign polres via `_get_polda_polres()`
 
+**Security (controller `strong_point_public.py`):**
+- Rate limiting: `check_rate_limit(client_ip, 'strong')` sebelum proses apapun
+- Guard token: `isinstance(token, str) and len(token) > 200`
+- Guard data: `isinstance(data, dict)`
+- Validasi server-side lengkap: `_validate_strong_pub_data(data, is_subdit_form)` — cek keterangan_lokasi, polres (relasional), polsek (relasional), kabupaten, kecamatan+relasional, desa+relasional, GPS bounds; **foto TIDAK divalidasi di sini** (dipindah ke `set_selesai`)
+- `submitter_ip` + `submitter_ua` disimpan ke record
+- `personel_add`: cek `rec.state == 'PROSES'` + batas panjang `nama` (200) / `pangkat` (100)
+- `personel_remove`: cek `p.strong_point_id.state == 'PROSES'`
+- `set_selesai`: terima `foto=None`; validasi foto (wajib, ukuran `> 700_000`, magic bytes JPEG/PNG/WebP); validasi format tanggal; idempotent (return success jika sudah SELESAI); simpan `{'state': 'SELESAI', 'tanggal_selesai': ..., 'foto': foto_b64}`
+- Wilayah endpoints (`polsek`, `kabupaten`, `kecamatan`, `desa`): wrapped try/except → return `[]` (cegah crash non-integer input)
+
 **API endpoints:**
 - `GET /strong/<token>` → render form
-- `POST /strong/api/submit_public` → create record, return `{code, record_id}`
+- `POST /strong/api/submit_public` → create record, return `{success, code, record_id}`
 - `POST /strong/api/polsek` / `kabupaten` / `kecamatan` / `desa`
 - `POST /strong/api/personel_add` / `personel_remove`
 - `POST /strong/api/set_selesai`
@@ -528,8 +556,8 @@ def _wib_to_utc(dt_str):
 | `POST /petadigi/api/kecamatan` | Cascading by `kabupaten_id` (filter polsek_id jika is_polsek) |
 | `POST /petadigi/api/desa` | Cascading by `kecamatan_id` |
 | `POST /petadigi/api/list` | List SP records — paginated (offset/limit=20), filter: `'today'`, `kabupaten_id`, `state` |
-| `POST /petadigi/api/submit` | Create SP record baru, `tanggal_mulai` di-`_wib_to_utc()` |
-| `POST /petadigi/api/record` | Detail 1 record: info + personel + `foto_src` (base64 data URL) |
+| `POST /petadigi/api/submit` | Create SP record baru, `tanggal_mulai` di-`_wib_to_utc()`; menyimpan `keterangan_lokasi`, `submitter_ip`, `submitter_ua` |
+| `POST /petadigi/api/record` | Detail 1 record: info + personel + `foto_src` (base64 data URL); field `keterangan_lokasi` disertakan |
 | `POST /petadigi/api/personel_add` | Tambah personel ke SP |
 | `POST /petadigi/api/personel_remove` | Hapus personel |
 | `POST /petadigi/api/upload_foto` | Upload foto base64 → field `foto` (Binary attachment) |
@@ -601,6 +629,8 @@ if att and att.datas:
 - `foto` (Binary, `attachment=True`), `foto_filename` (Char)
 - `personel_ids` (One2many → `petadigi.personel`)
 - `personel_count` (Integer, computed)
+- `submitter_ip` (Char, readonly) — IP pengirim dari `X-Forwarded-For` / `remote_addr`
+- `submitter_ua` (Char, readonly) — browser+OS parsed (mis: "Edge 150 / Windows 10/11")
 
 **`petadigi.lokasi_strong_point`** — master lokasi strong point
 - `nama`, `code`
@@ -672,9 +702,20 @@ if att and att.datas:
 **Alur Strong Point tab**:
 1. `_showRecordList()` — load 20 pertama, infinite scroll (IntersectionObserver sentinel)
 2. FAB (+) → `_openLokasiPicker()` — list lokasi sorted by GPS distance (Haversine)
-3. Pilih lokasi → `_openFormView()` — isi data SP baru, submit
-4. Submit sukses → `_openDetail(recordId)` — detail view
-5. Klik record di list → `_openDetail(recordId)`
+3. Pilih lokasi → `_openFormView()` — isi data SP baru:
+   - `keterangan_lokasi` (default = nama lokasi yang dipilih, bisa diubah)
+   - `tanggal_mulai` pre-fill waktu sekarang (dibulatkan ke 5 menit terdekat)
+   - `desa_id` **wajib**
+   - **Card Personel** wajib diisi min 1 sebelum submit — input nama+pangkat, tombol tambah, list lokal `_sp.personelLocal`
+   - GPS wajib (koordinat tidak boleh 0,0)
+4. Submit: batch-save personel lokal via Promise chain setelah record ter-create, lalu buka detail
+5. Submit sukses → `_openDetail(recordId)` — detail view
+6. Klik record di list → `_openDetail(recordId)`
+
+**Detail view — Foto wajib sebelum Set Selesai:**
+- Tombol "Set Selesai" dicek terlebih dahulu apakah `data.has_foto === true`
+- Jika belum ada foto → tampilkan toast error, batalkan
+- Alur: upload foto dahulu via tombol upload di detail → baru bisa set selesai
 
 **Sub-page navigation**:
 - `_hideAppbar()` / `_showAppbar()` — toggle class `sp-subpage` pada `#sp-app`
@@ -1572,6 +1613,21 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - Konfigurasi via backend: `strong_point.form_config` / `patroli.form_config` — generate token + QR code
 - Nginx ModSecurity: wajib tambah `modsecurity off` untuk `/strong/` dan `/patroli/` (ada upload foto base64)
 
+**Strong Point Mobile App — Update Internal (2026-07-15)**
+- Form create: tambah field `keterangan_lokasi` (default = nama lokasi terpilih), pre-fill `tanggal_mulai` sekarang, `desa_id` wajib, GPS wajib
+- Form create: Card Personel dipindah ke form create (bukan di detail), minimal 1 personel wajib sebelum submit; `personelLocal` state lokal, batch-save via Promise chain setelah record ter-create
+- `api_submit`: simpan `keterangan_lokasi`, `submitter_ip` (dari `X-Forwarded-For`), `submitter_ua` (parsed via `parse_user_agent`)
+- `api_record`: kembalikan `keterangan_lokasi` di response; tampilkan di detail view
+- Detail view: tombol Set Selesai dicegah jika `has_foto === false` — foto dokumentasi wajib diupload terlebih dahulu
+
+**Strong Point Public Form — Update UX & Security (2026-07-15)**
+- Isian wajib diperluas: kecamatan, desa, GPS, minimal 1 personel
+- **Foto dokumentasi dipindah ke fase `selesai`** — bukan di fase `form` lagi; foto merupakan dokumentasi akhir giat, wajib diisi sebelum submit selesai
+- Phase `personel` dihapus — personel dikumpulkan di state lokal di halaman utama, batch-save ke server setelah record ter-create
+- Field `submitter_ip` + `submitter_ua` (readonly) ditambah ke model `petadigi.strong_point` dan ditampilkan di form view (group INFO PENGIRIM)
+- Security patch controller `/strong/*`: rate limiting, guard token/data, `_validate_strong_pub_data()` lengkap (relasi wilayah, GPS bounds; foto tidak lagi divalidasi di sini), state guard di `personel_add`/`personel_remove`, format validation + idempotency di `set_selesai`, try/except di semua wilayah endpoints
+- `strong_pub_set_selesai`: terima `foto=None`; validasi foto wajib + ukuran (`> 700_000`) + magic bytes; simpan foto ke record bersama state SELESAI + tanggal_selesai
+
 **Subdit_id Tagging (2026-07-03)**
 - Field `subdit_id` baru di `petadigi.strong_point` dan `petadigi.patroli` — identifikasi data per subdit
 - Form config (`strong_point.form_config` & `patroli.form_config`) punya optional `subdit_id` — jika diset, public form otomatis menyembunyikan field Polres/Polsek (`is_subdit_form` flag), polres di-auto-assign ke Polda
@@ -1587,4 +1643,4 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 
 ---
 
-*Dokumen diperbarui: 2026-07-15*
+*Dokumen diperbarui: 2026-07-15 (Strong Point Mobile internal + Public Form: foto ke fase selesai, personel di form create, keterangan_lokasi, submitter info)*

@@ -435,6 +435,11 @@ self.addEventListener('fetch', e => {
         if not user:
             return {'error': 'Sesi habis. Silakan login kembali.'}
         is_subdit_sp = user.has_group('petadigi.group_subdit_strong_point')
+        client_ip = (
+            request.httprequest.environ.get('HTTP_X_FORWARDED_FOR', '')
+            .split(',')[0].strip()
+            or request.httprequest.remote_addr
+        )
         try:
             if is_subdit_sp:
                 resolved_polsek = False
@@ -454,18 +459,23 @@ self.addEventListener('fetch', e => {
                     resolved_polsek = False
                 resolved_polres = user.polres_id.id
             vals = {
-                'polres_id':     resolved_polres,
-                'polsek_id':     resolved_polsek,
-                'subdit_id':     user.subdit_id.id if is_subdit_sp and user.subdit_id else False,
-                'lokasi_id':     int(kwargs['lokasi_id'])    if kwargs.get('lokasi_id')    else False,
-                'kabupaten_id':  int(kwargs['kabupaten_id']) if kwargs.get('kabupaten_id') else False,
-                'kecamatan_id':  int(kwargs['kecamatan_id']) if kwargs.get('kecamatan_id') else False,
-                'desa_id':       int(kwargs['desa_id'])      if kwargs.get('desa_id')      else False,
-                'tanggal_mulai': _wib_to_utc(kwargs.get('tanggal_mulai')) or False,
-                'latitude':      float(kwargs['latitude'])   if kwargs.get('latitude')     else 0.0,
-                'longitude':     float(kwargs['longitude'])  if kwargs.get('longitude')    else 0.0,
-                'keterangan':    kwargs.get('keterangan')    or '',
-                'state':         'PROSES',
+                'polres_id':          resolved_polres,
+                'polsek_id':          resolved_polsek,
+                'subdit_id':          user.subdit_id.id if is_subdit_sp and user.subdit_id else False,
+                'lokasi_id':          int(kwargs['lokasi_id'])    if kwargs.get('lokasi_id')    else False,
+                'kabupaten_id':       int(kwargs['kabupaten_id']) if kwargs.get('kabupaten_id') else False,
+                'kecamatan_id':       int(kwargs['kecamatan_id']) if kwargs.get('kecamatan_id') else False,
+                'desa_id':            int(kwargs['desa_id'])      if kwargs.get('desa_id')      else False,
+                'keterangan_lokasi':  (kwargs.get('keterangan_lokasi') or '').strip(),
+                'tanggal_mulai':      _wib_to_utc(kwargs.get('tanggal_mulai')) or False,
+                'latitude':           float(kwargs['latitude'])   if kwargs.get('latitude')     else 0.0,
+                'longitude':          float(kwargs['longitude'])  if kwargs.get('longitude')    else 0.0,
+                'keterangan':         kwargs.get('keterangan')    or '',
+                'state':              'PROSES',
+                'submitter_ip':       client_ip,
+                'submitter_ua':       parse_user_agent(
+                    request.httprequest.environ.get('HTTP_USER_AGENT', '')
+                ),
             }
             record = request.env['petadigi.strong_point'].with_user(user.id).create(vals)
             return {'success': True, 'code': record.code, 'record_id': record.id}
@@ -514,17 +524,18 @@ self.addEventListener('fetch', e => {
                 _logger.error('[SP] foto_src build error: %s', e, exc_info=True)
 
         return {
-            'id':             rec.id,
-            'code':           rec.code,
-            'state':          rec.state,
-            'lokasi_nama':    rec.lokasi_nama or '',
-            'kecamatan_nama': rec.kecamatan_id.name if rec.kecamatan_id else '',
-            'desa_nama':      rec.desa_id.name      if rec.desa_id      else '',
-            'tanggal_mulai':  _fmt_dt(rec.tanggal_mulai),
-            'tanggal_selesai': _fmt_dt(rec.tanggal_selesai),
-            'has_foto':       bool(foto_src),
-            'foto_src':       foto_src or '',
-            'keterangan':     rec.keterangan or '',
+            'id':                rec.id,
+            'code':              rec.code,
+            'state':             rec.state,
+            'lokasi_nama':       rec.lokasi_nama or '',
+            'keterangan_lokasi': rec.keterangan_lokasi or '',
+            'kecamatan_nama':    rec.kecamatan_id.name if rec.kecamatan_id else '',
+            'desa_nama':         rec.desa_id.name      if rec.desa_id      else '',
+            'tanggal_mulai':     _fmt_dt(rec.tanggal_mulai),
+            'tanggal_selesai':   _fmt_dt(rec.tanggal_selesai),
+            'has_foto':          bool(foto_src),
+            'foto_src':          foto_src or '',
+            'keterangan':        rec.keterangan or '',
             'personel': [
                 {'id': p.id, 'nama_lengkap': p.nama_lengkap, 'pangkat': p.pangkat or ''}
                 for p in rec.personel_ids
@@ -1012,21 +1023,6 @@ self.addEventListener('fetch', e => {
         elif not (-180 <= lng <= 180):
             errors.append('Nilai longitude tidak valid')
 
-        # Foto wajib + ukuran + magic bytes
-        foto_raw = data.get('foto')
-        if not foto_raw:
-            errors.append('Foto dokumentasi wajib diisi')
-        else:
-            foto_b64 = (
-                foto_raw.split(',', 1)[1]
-                if isinstance(foto_raw, str) and ',' in foto_raw
-                else foto_raw
-            )
-            if len(foto_b64) > 700_000:
-                errors.append('Ukuran foto terlalu besar. Coba pilih foto lain atau hapus foto.')
-            elif not is_valid_image(foto_b64 or ''):
-                errors.append('Foto harus berupa file gambar (JPEG, PNG, atau WebP)')
-
         return errors
 
     def _strong_pub_valid(self, token):
@@ -1144,13 +1140,6 @@ self.addEventListener('fetch', e => {
 
         # ── Simpan data ───────────────────────────────────────────────────────
         try:
-            foto_raw = data.get('foto', '')
-            foto_b64 = (
-                foto_raw.split(',', 1)[1]
-                if isinstance(foto_raw, str) and ',' in foto_raw
-                else foto_raw
-            )
-
             if is_subdit_form:
                 polda = self._get_polda_polres()
                 if not polda:
@@ -1178,7 +1167,6 @@ self.addEventListener('fetch', e => {
                 'keterangan':        (data.get('keterangan') or '').strip(),
                 'tanggal_mulai':     _wib_to_utc((data.get('tanggal_mulai') or '').replace('T', ' ')) or odoo_fields.Datetime.now(),
                 'state':             'PROSES',
-                'foto':              foto_b64 or False,
                 'submitter_ip':      client_ip,
                 'submitter_ua':      parse_user_agent(
                     request.httprequest.environ.get('HTTP_USER_AGENT', '')
@@ -1233,9 +1221,24 @@ self.addEventListener('fetch', e => {
             return {'error': str(e)}
 
     @http.route('/strong/api/set_selesai', type='jsonrpc', auth='public', csrf=False)
-    def strong_pub_set_selesai(self, token, record_id, tanggal_selesai, **kwargs):
+    def strong_pub_set_selesai(self, token, record_id, tanggal_selesai, foto=None, **kwargs):
         if not token or not self._strong_pub_valid(token):
             return {'error': 'unauthorized'}
+
+        # ── Validasi foto wajib ───────────────────────────────────────────────
+        if not foto:
+            return {'error': 'Foto dokumentasi wajib diisi sebelum menyelesaikan'}
+        foto_b64 = (
+            foto.split(',', 1)[1]
+            if isinstance(foto, str) and ',' in foto
+            else foto
+        )
+        if len(foto_b64) > 700_000:
+            return {'error': 'Ukuran foto terlalu besar. Pilih foto lain.'}
+        if not is_valid_image(foto_b64):
+            return {'error': 'Foto harus berupa file gambar (JPEG, PNG, atau WebP)'}
+
+        # ── Validasi tanggal selesai ──────────────────────────────────────────
         if not tanggal_selesai:
             return {'error': 'Tanggal selesai harus diisi'}
         tgl_str = (tanggal_selesai or '').replace('T', ' ').strip()
@@ -1249,6 +1252,7 @@ self.addEventListener('fetch', e => {
                 continue
         if not parsed_ok:
             return {'error': 'Format tanggal selesai tidak valid'}
+
         try:
             rec = request.env['petadigi.strong_point'].sudo().browse(int(record_id))
             if not rec.exists():
@@ -1256,8 +1260,9 @@ self.addEventListener('fetch', e => {
             if rec.state == 'SELESAI':
                 return {'success': True}
             rec.sudo().write({
-                'state': 'SELESAI',
+                'state':           'SELESAI',
                 'tanggal_selesai': _wib_to_utc(tgl_str),
+                'foto':            foto_b64,
             })
             return {'success': True}
         except Exception as e:

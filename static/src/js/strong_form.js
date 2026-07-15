@@ -336,6 +336,7 @@
         filterOpen:     false,
         filterKabupaten: null,
         filterState:    null,
+        personelLocal: [],  // personel dikumpulkan sebelum submit, batch-save setelah create
     };
 
     // ── Distance helpers ─────────────────────────────────────────────────────
@@ -753,10 +754,50 @@
     // ── Open form for a selected lokasi ─────────────────────────────────────
     function _openForm(lokasi) {
         _sp.selected = lokasi;
+        _sp.personelLocal = [];
         document.getElementById('sp-list-view').style.display = 'none';
         var fv = document.getElementById('sp-form-view');
         fv.style.display = '';
-        _buildForm(fv);
+        _buildForm(fv, lokasi);
+    }
+
+    // ── Local personel helpers (form, before submit) ─────────────────────────
+    function _renderPersonelLocalList() {
+        var listEl  = document.getElementById('sp-fp-list');
+        var countEl = document.getElementById('sp-fp-count');
+        if (!listEl) return;
+        if (!_sp.personelLocal.length) {
+            listEl.innerHTML = '<div class="sp-personel-empty">Belum ada personel</div>';
+        } else {
+            listEl.innerHTML = _sp.personelLocal.map(function (p) {
+                return '<div class="sp-personel-row" data-tid="' + p.tempId + '">'
+                    + '<div class="sp-personel-avatar"><i class="fa fa-user"></i></div>'
+                    + '<div class="sp-personel-name">' + _esc(p.nama_lengkap) + '</div>'
+                    + '<button class="sp-personel-del sp-fp-del" data-tid="' + p.tempId + '" title="Hapus"><i class="fa fa-times"></i></button>'
+                    + '</div>';
+            }).join('');
+            listEl.querySelectorAll('.sp-fp-del').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var tid = parseFloat(this.dataset.tid);
+                    _sp.personelLocal = _sp.personelLocal.filter(function (p) { return p.tempId !== tid; });
+                    _renderPersonelLocalList();
+                });
+            });
+        }
+        if (countEl) countEl.textContent = _sp.personelLocal.length;
+    }
+
+    function _addPersonelLocal() {
+        var namaEl    = document.getElementById('sp-fp-nama');
+        var pangkatEl = document.getElementById('sp-fp-pangkat');
+        var nama      = (namaEl ? namaEl.value : '').trim().toUpperCase();
+        if (!nama) { showToast('Isi nama personel', 'error'); return; }
+        var pangkat     = (pangkatEl ? pangkatEl.value : '').trim().toUpperCase();
+        var nama_lengkap = pangkat ? (pangkat + ' ' + nama) : nama;
+        _sp.personelLocal.push({ tempId: Date.now() + Math.random(), nama: nama, pangkat: pangkat, nama_lengkap: nama_lengkap });
+        if (namaEl)    namaEl.value    = '';
+        if (pangkatEl) pangkatEl.value = '';
+        _renderPersonelLocalList();
     }
 
     function _backToList() {
@@ -771,6 +812,10 @@
         var ctx = window._SP_CTX || {};
         var lok = _sp.selected;
         var pos = _sp.userPos;
+
+        var now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        var nowStr = now.toISOString().slice(0, 16);
 
         // Polsek row — disembunyikan untuk subdit SP (selalu Polda, tidak punya polsek)
         var polsekRow = '';
@@ -849,10 +894,15 @@
             +       '<select class="sp-select" id="sp-kecamatan" disabled><option value="">— Pilih Kabupaten —</option></select></div>'
             +     '</div>'
             +     '<div class="sp-field">'
-            +       '<label class="sp-label">Desa / Kelurahan</label>'
+            +       '<label class="sp-label">Desa / Kelurahan <span class="sp-req">*</span></label>'
             +       '<div class="sp-input-wrap"><i class="fa fa-home sp-input-icon"></i>'
             +       '<select class="sp-select" id="sp-desa" disabled><option value="">— Pilih Kecamatan —</option></select></div>'
             +     '</div>'
+            +   '</div>'
+            +   '<div class="sp-field">'
+            +     '<label class="sp-label">Keterangan Lokasi <span class="sp-req">*</span></label>'
+            +     '<div class="sp-input-wrap"><i class="fa fa-map-marker sp-input-icon"></i>'
+            +     '<input type="text" class="sp-input" id="sp-keterangan-lokasi" value="' + _esc(lok.nama) + '" placeholder="Keterangan lokasi..."/></div>'
             +   '</div>'
             + '</div>'
 
@@ -861,7 +911,7 @@
             +   '<div class="sp-card-title"><i class="fa fa-clock-o"></i> Waktu Mulai</div>'
             +   '<div class="sp-field">'
             +     '<label class="sp-label">Tgl &amp; Jam Mulai <span class="sp-req">*</span></label>'
-            +     '<input type="datetime-local" class="sp-input sp-input--bare" id="sp-tgl-mulai"/>'
+            +     '<input type="datetime-local" class="sp-input sp-input--bare" id="sp-tgl-mulai" value="' + nowStr + '"/>'
             +   '</div>'
             + '</div>'
 
@@ -896,6 +946,23 @@
             + '<div class="sp-card">'
             +   '<div class="sp-card-title"><i class="fa fa-pencil"></i> Keterangan</div>'
             +   '<textarea class="sp-textarea" id="sp-keterangan" rows="3" placeholder="Catatan tambahan (opsional)..."></textarea>'
+            + '</div>'
+
+            // Card 5: Personel (lokal, batch-save setelah submit)
+            + '<div class="sp-card">'
+            +   '<div class="sp-card-title"><i class="fa fa-users"></i> Personel <span class="sp-req">*</span>'
+            +     '<span class="sp-personel-count" id="sp-fp-count" style="margin-left:6px;">0</span>'
+            +   '</div>'
+            +   '<div id="sp-fp-list"><div class="sp-personel-empty">Belum ada personel</div></div>'
+            +   '<div class="sp-personel-add-form" style="margin-top:10px;">'
+            +     '<input type="text" class="sp-input sp-input--bare sp-input--upper" id="sp-fp-nama"'
+            +       ' placeholder="Nama lengkap *" autocapitalize="characters" style="width:100%;margin-bottom:8px;"/>'
+            +     '<div style="display:flex;gap:8px;align-items:center;">'
+            +       '<input type="text" class="sp-input sp-input--bare sp-input--upper" id="sp-fp-pangkat"'
+            +         ' placeholder="Pangkat (opsional)" autocapitalize="characters" style="flex:1;"/>'
+            +       '<button type="button" class="sp-btn-add-personel" id="sp-fp-add"><i class="fa fa-plus"></i></button>'
+            +     '</div>'
+            +   '</div>'
             + '</div>'
 
             // Sticky submit bar
@@ -976,6 +1043,12 @@
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fa fa-crosshairs"></i> Coba Lagi';
             }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+        });
+
+        // Personel local
+        document.getElementById('sp-fp-add').addEventListener('click', _addPersonelLocal);
+        document.getElementById('sp-fp-nama').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); _addPersonelLocal(); }
         });
 
         // Submit
@@ -1080,14 +1153,22 @@
     }
 
     function _submitStrong() {
-        var kabId  = document.getElementById('sp-kabupaten')?.value;
-        var kecId  = document.getElementById('sp-kecamatan')?.value;
-        var tglMul = document.getElementById('sp-tgl-mulai')?.value;
+        var kabId        = document.getElementById('sp-kabupaten')?.value;
+        var kecId        = document.getElementById('sp-kecamatan')?.value;
+        var desaId       = document.getElementById('sp-desa')?.value;
+        var tglMul       = document.getElementById('sp-tgl-mulai')?.value;
+        var ketLokasi    = (document.getElementById('sp-keterangan-lokasi')?.value || '').trim();
+        var lat          = parseFloat(document.getElementById('sp-lat')?.value) || 0;
+        var lng          = parseFloat(document.getElementById('sp-lng')?.value) || 0;
 
         var ctx    = window._SP_CTX || {};
-        if (!kabId)  { showToast('Pilih Kabupaten terlebih dahulu', 'error'); return; }
-        if (!kecId)  { showToast('Pilih Kecamatan terlebih dahulu', 'error'); return; }
-        if (!tglMul) { showToast('Isi Tanggal & Jam Mulai', 'error'); return; }
+        if (!kabId)     { showToast('Pilih Kabupaten terlebih dahulu', 'error'); return; }
+        if (!kecId)     { showToast('Pilih Kecamatan terlebih dahulu', 'error'); return; }
+        if (!desaId)    { showToast('Pilih Desa / Kelurahan terlebih dahulu', 'error'); return; }
+        if (!ketLokasi) { showToast('Isi Keterangan Lokasi terlebih dahulu', 'error'); return; }
+        if (!lat && !lng) { showToast('Ambil GPS terlebih dahulu', 'error'); return; }
+        if (!tglMul)    { showToast('Isi Tanggal & Jam Mulai', 'error'); return; }
+        if (!_sp.personelLocal.length) { showToast('Tambahkan minimal 1 personel terlebih dahulu', 'error'); return; }
 
         var btn   = document.getElementById('sp-submit-btn');
         var label = document.getElementById('sp-submit-label');
@@ -1095,15 +1176,16 @@
         label.innerHTML = '<span class="sp-spinner"></span> Menyimpan...';
 
         var params = {
-            lokasi_id:       _sp.selected ? _sp.selected.id : null,
-            kabupaten_id:    parseInt(kabId),
-            kecamatan_id:    parseInt(kecId),
-            desa_id:         parseInt(document.getElementById('sp-desa')?.value) || null,
-            tanggal_mulai:   _fmtDatetimeLocal(tglMul),
-            tanggal_selesai: _fmtDatetimeLocal(document.getElementById('sp-tgl-selesai')?.value),
-            latitude:        parseFloat(document.getElementById('sp-lat')?.value) || 0,
-            longitude:       parseFloat(document.getElementById('sp-lng')?.value) || 0,
-            keterangan:      document.getElementById('sp-keterangan')?.value || '',
+            lokasi_id:          _sp.selected ? _sp.selected.id : null,
+            kabupaten_id:       parseInt(kabId),
+            kecamatan_id:       parseInt(kecId),
+            desa_id:            parseInt(desaId) || null,
+            keterangan_lokasi:  ketLokasi,
+            tanggal_mulai:      _fmtDatetimeLocal(tglMul),
+            tanggal_selesai:    _fmtDatetimeLocal(document.getElementById('sp-tgl-selesai')?.value),
+            latitude:           lat,
+            longitude:          lng,
+            keterangan:         document.getElementById('sp-keterangan')?.value || '',
         };
 
         if (!ctx.is_polsek && !ctx.is_subdit_sp) {
@@ -1113,11 +1195,25 @@
 
         rpc('/petadigi/api/submit', params).then(function (res) {
             if (res && res.success) {
-                showToast(res.code + ' berhasil disimpan!', 'success');
-                // Destroy map before leaving form view
-                if (_sp.map) { _sp.map.remove(); _sp.map = null; _sp.marker = null; }
-                document.getElementById('sp-form-view').style.display = 'none';
-                _openDetail(res.record_id, res.code);
+                // Batch-save personel lokal
+                var personelToSave = _sp.personelLocal.slice();
+                _sp.personelLocal = [];
+                var chain = Promise.resolve();
+                personelToSave.forEach(function (p) {
+                    chain = chain.then(function () {
+                        return rpc('/petadigi/api/personel_add', {
+                            record_id: res.record_id,
+                            nama:      p.nama,
+                            pangkat:   p.pangkat,
+                        }).catch(function () {});
+                    });
+                });
+                chain.then(function () {
+                    showToast(res.code + ' berhasil disimpan!', 'success');
+                    if (_sp.map) { _sp.map.remove(); _sp.map = null; _sp.marker = null; }
+                    document.getElementById('sp-form-view').style.display = 'none';
+                    _openDetail(res.record_id);
+                });
             } else {
                 showToast(res.error || 'Gagal menyimpan data', 'error');
                 btn.disabled = false;
@@ -1205,6 +1301,7 @@
             // Info card
             + '<div class="sp-card">'
             +   '<div class="sp-card-title"><i class="fa fa-info-circle"></i> Info</div>'
+            +   (data.keterangan_lokasi ? '<div class="sp-info-row sp-info-row--full"><span class="sp-info-label">Lokasi</span><span class="sp-info-value">' + _esc(data.keterangan_lokasi) + '</span></div>' : '')
             +   '<div class="sp-info-row"><span class="sp-info-label">Kecamatan</span><span class="sp-info-value">' + _esc(data.kecamatan_nama || '—') + '</span></div>'
             +   '<div class="sp-info-row"><span class="sp-info-label">Desa</span><span class="sp-info-value">' + _esc(data.desa_nama || '—') + '</span></div>'
             +   '<div class="sp-info-row"><span class="sp-info-label">Tgl Mulai</span><span class="sp-info-value">' + _fmtDtDisplay(data.tanggal_mulai) + '</span></div>'
@@ -1312,6 +1409,10 @@
         // Set Selesai
         if (isProses) {
             document.getElementById('sp-selesai-trigger').addEventListener('click', function () {
+                if (!data.has_foto) {
+                    showToast('Upload foto dokumentasi terlebih dahulu sebelum menyelesaikan', 'error');
+                    return;
+                }
                 this.style.display = 'none';
                 document.getElementById('sp-selesai-info').style.display   = 'none';
                 document.getElementById('sp-selesai-form').style.display   = '';
