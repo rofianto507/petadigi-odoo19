@@ -9,7 +9,7 @@
 | Field | Value |
 |---|---|
 | Nama Module | PetaDigi |
-| Versi | 19.0.2.0.0 |
+| Versi | 19.0.2.1.0 |
 | Platform | Odoo 19 |
 | Author | Cv Sel Studio |
 | Path | `c:\Program Files\Odoo 19.0.20251203\server\odoo\addons\petadigi\` |
@@ -57,6 +57,7 @@ petadigi/
 │   └── ...                    # 32+ file XML views
 ├── controllers/
 │   ├── __init__.py
+│   ├── public_utils.py        # Shared utilities: check_rate_limit, is_valid_image, parse_user_agent
 │   ├── giat_public.py         # Public form controller Cooling System
 │   ├── sumur_public.py        # Public form controller Sumur Minyak
 │   └── strong_point_public.py # Mobile SPA controller Strong Point (/petadigi/*)
@@ -184,26 +185,33 @@ petadigi.desa            → Desa/Kelurahan (menyimpan GeoJSON geometry, FK: kec
 **`petadigi.sumur_minyak`** — Data sumur minyak masyarakat
 - `code` (auto-sequence, readonly, default='New'), `name` (Nama Sumur, required)
 - `kategori_id` → `petadigi.kategori_sumur_minyak`
+- `kategori_kode` (Selection, related `kategori_id.kode`)
 - `kabupaten_id`, `kecamatan_id`, `desa_id`
 - `latitude`, `longitude` (Float, digits 10,6)
 - `foto` (Binary, attachment=True), `foto_filename` (Char)
 - `sumber_dokumen_id` (domain: `tipe_sumber = 'SUMUR MINYAK'`)
-- `jumlah_minyak` (Float, digits 10,2, help: "Jumlah minyak produksi/Minyak masuk")
+- `minyak_produksi`, `minyak_masuk`, `minyak_tersedia`, `minyak_keluar`, `minyak_ditolak` (Float, digits 10,2)
+- `total_minyak` (Float, computed stored — rumus per `kategori_kode`: sumur_masyarakat=produksi+keluar, bku=masuk+tersedia+keluar, k3s=masuk+ditolak)
+- `nama_surveyor`, `hp_surveyor` (Char)
+- `submitter_ip` (Char, readonly) — IP pengirim dari `X-Forwarded-For` / `remote_addr`
+- `submitter_ua` (Char, readonly) — browser+OS parsed (mis: "Edge 150 / Windows 10/11")
 - `state`: `AKTIF` / `TIDAK AKTIF`
-- `is_data_lengkap` (Boolean, computed stored — True jika lat+lon+foto ada)
 - Methods: `action_set_aktif`, `action_set_tidak_aktif`
-- **Field yang DIHAPUS** (tidak ada lagi): `pemilik_sumur`, `pemilik_lahan`, `penampung`, `sumber_info_1–5`, `deviasi_titik`
+- **Field yang DIHAPUS**: `jumlah_minyak`, `is_data_lengkap`, `pemilik_sumur`, `pemilik_lahan`, `penampung`, `sumber_info_1–5`, `deviasi_titik`
 
 **`petadigi.kategori_sumur_minyak`** — Kategori Sumur Minyak (dengan public URL)
-- `name` (required), `keterangan`
+- `name` (required), `kode` (Selection: `sumur_masyarakat`/`bku`/`k3s`), `keterangan`
 - `state`: `draft` / `aktif` / `non_aktif`
 - `public_token` (Char, readonly, copy=False) — auto-generate `secrets.token_urlsafe(32)` saat create
 - `public_url` (Char, computed) — `{base_url}/sumur/{token}`
 - `qr_code_image` (Binary, computed) — QR code PNG warna amber `#B45309`
 - `sumur_ids` (One2many → `petadigi.sumur_minyak`)
 - `jumlah_sumur` (Integer, computed via `read_group`)
+- `total_minyak` (Float, computed via `read_group` sum)
+- `total_minyak_produksi`, `total_minyak_masuk`, `total_minyak_tersedia`, `total_minyak_keluar`, `total_minyak_ditolak` (Float, computed via `read_group` sum)
 - Methods: `action_set_aktif`, `action_set_non_aktif`, `action_set_draft`, `action_regenerate_token`, `action_share_whatsapp`, `action_view_sumur`
-- Form view: stat button "Total Sumur", panel URL+QR (background oranye, tampil saat aktif), notebook tab data sumur
+- Form view: stat button "Total Sumur", panel URL+QR (background oranye, tampil saat aktif), notebook tab data sumur dengan kolom `column_invisible` per `parent.kode`
+- List view kategori: kolom Total Produksi/Masuk/Tersedia/Keluar/Ditolak (semua `optional="hide"`)
 
 ### Model Cooling System
 
@@ -226,6 +234,9 @@ petadigi.desa            → Desa/Kelurahan (menyimpan GeoJSON geometry, FK: kec
 - `kegiatan` (Text)
 - `foto` (Binary, `attachment=True`), `foto_filename` (Char)
 - `latitude`, `longitude` (Float, digits 10,6)
+- `submitter_ip` (Char, readonly) — IP pengirim dari `X-Forwarded-For` / `remote_addr`
+- `submitter_ua` (Char, readonly) — browser+OS parsed (mis: "Edge 150 / Windows 10/11")
+- `@api.constrains('latitude','longitude')` — tolak koordinat di luar wilayah Indonesia (-11–6 / 95–141)
 
 ### Model Wizard
 ```
@@ -259,46 +270,80 @@ petadigi.subdit                   petadigi.sub_status_perkara
 
 **Form fields**:
 - Nama Sumur (required)
-- Jumlah Minyak (number, opsional)
-- Kabupaten/Kota (required, dropdown dari `petadigi.kabupaten`)
-- Kecamatan (opsional, async load by kabupaten)
-- Desa/Kelurahan (opsional, async load by kecamatan)
-- GPS + Leaflet map (marker draggable, wajib sebelum submit)
-- Foto (opsional, compressed)
+- Minyak per kategori (wajib sesuai `kategori.kode`):
+  - `sumur_masyarakat` → Minyak Produksi + Minyak Keluar (wajib)
+  - `bku` → Minyak Masuk + Minyak Tersedia + Minyak Keluar (wajib)
+  - `k3s` → Minyak Masuk + Minyak Ditolak (wajib)
+- Kabupaten/Kota (required), Kecamatan (**wajib**, async load), Desa/Kelurahan (**wajib**, async load)
+- GPS + Leaflet map (marker draggable, **wajib**, ditolak jika 0,0)
+- Foto dokumentasi (**wajib**, compressed, JPEG/PNG/WebP)
+- Nama Surveyor (required), No. HP Surveyor (opsional)
 
 **Submit**: create `petadigi.sumur_minyak` dengan `kategori_id` dari token, `state='AKTIF'`
 
 **Fitur identik dengan giat_form.js**:
 - Kompresi foto Canvas (max 960px, quality 0.75→0.60→0.45, target <500k base64)
-- GPS auto-request on load, enforced sebelum submit
+- GPS auto-request on load, enforced sebelum submit (koordinat 0,0 ditolak)
 - reCAPTCHA v3 action `submit_sumur`
 - Error handling: AbortError, HTTP 413, network failure
 - Reset form setelah submit sukses
+
+**Cache busting**: `sumur_form.js?v=6` di `sumur_form_template.xml`
+
+**Keamanan `sumur_public.py`** (2026-07-15):
+- Fungsi utility bersama ada di `controllers/public_utils.py` (dipakai juga oleh `giat_public.py`):
+  - `check_rate_limit(ip, namespace)` — maks 10 submit/IP/jam per namespace, `threading.Lock`, module-level `defaultdict(list)`
+  - `is_valid_image(b64)` — cek magic bytes JPEG (`\xff\xd8\xff`), PNG (`\x89PNG`), WebP (`RIFF...WEBP`)
+  - `parse_user_agent(ua)` — ekstrak browser+versi dan OS dari raw User-Agent string
+- `sumur_public.py` memanggil `check_rate_limit(client_ip, 'sumur')` → limit independen dari form giat
+- **Validasi server-side**: `_validate_submit_data(data, kategori)` — semua required fields, relasi wilayah, GPS bounds (-90–90 / -180–180), nilai minyak non-negatif dan ≤ 9.999.999, panjang string (nama maks 200 char, HP maks 50 char)
+- **Info pengirim**: `submitter_ip` (dari `X-Forwarded-For` → split `,` → strip) + `submitter_ua` (parsed, bukan raw)
+- Kecamatan divalidasi milik kabupaten yang dikirim; desa divalidasi milik kecamatan
 
 ### Dashboard Sumur Minyak (Mode `sumur`)
 - Layer: `dashboard_layer_sumur_minyak.js`
 - Charts: `dashboard_charts_sumur_minyak.js`
 - Mode dipilih dari toggle peta → `currentMode = 'sumur'`
 
+**KPI Cards** (6 cards, layout `data-cols="6"`):
+- Total Sumur, Total Produksi (L), Total Masuk (L), Total Tersedia (L), Total Keluar (L), Total Ditolak (L)
+- Data dari single `read_group` dengan 5 aggregate sum + count
+- CSS kompak untuk 6 kolom: padding/font/icon lebih kecil; responsive 3-col <1100px, 2-col <700px
+
 **Filter khusus sumur** — `filterKategoriSumur` (ref terpisah dari `filterKategori`):
 - `filterKategori` disembunyikan saat mode sumur (`showKategori = !['umum','sumur'].includes(mode)`)
 - `filterKategoriSumur` hanya tampil di mode sumur, populated via `_populateKategoriSumur()` dari `petadigi.kategori_sumur_minyak`
-- `_getActiveFilters(ctx)` di `dashboard_layer_sumur_minyak.js`:
-  ```js
-  { kabupatenId, stateValue, kategoriId: filterKategoriSumur?.el?.value }
-  ```
 
-**Charts**:
-- Bar chart: total sumur per kabupaten (semua kabupaten muncul termasuk yang 0, sort desc)
-- Donut chart: distribusi per kategori (legend horizontal-bottom, center `['50%','46%']`)
-- Judul donut: "Kategori Sumur Minyak"
+**Marker**: warna per `kategori_kode` via `MARKER_KATEGORI`:
+- `sumur_masyarakat` → ungu `#8E44AD`
+- `bku` → biru `#2980B9`
+- `k3s` → hijau `#27AE60`
+- default (tanpa kategori) → abu `#7F8C8D`
+
+**Choropleth kabupaten/kecamatan/desa**: warna berdasarkan `total_minyak` (liter), bukan jumlah sumur:
+```js
+const SUMUR_COLORS = [
+    { min: 10001, max: Infinity, color: '#7E5109', label: '> 10.000 L' },
+    { min:  5001, max: 10000,    color: '#A04000', label: '5.001 – 10.000 L' },
+    { min:  1001, max:  5000,    color: '#CA6F1E', label: '1.001 – 5.000 L' },
+    { min:     1, max:  1000,    color: '#E59866', label: '1 – 1.000 L' },
+    { min:     0, max:     0,    color: '#FDEBD0', label: 'Tidak Ada Minyak' },
+];
+```
+
+**Legenda**: dua seksi — "Jumlah Liter" (warna choropleth) + "Kategori Sumur" (warna marker per kategori)
+
+**Charts**: Bar+line combo dual Y-axis dengan unit Liter di tooltip dan Y-axis
 
 **Tabel data** (pagination 20/halaman):
-- Kolom: #, Kode, Nama Sumur, Desa, Kecamatan, Kabupaten, Kategori, Jml. Minyak Produksi/Masuk, Status
-- Format `jumlah_minyak`: `toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })`
+- Kolom: #, Kode, Nama Sumur, Desa, Kecamatan, Kabupaten, Kategori, Total Minyak (L), Status
 - Klik baris → buka form sumur minyak
 
-**Marker popup**: Nama, Kode, Kabupaten, Kecamatan, Desa, Kategori, Jml. Minyak, Status, Foto
+**Popup marker**: Nama, Kode, Kabupaten, Kecamatan, Desa, Kategori, Total Minyak (L), Status, Foto
+
+**View backend sumur minyak**:
+- List view: 5 kolom minyak `optional="hide"` sebelum Total Minyak + filter Tanggal Input (`date="create_date"`)
+- Form view: grup INFO PENGIRIM di paling bawah (IP Address + Browser/OS, readonly)
 
 ---
 
@@ -311,9 +356,29 @@ petadigi.subdit                   petadigi.sub_status_perkara
 - JS: `static/src/js/giat_form.js` — OWL Component standalone
 - CSS: `static/src/css/giat_form.css` — tema biru `#1565c0`
 
-**Form fields**: NRP, Nama Petugas (req), Pangkat, Polres (req), Polsek, Tanggal, Deskripsi Kegiatan (req), GPS, Foto
+**Form fields**: NRP (**wajib**), Nama Petugas (req), Pangkat (**wajib**), Polres (req), Polsek, Tanggal (**wajib**), Deskripsi Kegiatan (req), GPS (**wajib**, ditolak jika 0,0), Foto (**wajib**, JPEG/PNG/WebP)
 - Cache: `localStorage.petadigi_giat_petugas` untuk NRP/nama/pangkat
 - WIB→UTC: `_parse_tanggal` kurangi 7 jam
+- Cache busting: `giat_form.js?v=4` di `giat_form_template.xml`
+
+**Keamanan `giat_public.py`** (2026-07-15):
+- Import utility dari `controllers/public_utils.py`: `check_rate_limit`, `is_valid_image`, `parse_user_agent`
+- **Rate limiting**: `check_rate_limit(client_ip, 'giat')` — limit independen dari form sumur
+- **Sanitasi input awal**: token harus `str` dan `len ≤ 200`; `data` harus `dict` (guard `isinstance`) — mencegah crash `AttributeError` jika client kirim `data: null`
+- **Urutan pengecekan**: rate limit → token type/length → `data` type → token DB lookup → reCAPTCHA → `_validate_submit_data` → save
+- **Validasi server-side** `_validate_submit_data(data)`:
+  - NRP: wajib, maks 50 char
+  - Nama petugas: wajib, maks 200 char
+  - Pangkat: wajib, maks 100 char
+  - Polres: wajib (int > 0)
+  - Polsek: integritas relasional — DB lookup `polsek.polres_id == polres_id`
+  - Tanggal: wajib + validasi format datetime (bukan hanya non-empty)
+  - Kegiatan: wajib, maks 5000 char
+  - GPS: tidak boleh 0,0; lat -90–90; lng -180–180
+  - Foto: wajib + cek ukuran (maks 700.000 char base64 ≈ 500 KB) + magic bytes JPEG/PNG/WebP
+- **Info pengirim**: `submitter_ip` + `submitter_ua` disimpan ke `petadigi.hasil_giat`
+- Form view backend: grup INFO PENGIRIM di paling bawah (IP Address + Browser/OS, readonly)
+- Endpoint helper `get_polsek`: token-validated (tidak bisa diakses tanpa token aktif)
 
 ### Dashboard Monitoring Giat
 - OWL component: `MonitoringGiatDashboard` di `dashboard_monitoring_giat.js`
@@ -945,7 +1010,7 @@ const groups = await ctx.orm.call('petadigi.sumur_minyak', 'read_group',
 
 // searchRead
 const records = await ctx.orm.searchRead('petadigi.sumur_minyak', domain,
-    ['id', 'code', 'name', 'kategori_id', 'jumlah_minyak', 'state'], { order: 'name asc' });
+    ['id', 'code', 'name', 'kategori_id', 'kategori_kode', 'total_minyak', 'state'], { order: 'name asc' });
 
 // searchCount
 const total = await ctx.orm.searchCount('petadigi.sumur_minyak', domain);
@@ -1102,7 +1167,7 @@ FROM res_users WHERE login LIKE 'madmin_%'
 ## 19. VPS & Server
 
 ### Versi
-- **Lokal**: Odoo 19.0.20251203, manifest `19.0.2.0.0`
+- **Lokal**: Odoo 19.0.20251203, manifest `19.0.2.1.0`
 - **VPS**: Odoo 19.0 (harus sama)
 - Jika prefix tidak cocok → modul "Uninstallable"
 
@@ -1333,13 +1398,12 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - Grafik ECharts per mode, sub kategori dibatasi top 10
 - Filter tahun, kabupaten, state, kategori, sub kategori, date range
 
-**Sumur Minyak** (terbaru)
-- Model `petadigi.sumur_minyak` — field: code, name, kategori_id, kabupaten/kecamatan/desa, lat/lon, foto, jumlah_minyak, state
-- Model `petadigi.kategori_sumur_minyak` — upgrade dengan state/public_token/URL/QR code (sama dengan jenis_laporan)
-- Dashboard mode `sumur`: marker cluster + bar + donut + tabel paginasi
-- Filter `filterKategoriSumur` (ref terpisah, hanya tampil di mode sumur)
-- Format `jumlah_minyak` dengan pemisah ribuan Indonesia (`.`) dan dua desimal
-- **Public form** `/sumur/<token>` — GPS, kompresi foto, reCAPTCHA, dropdown cascading kabupaten→kecamatan→desa
+**Sumur Minyak** (2026-07-15)
+- Model `petadigi.sumur_minyak`: 5 field minyak terpisah + `total_minyak` computed + `nama_surveyor` + `hp_surveyor` + `submitter_ip` + `submitter_ua`; hapus `jumlah_minyak` dan `is_data_lengkap`
+- Model `petadigi.kategori_sumur_minyak`: `kode` Selection (sumur_masyarakat/bku/k3s), 5 aggregate total minyak computed
+- List view: 5 kolom minyak optional hidden + filter Tanggal Input; form inline list column_invisible per kode
+- **Public form** `/sumur/<token>`: field minyak wajib per kategori; kecamatan+desa+foto+GPS wajib; server-side validation + rate limiting + foto magic bytes + relasi wilayah + bounds numerik; info pengirim (IP + UA parsed)
+- Dashboard: 6 KPI cards minyak, marker warna per kategori, choropleth berdasarkan total_minyak (liter), legenda dua seksi
 - Tema amber `#B45309` untuk semua UI sumur minyak
 
 **Cooling System**
@@ -1482,4 +1546,4 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 
 ---
 
-*Dokumen diperbarui: 2026-07-03*
+*Dokumen diperbarui: 2026-07-15*

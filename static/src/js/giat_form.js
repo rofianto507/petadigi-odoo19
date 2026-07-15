@@ -45,12 +45,14 @@
                             <div class="gf-card">
                                 <div class="gf-card-body">
 
-                                    <div class="gf-field">
-                                        <label class="gf-label">NRP</label>
+                                    <div t-att-class="'gf-field' + (state.errors.nrp ? ' has-error' : '')">
+                                        <label class="gf-label">NRP <span class="gf-req">*</span></label>
                                         <input class="gf-input" type="text" inputmode="numeric"
                                                t-att-value="state.nrp"
                                                t-on-input="onNrpInput"
                                                placeholder="Nomor Registrasi Pokok"/>
+                                        <div t-if="state.errors.nrp" class="gf-errmsg"
+                                             t-out="state.errors.nrp"/>
                                     </div>
 
                                     <div t-att-class="'gf-field' + (state.errors.nama_petugas ? ' has-error' : '')">
@@ -66,12 +68,14 @@
                                              t-out="state.errors.nama_petugas"/>
                                     </div>
 
-                                    <div class="gf-field">
-                                        <label class="gf-label">Pangkat</label>
+                                    <div t-att-class="'gf-field' + (state.errors.pangkat_petugas ? ' has-error' : '')">
+                                        <label class="gf-label">Pangkat <span class="gf-req">*</span></label>
                                         <input class="gf-input" type="text"
                                                t-att-value="state.pangkat_petugas"
                                                t-on-input="onPangkatInput"
                                                placeholder="Pangkat petugas"/>
+                                        <div t-if="state.errors.pangkat_petugas" class="gf-errmsg"
+                                             t-out="state.errors.pangkat_petugas"/>
                                     </div>
 
                                 </div>
@@ -162,8 +166,8 @@
 
                         <!-- Lokasi GPS + Map -->
                         <div class="gf-section">
-                            <div class="gf-section-label">Lokasi Kegiatan</div>
-                            <div class="gf-card">
+                            <div class="gf-section-label">Lokasi Kegiatan <span class="gf-req">*</span></div>
+                            <div t-att-class="'gf-card' + (state.errors.gps ? ' has-error' : '')">
                                 <div class="gf-card-body">
 
                                     <button class="gf-btn gf-btn-tonal gf-btn-block"
@@ -195,6 +199,9 @@
                                         <span>Menunggu izin akses GPS</span>
                                     </div>
 
+                                    <div t-if="state.errors.gps" class="gf-errmsg"
+                                         t-out="state.errors.gps"/>
+
                                     <!-- Map always stays in DOM to avoid Leaflet reinit -->
                                     <div id="gf-map" class="gf-map"/>
 
@@ -204,8 +211,8 @@
 
                         <!-- Foto Dokumentasi -->
                         <div class="gf-section">
-                            <div class="gf-section-label">Foto Dokumentasi</div>
-                            <div class="gf-card">
+                            <div class="gf-section-label">Foto Dokumentasi <span class="gf-req">*</span></div>
+                            <div t-att-class="'gf-card' + (state.errors.foto ? ' has-error' : '')">
                                 <div class="gf-card-body">
                                     <div class="gf-foto-btns">
                                         <label class="gf-btn gf-btn-outlined">
@@ -237,6 +244,8 @@
                                             </button>
                                         </div>
                                     </div>
+                                    <div t-if="state.errors.foto" class="gf-errmsg"
+                                         t-out="state.errors.foto"/>
                                 </div>
                             </div>
                         </div>
@@ -566,26 +575,27 @@
         /* ------ Validation ------ */
         _validate() {
             const errors = {};
-            if (!this.state.nama_petugas.trim()) errors.nama_petugas = 'Nama petugas wajib diisi';
-            if (!this.state.polres_id) errors.polres_id = 'Pilih Polres terlebih dahulu';
-            if (!this.state.tanggal) errors.tanggal = 'Tanggal kegiatan wajib diisi';
-            if (!this.state.kegiatan.trim()) errors.kegiatan = 'Uraian kegiatan wajib diisi';
+            if (!this.state.nrp.trim())             errors.nrp             = 'NRP wajib diisi';
+            if (!this.state.nama_petugas.trim())    errors.nama_petugas    = 'Nama petugas wajib diisi';
+            if (!this.state.pangkat_petugas.trim()) errors.pangkat_petugas = 'Pangkat wajib diisi';
+            if (!this.state.polres_id)              errors.polres_id       = 'Pilih Polres terlebih dahulu';
+            if (!this.state.tanggal)                errors.tanggal         = 'Tanggal kegiatan wajib diisi';
+            if (!this.state.kegiatan.trim())        errors.kegiatan        = 'Uraian kegiatan wajib diisi';
+            if (!this.state.foto)                   errors.foto            = 'Foto dokumentasi wajib diisi';
+            const lat = parseFloat(this.state.latitude);
+            const lng = parseFloat(this.state.longitude);
+            if (!this.state.latitude || (lat === 0 && lng === 0)) {
+                errors.gps = 'Lokasi GPS wajib diisi. Izinkan akses lokasi di browser lalu coba lagi.';
+            }
             this.state.errors = errors;
             return Object.keys(errors).length === 0;
         }
 
         /* ------ Submit ------ */
         async submit() {
-            // Jika lokasi belum ada, paksa minta GPS dulu sebelum lanjut
-            if (!this.state.latitude) {
-                this.state.submitError = null;
-                const ok = await this._requestGPSAndWait();
-                if (!ok || !this.state.latitude) {
-                    this.state.submitError = 'Lokasi GPS diperlukan. Izinkan akses lokasi di browser lalu coba lagi.';
-                    document.getElementById('gf-map')
-                        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
+            // Auto-request GPS sebelum validasi jika belum ada
+            if (!this.state.latitude && !this.state.gpsLoading) {
+                await this._requestGPSAndWait();
             }
 
             if (!this._validate()) {

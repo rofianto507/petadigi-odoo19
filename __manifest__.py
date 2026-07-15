@@ -1,6 +1,6 @@
 {
     'name': 'PetaDigi',
-    'version': '19.0.2.0.0',
+    'version': '19.0.2.1.0',
     'summary': 'Sistem Informasi Peta Digital Kepolisian — Dashboard Peta, Import LP, dan Monitoring Kegiatan Lapangan.',
     'description': """
 PetaDigi adalah modul Odoo untuk manajemen data dan visualisasi peta interaktif kepolisian.

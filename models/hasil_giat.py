@@ -30,6 +30,8 @@ class HasilGiat(models.Model):
     foto_filename = fields.Char('Nama File Foto')
     latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)
     longitude = fields.Float('Longitude', digits=(10, 6), tracking=True, aggregator=False)
+    submitter_ip = fields.Char('IP Pengirim', readonly=True)
+    submitter_ua = fields.Char('User-Agent Pengirim', readonly=True)
 
     @api.constrains('latitude', 'longitude')
     def _check_koordinat(self):

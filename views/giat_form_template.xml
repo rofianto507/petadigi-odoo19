@@ -23,7 +23,7 @@
                 <t t-if="recaptcha_site_key">
                     <script t-attf-src="https://www.recaptcha.net/recaptcha/api.js?render=#{recaptcha_site_key}" async="" defer=""/>
                 </t>
-                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/giat_form.js?v=3"/>
+                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/giat_form.js?v=4"/>
             </body>
         </html>
     </template>
