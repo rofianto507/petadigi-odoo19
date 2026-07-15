@@ -1873,7 +1873,7 @@
             +     '<div class="sp-field"><label class="sp-label">Kecamatan <span class="sp-req">*</span></label>'
             +       '<div class="sp-input-wrap"><i class="fa fa-map-o sp-input-icon"></i>'
             +       '<select class="sp-select" id="pt-kecamatan" disabled><option value="">— Pilih Kabupaten —</option></select></div></div>'
-            +     '<div class="sp-field"><label class="sp-label">Desa / Kelurahan</label>'
+            +     '<div class="sp-field"><label class="sp-label">Desa / Kelurahan <span class="sp-req">*</span></label>'
             +       '<div class="sp-input-wrap"><i class="fa fa-home sp-input-icon"></i>'
             +       '<select class="sp-select" id="pt-desa" disabled><option value="">— Pilih Kecamatan —</option></select></div></div>'
             +   '</div>'
@@ -1927,6 +1927,8 @@
             var tglMul = document.getElementById('pt-tgl-mulai').value;
             if (!kabId)  { showToast('Pilih Kabupaten terlebih dahulu', 'error'); return; }
             if (!kecId)  { showToast('Pilih Kecamatan terlebih dahulu', 'error'); return; }
+            var desaId = document.getElementById('pt-desa').value;
+            if (!desaId) { showToast('Pilih Desa/Kelurahan terlebih dahulu', 'error'); return; }
             if (!tglMul) { showToast('Isi Tanggal & Jam Mulai', 'error'); return; }
             var btn = document.getElementById('pt-create-submit');
             var lbl = document.getElementById('pt-create-label');
@@ -2136,6 +2138,10 @@
 
         if (isProses) {
             document.getElementById('pt-selesai-trigger').addEventListener('click', function () {
+                var personelCnt = parseInt(document.getElementById('pt-personel-count').textContent) || 0;
+                var lokasiCnt   = parseInt(document.getElementById('pt-lokasi-count').textContent) || 0;
+                if (personelCnt === 0) { showToast('Minimal 1 personel wajib ditambahkan sebelum menyelesaikan patroli', 'error'); return; }
+                if (lokasiCnt === 0)   { showToast('Minimal 1 titik lokasi wajib ditambahkan sebelum menyelesaikan patroli', 'error'); return; }
                 this.style.display = 'none';
                 document.getElementById('pt-selesai-info').style.display = 'none';
                 document.getElementById('pt-selesai-form').style.display = '';
@@ -2343,11 +2349,11 @@
             + '</div>'
             + '<div class="sp-card">'
             +   '<div class="sp-card-title" style="color:var(--sp-primary);"><i class="fa fa-clock-o"></i> Waktu</div>'
-            +   '<div class="sp-field"><label class="sp-label">Tgl &amp; Jam</label>'
+            +   '<div class="sp-field"><label class="sp-label">Tgl &amp; Jam <span class="sp-req">*</span></label>'
             +     '<input type="datetime-local" class="sp-input sp-input--bare" id="pt-titik-tgl" value="' + nowStr + '"/></div>'
             + '</div>'
             + '<div class="sp-card">'
-            +   '<div class="sp-card-title" style="color:var(--sp-primary);"><i class="fa fa-camera"></i> Foto (opsional)</div>'
+            +   '<div class="sp-card-title" style="color:var(--sp-primary);"><i class="fa fa-camera"></i> Foto Dokumentasi <span class="sp-req">*</span></div>'
             +   '<div class="sp-foto-zone" id="pt-foto-zone"><i class="fa fa-camera" style="color:var(--sp-primary);"></i>'
             +     '<div class="sp-foto-zone-text">Tambah Foto Dokumentasi</div>'
             +     '<div class="sp-foto-zone-sub">Tap untuk mengambil foto</div></div>'
@@ -2408,7 +2414,10 @@
         document.getElementById('pt-titik-submit').addEventListener('click', function () {
             var lat = parseFloat(document.getElementById('pt-lat').value) || 0;
             var lng = parseFloat(document.getElementById('pt-lng').value) || 0;
+            var tglTitik = document.getElementById('pt-titik-tgl').value;
             if (!lat || !lng) { showToast('Ambil koordinat GPS terlebih dahulu', 'error'); return; }
+            if (!tglTitik) { showToast('Isi tanggal dan jam titik lokasi', 'error'); return; }
+            if (!_pt.titikFile) { showToast('Foto dokumentasi wajib diisi', 'error'); return; }
             var btn = this, lbl = document.getElementById('pt-titik-label');
             btn.disabled = true; lbl.innerHTML = '<span class="sp-spinner"></span> Menyimpan...';
             rpc('/petadigi/api/patroli/lokasi_add', {

@@ -816,6 +816,9 @@ self.addEventListener('fetch', e => {
                 else:
                     resolved_polsek = False
                 resolved_polres = user.polres_id.id
+            client_ip = (request.httprequest.environ.get('HTTP_X_FORWARDED_FOR', '').split(',')[0].strip()
+                         or request.httprequest.remote_addr)
+            client_ua = parse_user_agent(request.httprequest.environ.get('HTTP_USER_AGENT', ''))
             vals = {
                 'polres_id':     resolved_polres,
                 'polsek_id':     resolved_polsek,
@@ -826,6 +829,8 @@ self.addEventListener('fetch', e => {
                 'tanggal_mulai': _wib_to_utc(kwargs.get('tanggal_mulai')) or False,
                 'keterangan':    kwargs.get('keterangan') or '',
                 'state':         'PROSES',
+                'submitter_ip':  client_ip,
+                'submitter_ua':  client_ua,
             }
             record = request.env['petadigi.patroli'].with_user(user.id).create(vals)
             return {'success': True, 'code': record.code, 'record_id': record.id}
