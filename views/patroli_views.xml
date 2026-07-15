@@ -163,6 +163,11 @@
                                 <field name="keterangan" placeholder="Keterangan tambahan..."/>
                             </page>
                         </notebook>
+
+                        <group string="INFO PENGIRIM">
+                            <field name="submitter_ip" string="IP Address"/>
+                            <field name="submitter_ua" string="Browser / OS"/>
+                        </group>
                     </sheet>
                     <chatter/>
                 </form>

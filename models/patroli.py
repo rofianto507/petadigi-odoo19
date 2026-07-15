@@ -40,6 +40,8 @@ class Patroli(models.Model):
     keterangan = fields.Text('Keterangan', tracking=True)
     subdit_id = fields.Many2one('petadigi.subdit', string='Subdit', tracking=True,
                                 help='Diisi otomatis dari form publik atau user subdit yang input')
+    submitter_ip = fields.Char('IP Address', readonly=True, copy=False)
+    submitter_ua = fields.Char('Browser / OS', readonly=True, copy=False)
     state = fields.Selection([
         ('PROSES', 'PROSES'),
         ('SELESAI', 'SELESAI'),

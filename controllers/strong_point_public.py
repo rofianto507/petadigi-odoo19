@@ -1272,7 +1272,7 @@ self.addEventListener('fetch', e => {
     # ── PUBLIC PATROLI FORM ───────────────────────────────────────────────────
 
     def _patroli_pub_valid(self, token):
-        if not token:
+        if not token or not isinstance(token, str) or len(token) > 200:
             return False
         return request.env['petadigi.patroli.form_config'].sudo().search(
             [('public_token', '=', token), ('is_aktif', '=', True)], limit=1
@@ -1307,46 +1307,121 @@ self.addEventListener('fetch', e => {
     def patroli_pub_polsek(self, polres_id, token=None, **kwargs):
         if not token or not self._patroli_pub_valid(token):
             return []
-        return request.env['petadigi.polsek'].sudo().search_read(
-            [('polres_id', '=', int(polres_id))], ['id', 'name'], order='name asc'
-        )
+        try:
+            return request.env['petadigi.polsek'].sudo().search_read(
+                [('polres_id', '=', int(polres_id))], ['id', 'name'], order='name asc'
+            )
+        except Exception:
+            return []
 
     @http.route('/patroli/api/kabupaten', type='jsonrpc', auth='public', csrf=False)
     def patroli_pub_kabupaten(self, polres_id, token=None, **kwargs):
         if not token or not self._patroli_pub_valid(token):
             return []
-        polres = request.env['petadigi.polres'].sudo().browse(int(polres_id))
-        if not polres.exists():
+        try:
+            polres = request.env['petadigi.polres'].sudo().browse(int(polres_id))
+            if not polres.exists():
+                return []
+            domain = [] if polres.polsek_count == 0 else [('polres_id', '=', polres.id)]
+            return request.env['petadigi.kabupaten'].sudo().search_read(
+                domain, ['id', 'name'], order='name asc'
+            )
+        except Exception:
             return []
-        domain = [] if polres.polsek_count == 0 else [('polres_id', '=', polres.id)]
-        return request.env['petadigi.kabupaten'].sudo().search_read(
-            domain, ['id', 'name'], order='name asc'
-        )
 
     @http.route('/patroli/api/kecamatan', type='jsonrpc', auth='public', csrf=False)
     def patroli_pub_kecamatan(self, kabupaten_id, token=None, **kwargs):
         if not token or not self._patroli_pub_valid(token):
             return []
-        return request.env['petadigi.kecamatan'].sudo().search_read(
-            [('kabupaten_id', '=', int(kabupaten_id))], ['id', 'name'], order='name asc'
-        )
+        try:
+            return request.env['petadigi.kecamatan'].sudo().search_read(
+                [('kabupaten_id', '=', int(kabupaten_id))], ['id', 'name'], order='name asc'
+            )
+        except Exception:
+            return []
 
     @http.route('/patroli/api/desa', type='jsonrpc', auth='public', csrf=False)
     def patroli_pub_desa(self, kecamatan_id, token=None, **kwargs):
         if not token or not self._patroli_pub_valid(token):
             return []
-        return request.env['petadigi.desa'].sudo().search_read(
-            [('kecamatan_id', '=', int(kecamatan_id))], ['id', 'name'], order='name asc'
-        )
+        try:
+            return request.env['petadigi.desa'].sudo().search_read(
+                [('kecamatan_id', '=', int(kecamatan_id))], ['id', 'name'], order='name asc'
+            )
+        except Exception:
+            return []
 
     @http.route('/patroli/api/submit', type='jsonrpc', auth='public', csrf=False)
     def patroli_pub_submit(self, token, data, **kwargs):
-        config = token and self._patroli_pub_valid(token)
+        # ── Rate limiting ─────────────────────────────────────────────────────
+        client_ip = (
+            request.httprequest.environ.get('HTTP_X_FORWARDED_FOR', '')
+            .split(',')[0].strip()
+            or request.httprequest.remote_addr
+        )
+        if not check_rate_limit(client_ip, 'patroli'):
+            _logger.warning('patroli_pub_submit: rate limit exceeded (ip=%s)', client_ip)
+            return {'error': 'Terlalu banyak pengiriman. Silakan coba lagi dalam 1 jam.'}
+
+        # ── Sanitasi token & data ─────────────────────────────────────────────
+        if not isinstance(token, str) or len(token) > 200:
+            return {'error': 'Token tidak valid'}
+        if not isinstance(data, dict):
+            return {'error': 'Data tidak valid'}
+
+        config = self._patroli_pub_valid(token)
         if not config:
             return {'error': 'unauthorized'}
-        kabupaten_id = data.get('kabupaten_id')
+
+        # ── Validasi wilayah ──────────────────────────────────────────────────
+        try:
+            kabupaten_id = int(data.get('kabupaten_id') or 0)
+        except (ValueError, TypeError):
+            kabupaten_id = 0
         if not kabupaten_id:
             return {'error': 'Kabupaten/Kota wajib dipilih'}
+
+        try:
+            kecamatan_id = int(data.get('kecamatan_id') or 0)
+        except (ValueError, TypeError):
+            kecamatan_id = 0
+        if not kecamatan_id:
+            return {'error': 'Kecamatan wajib dipilih'}
+        if not request.env['petadigi.kecamatan'].sudo().search_count([
+            ('id', '=', kecamatan_id), ('kabupaten_id', '=', kabupaten_id),
+        ]):
+            return {'error': 'Kecamatan tidak valid untuk kabupaten yang dipilih'}
+
+        try:
+            desa_id = int(data.get('desa_id') or 0)
+        except (ValueError, TypeError):
+            desa_id = 0
+        if not desa_id:
+            return {'error': 'Desa/Kelurahan wajib dipilih'}
+        if not request.env['petadigi.desa'].sudo().search_count([
+            ('id', '=', desa_id), ('kecamatan_id', '=', kecamatan_id),
+        ]):
+            return {'error': 'Desa/Kelurahan tidak valid untuk kecamatan yang dipilih'}
+
+        # ── Validasi tanggal mulai ────────────────────────────────────────────
+        tgl_mulai_raw = (data.get('tanggal_mulai') or '').replace('T', ' ').strip()
+        if tgl_mulai_raw:
+            parsed_ok = False
+            for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+                try:
+                    datetime.strptime(tgl_mulai_raw, fmt)
+                    parsed_ok = True
+                    break
+                except ValueError:
+                    continue
+            if not parsed_ok:
+                return {'error': 'Format tanggal mulai tidak valid'}
+
+        # ── Validasi keterangan ───────────────────────────────────────────────
+        keterangan = (data.get('keterangan') or '').strip()
+        if len(keterangan) > 5000:
+            return {'error': 'Keterangan terlalu panjang (maks 5000 karakter)'}
+
         try:
             if config.subdit_id:
                 polda = self._get_polda_polres()
@@ -1355,24 +1430,38 @@ self.addEventListener('fetch', e => {
                 polres_id = polda.id
                 polsek_id = False
             else:
-                polres_id = data.get('polres_id')
+                try:
+                    polres_id = int(data.get('polres_id') or 0)
+                except (ValueError, TypeError):
+                    polres_id = 0
                 if not polres_id:
                     return {'error': 'Polres wajib dipilih'}
-                polres = request.env['petadigi.polres'].sudo().browse(int(polres_id))
-                if not polres.exists():
+                if not request.env['petadigi.polres'].sudo().search_count(
+                        [('id', '=', polres_id)]):
                     return {'error': 'Polres tidak valid'}
-                polres_id = polres.id
-                polsek_id = int(data['polsek_id']) if data.get('polsek_id') else False
+                try:
+                    polsek_id = int(data.get('polsek_id') or 0) or False
+                except (ValueError, TypeError):
+                    polsek_id = False
+                if polsek_id and not request.env['petadigi.polsek'].sudo().search_count([
+                    ('id', '=', polsek_id), ('polres_id', '=', polres_id),
+                ]):
+                    return {'error': 'Polsek tidak valid untuk Polres yang dipilih'}
+
             vals = {
-                'polres_id':    polres_id,
-                'polsek_id':    polsek_id,
-                'subdit_id':    config.subdit_id.id if config.subdit_id else False,
-                'kabupaten_id': int(kabupaten_id),
-                'kecamatan_id': int(data['kecamatan_id']) if data.get('kecamatan_id') else False,
-                'desa_id':      int(data['desa_id'])      if data.get('desa_id')      else False,
-                'keterangan':   data.get('keterangan') or '',
-                'tanggal_mulai': _wib_to_utc((data.get('tanggal_mulai') or '').replace('T', ' ')) or False,
-                'state':        'PROSES',
+                'polres_id':     polres_id,
+                'polsek_id':     polsek_id,
+                'subdit_id':     config.subdit_id.id if config.subdit_id else False,
+                'kabupaten_id':  kabupaten_id,
+                'kecamatan_id':  kecamatan_id,
+                'desa_id':       desa_id,
+                'keterangan':    keterangan,
+                'tanggal_mulai': _wib_to_utc(tgl_mulai_raw) if tgl_mulai_raw else False,
+                'state':         'PROSES',
+                'submitter_ip':  client_ip,
+                'submitter_ua':  parse_user_agent(
+                    request.httprequest.environ.get('HTTP_USER_AGENT', '')
+                ),
             }
             result = request.env['petadigi.patroli'].sudo().create(vals)
             return {'success': True, 'code': result.code, 'record_id': result.id}
@@ -1384,16 +1473,24 @@ self.addEventListener('fetch', e => {
     def patroli_pub_personel_add(self, token, record_id, nama, pangkat=None, **kwargs):
         if not token or not self._patroli_pub_valid(token):
             return {'error': 'unauthorized'}
-        if not (nama or '').strip():
+        nama = (nama or '').strip()
+        if not nama:
             return {'error': 'Nama personel wajib diisi'}
-        rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
-        if not rec.exists():
-            return {'error': 'Data tidak ditemukan'}
+        if len(nama) > 200:
+            return {'error': 'Nama personel terlalu panjang (maks 200 karakter)'}
+        pangkat = (pangkat or '').strip()
+        if len(pangkat) > 100:
+            return {'error': 'Pangkat terlalu panjang (maks 100 karakter)'}
         try:
+            rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
+            if not rec.exists():
+                return {'error': 'Data tidak ditemukan'}
+            if rec.state != 'PROSES':
+                return {'error': 'Tidak dapat menambah personel pada patroli yang sudah selesai'}
             p = request.env['petadigi.personel_patroli'].sudo().create({
                 'patroli_id': rec.id,
-                'nama':       nama.strip(),
-                'pangkat':    (pangkat or '').strip(),
+                'nama':       nama,
+                'pangkat':    pangkat,
             })
             return {'success': True, 'id': p.id, 'nama_lengkap': p.nama_lengkap}
         except Exception as e:
@@ -1408,6 +1505,8 @@ self.addEventListener('fetch', e => {
             p = request.env['petadigi.personel_patroli'].sudo().browse(int(personel_id))
             if not p.exists():
                 return {'error': 'not found'}
+            if p.patroli_id.state != 'PROSES':
+                return {'error': 'Tidak dapat menghapus personel dari patroli yang sudah selesai'}
             p.sudo().unlink()
             return {'success': True}
         except Exception as e:
@@ -1419,24 +1518,52 @@ self.addEventListener('fetch', e => {
                                 tanggal=None, catatan=None, foto=None, **kwargs):
         if not token or not self._patroli_pub_valid(token):
             return {'error': 'unauthorized'}
+
+        # ── Validasi wajib ────────────────────────────────────────────────────
+        if not tanggal:
+            return {'error': 'Tanggal dan jam wajib diisi'}
+        try:
+            lat_f = float(latitude)
+            lng_f = float(longitude)
+        except (TypeError, ValueError):
+            return {'error': 'Koordinat GPS tidak valid'}
+        if lat_f == 0.0 and lng_f == 0.0:
+            return {'error': 'Koordinat GPS wajib diambil sebelum menyimpan titik'}
+        if not (-90 <= lat_f <= 90):
+            return {'error': 'Nilai latitude tidak valid'}
+        if not (-180 <= lng_f <= 180):
+            return {'error': 'Nilai longitude tidak valid'}
+        if not foto:
+            return {'error': 'Foto dokumentasi wajib diisi'}
+        foto_b64 = (
+            foto.split(',', 1)[1]
+            if isinstance(foto, str) and ',' in foto
+            else foto
+        )
+        if len(foto_b64) > 700_000:
+            return {'error': 'Ukuran foto terlalu besar. Pilih foto lain.'}
+        if not is_valid_image(foto_b64):
+            return {'error': 'Foto harus berupa file gambar (JPEG, PNG, atau WebP)'}
+        catatan = (catatan or '').strip()
+        if len(catatan) > 2000:
+            return {'error': 'Catatan terlalu panjang (maks 2000 karakter)'}
+
         rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
         if not rec.exists():
             return {'error': 'Data tidak ditemukan'}
         try:
             tgl_str = (tanggal or '').replace('T', ' ')
             tgl_utc = _wib_to_utc(tgl_str) if tgl_str else datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-            # Display: ambil HH:MM dari input (sudah WIB)
             tanggal_display = tgl_str[11:16] if len(tgl_str) >= 16 else (datetime.utcnow() + timedelta(hours=7)).strftime('%H:%M')
             vals = {
-                'patroli_id': rec.id,
-                'tanggal':    tgl_utc,
-                'latitude':   float(latitude)  if latitude  else 0.0,
-                'longitude':  float(longitude) if longitude else 0.0,
-                'catatan':    catatan or '',
+                'patroli_id':    rec.id,
+                'tanggal':       tgl_utc,
+                'latitude':      lat_f,
+                'longitude':     lng_f,
+                'catatan':       catatan,
+                'foto':          foto_b64,
+                'foto_filename': 'patroli_lokasi.jpg',
             }
-            if foto:
-                vals['foto']          = foto
-                vals['foto_filename'] = 'patroli_lokasi.jpg'
             l = request.env['petadigi.lokasi_patroli'].sudo().create(vals)
             return {'success': True, 'id': l.id, 'tanggal_display': tanggal_display}
         except Exception as e:
@@ -1451,6 +1578,8 @@ self.addEventListener('fetch', e => {
             l = request.env['petadigi.lokasi_patroli'].sudo().browse(int(lokasi_id))
             if not l.exists():
                 return {'error': 'not found'}
+            if l.patroli_id.state != 'PROSES':
+                return {'error': 'Tidak dapat menghapus titik lokasi dari patroli yang sudah selesai'}
             l.sudo().unlink()
             return {'success': True}
         except Exception as e:
@@ -1463,13 +1592,30 @@ self.addEventListener('fetch', e => {
             return {'error': 'unauthorized'}
         if not tanggal_selesai:
             return {'error': 'Tanggal selesai harus diisi'}
+        tgl_str = tanggal_selesai.replace('T', ' ').strip()
+        parsed_ok = False
+        for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'):
+            try:
+                datetime.strptime(tgl_str, fmt)
+                parsed_ok = True
+                break
+            except ValueError:
+                continue
+        if not parsed_ok:
+            return {'error': 'Format tanggal selesai tidak valid'}
         try:
             rec = request.env['petadigi.patroli'].sudo().browse(int(record_id))
             if not rec.exists():
                 return {'error': 'Data tidak ditemukan'}
+            if rec.state == 'SELESAI':
+                return {'success': True}
+            if rec.personel_count == 0:
+                return {'error': 'Minimal 1 personel wajib ditambahkan sebelum menyelesaikan patroli'}
+            if rec.lokasi_count == 0:
+                return {'error': 'Minimal 1 titik lokasi wajib ditambahkan sebelum menyelesaikan patroli'}
             rec.sudo().write({
                 'state':           'SELESAI',
-                'tanggal_selesai': _wib_to_utc(tanggal_selesai.replace('T', ' ')),
+                'tanggal_selesai': _wib_to_utc(tgl_str),
             })
             return {'success': True}
         except Exception as e:

@@ -203,6 +203,10 @@
 
                         <!-- Lanjut set selesai -->
                         <div class="sf-submit-area">
+                            <div t-if="state.goSelesaiError" class="sf-error-banner">
+                                <div class="sf-error-banner-icon"/>
+                                <span t-out="state.goSelesaiError"/>
+                            </div>
                             <button class="sf-btn sf-btn-filled sf-btn-submit"
                                     t-on-click="goToSelesai"
                                     t-att-disabled="state.addingPersonel">
@@ -287,11 +291,12 @@
                             <div class="sf-section-label">Tanggal &amp; Waktu</div>
                             <div class="sf-card">
                                 <div class="sf-card-body">
-                                    <div class="sf-field">
-                                        <label class="sf-label">Tanggal &amp; Jam</label>
+                                    <div t-att-class="'sf-field' + (state.lokasiTanggalError ? ' has-error' : '')">
+                                        <label class="sf-label">Tanggal &amp; Jam <span class="sf-req">*</span></label>
                                         <input class="sf-input" type="datetime-local"
                                                t-att-value="state.lokasiTanggal"
-                                               t-on-input="ev => state.lokasiTanggal = ev.target.value"/>
+                                               t-on-input="ev => { state.lokasiTanggal = ev.target.value; state.lokasiTanggalError = null; }"/>
+                                        <div t-if="state.lokasiTanggalError" class="sf-errmsg" t-out="state.lokasiTanggalError"/>
                                     </div>
                                 </div>
                             </div>
@@ -299,7 +304,9 @@
 
                         <!-- Foto -->
                         <div class="sf-section">
-                            <div class="sf-section-label">Foto Dokumentasi</div>
+                            <div class="sf-section-label">
+                                Foto Dokumentasi <span class="sf-req">*</span>
+                            </div>
                             <div class="sf-card">
                                 <div class="sf-card-body">
                                     <div class="sf-foto-btns">
@@ -328,6 +335,7 @@
                                             </div>
                                         </div>
                                     </t>
+                                    <div t-if="state.lokasiFotoError" class="sf-errmsg" t-out="state.lokasiFotoError"/>
                                 </div>
                             </div>
                         </div>
@@ -440,13 +448,14 @@
                                         </select>
                                         <div t-if="state.errors.kabupaten_id" class="sf-errmsg" t-out="state.errors.kabupaten_id"/>
                                     </div>
-                                    <div class="sf-field">
-                                        <label class="sf-label">Kecamatan <span class="sf-opt">Opsional</span></label>
+                                    <div t-att-class="'sf-field' + (state.errors.kecamatan_id ? ' has-error' : '')">
+                                        <label class="sf-label">Kecamatan <span class="sf-req">*</span></label>
                                         <select class="sf-input sf-select"
                                                 t-att-disabled="!state.kabupaten_id || state.loadingKecamatan"
                                                 t-on-change="onKecamatanChange">
                                             <option value="">
                                                 <t t-if="state.loadingKecamatan">Memuat...</t>
+                                                <t t-elif="!state.kabupaten_id">Pilih Kabupaten dahulu</t>
                                                 <t t-else="">Pilih Kecamatan</t>
                                             </option>
                                             <t t-foreach="state.kecamatan_list" t-as="kec" t-key="kec.id">
@@ -455,14 +464,16 @@
                                                         t-out="kec.name"/>
                                             </t>
                                         </select>
+                                        <div t-if="state.errors.kecamatan_id" class="sf-errmsg" t-out="state.errors.kecamatan_id"/>
                                     </div>
-                                    <div class="sf-field">
-                                        <label class="sf-label">Desa/Kelurahan <span class="sf-opt">Opsional</span></label>
+                                    <div t-att-class="'sf-field' + (state.errors.desa_id ? ' has-error' : '')">
+                                        <label class="sf-label">Desa/Kelurahan <span class="sf-req">*</span></label>
                                         <select class="sf-input sf-select"
                                                 t-att-disabled="!state.kecamatan_id || state.loadingDesa"
                                                 t-on-change="ev => state.desa_id = +ev.target.value || null">
                                             <option value="">
                                                 <t t-if="state.loadingDesa">Memuat...</t>
+                                                <t t-elif="!state.kecamatan_id">Pilih Kecamatan dahulu</t>
                                                 <t t-else="">Pilih Desa/Kelurahan</t>
                                             </option>
                                             <t t-foreach="state.desa_list" t-as="desa" t-key="desa.id">
@@ -471,6 +482,7 @@
                                                         t-out="desa.name"/>
                                             </t>
                                         </select>
+                                        <div t-if="state.errors.desa_id" class="sf-errmsg" t-out="state.errors.desa_id"/>
                                     </div>
                                 </div>
                             </div>
@@ -546,9 +558,13 @@
                 lokasiLat: null, lokasiLng: null, lokasiAccuracy: null,
                 lokasiGpsLoading: false, lokasiGpsError: null,
                 lokasiTanggal: '',
+                lokasiTanggalError: null,
                 lokasiCatatan: '',
                 lokasiFoto: null, lokasiFotoPreview: null, lokasiFotoLoading: false,
+                lokasiFotoError: null,
                 addingLokasi: false, removingLokasiId: null, lokasiError: null,
+                /* ── navigasi ke selesai ── */
+                goSelesaiError: null,
                 /* ── selesai ── */
                 tanggalSelesai: '', settingSelesai: false, selesaiError: null,
             });
@@ -633,7 +649,9 @@
             const errors = {};
             if (!this.initData.is_subdit_form && !this.state.polres_id)
                 errors.polres_id = 'Polres wajib dipilih';
-            if (!this.state.kabupaten_id) errors.kabupaten_id = 'Kabupaten/Kota wajib dipilih';
+            if (!this.state.kabupaten_id)  errors.kabupaten_id  = 'Kabupaten/Kota wajib dipilih';
+            if (!this.state.kecamatan_id)  errors.kecamatan_id  = 'Kecamatan wajib dipilih';
+            if (!this.state.desa_id)       errors.desa_id       = 'Desa/Kelurahan wajib dipilih';
             this.state.errors = errors;
             return Object.keys(errors).length === 0;
         }
@@ -841,12 +859,24 @@
 
         /* ── Tambah titik lokasi ─────────────────────────── */
         async addLokasi() {
+            this.state.lokasiTanggalError = null;
+            this.state.lokasiFotoError    = null;
+            this.state.lokasiError        = null;
+            let hasError = false;
+            if (!this.state.lokasiTanggal) {
+                this.state.lokasiTanggalError = 'Tanggal dan jam wajib diisi';
+                hasError = true;
+            }
             if (!this.state.lokasiLat) {
                 this.state.lokasiError = 'GPS belum tersedia. Tekan tombol "Perbarui" untuk mengambil lokasi.';
-                return;
+                hasError = true;
             }
+            if (!this.state.lokasiFoto) {
+                this.state.lokasiFotoError = 'Foto dokumentasi wajib diisi';
+                hasError = true;
+            }
+            if (hasError) return;
             this.state.addingLokasi = true;
-            this.state.lokasiError  = null;
             try {
                 const tanggalStr = this.state.lokasiTanggal || this._nowLocalDt();
                 const resp = await this._jsonRpc('/patroli/api/lokasi_add', {
@@ -906,6 +936,17 @@
 
         /* ── Set Selesai ─────────────────────────────────── */
         goToSelesai() {
+            this.state.goSelesaiError = null;
+            if (this.state.personel.length === 0) {
+                this.state.goSelesaiError = 'Minimal 1 personel wajib ditambahkan sebelum menyelesaikan patroli';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+            if (this.state.lokasi.length === 0) {
+                this.state.goSelesaiError = 'Minimal 1 titik lokasi wajib ditambahkan sebelum menyelesaikan patroli';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
             if (!this.state.tanggalSelesai) {
                 const now = new Date();
                 const pad = n => String(n).padStart(2, '0');
@@ -964,10 +1005,12 @@
                 addingPersonel: false, removingPersonelId: null, personelError: null,
                 lokasi: [], lokasiLat: null, lokasiLng: null,
                 lokasiGpsLoading: false, lokasiGpsError: null,
-                lokasiAccuracy: null, lokasiTanggal: '', lokasiCatatan: '',
+                lokasiAccuracy: null, lokasiTanggal: '', lokasiTanggalError: null,
+                lokasiCatatan: '',
                 lokasiFoto: null, lokasiFotoPreview: null,
-                lokasiFotoLoading: false, addingLokasi: false,
-                removingLokasiId: null, lokasiError: null,
+                lokasiFotoLoading: false, lokasiFotoError: null,
+                addingLokasi: false, removingLokasiId: null, lokasiError: null,
+                goSelesaiError: null,
                 tanggalSelesai: '', settingSelesai: false, selesaiError: null,
             });
             window.scrollTo({ top: 0, behavior: 'smooth' });

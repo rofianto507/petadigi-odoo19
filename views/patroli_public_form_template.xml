@@ -204,7 +204,7 @@
                 <div id="ppf-app" t-att-data-init="init_data"/>
                 <script type="text/javascript" t-attf-src="/petadigi/static/lib/leaflet/leaflet.js"/>
                 <script type="text/javascript" t-attf-src="/web/static/lib/owl/owl.js"/>
-                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/patroli_public_form.js?v=1"/>
+                <script type="text/javascript" t-attf-src="/petadigi/static/src/js/patroli_public_form.js?v=2"/>
             </body>
         </html>
     </template>
