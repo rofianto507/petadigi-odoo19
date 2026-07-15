@@ -19,7 +19,7 @@
                     <field name="minyak_tersedia" string="Total Tersedia" optional="hide"/>
                     <field name="minyak_ditolak"  string="Total Ditolak"  optional="hide"/>
                     <field name="total_minyak" string="Total Minyak"/>
-                    <field name="is_data_lengkap" widget="boolean" string="Lengkap"/>
+
                     <field name="state" widget="badge"
                         decoration-success="state == 'AKTIF'"
                         decoration-danger="state == 'TIDAK AKTIF'"/>
@@ -45,8 +45,7 @@
                     <filter string="AKTIF" name="filter_aktif" domain="[('state','=','AKTIF')]"/>
                     <filter string="TIDAK AKTIF" name="filter_tidak_aktif" domain="[('state','=','TIDAK AKTIF')]"/>
                     <separator/>
-                    <filter string="Data Lengkap" name="filter_lengkap" domain="[('is_data_lengkap','=',True)]"/>
-                    <filter string="Data Tidak Lengkap" name="filter_tidak_lengkap" domain="[('is_data_lengkap','=',False)]"/>
+
                     <group>
                         <filter string="Kategori" name="groupby_kategori" context="{'group_by': 'kategori_id'}"/>
                         <filter string="Kabupaten" name="groupby_kabupaten" context="{'group_by': 'kabupaten_id'}"/>
@@ -129,7 +128,7 @@
                         </group>
                         <group>
                             <group>
-                                <field name="is_data_lengkap" readonly="1"/>
+
                                 <field name="state" readonly="1"/>
                             </group>
                         </group>
@@ -143,6 +142,11 @@
                         <group>
                             <field name="latitude" string="Latitude"/>
                             <field name="longitude" string="Longitude"/>
+                        </group>
+
+                        <group string="INFO PENGIRIM">
+                            <field name="submitter_ip" string="IP Address"/>
+                            <field name="submitter_ua" string="Browser / OS"/>
                         </group>
                     </sheet>
                     <chatter/>

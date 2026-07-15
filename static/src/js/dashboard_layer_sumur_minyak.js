@@ -145,7 +145,7 @@ async function _loadSumurMarkers(ctx, domain) {
         ['id', 'code', 'name', 'latitude', 'longitude',
          'kecamatan_id', 'kategori_id', 'kategori_kode',
          'minyak_produksi', 'minyak_masuk', 'minyak_tersedia', 'minyak_keluar', 'minyak_ditolak',
-         'is_data_lengkap', 'state'],
+         'state'],
     );
 
     records.forEach(r => {
@@ -154,9 +154,6 @@ async function _loadSumurMarkers(ctx, domain) {
         const stateLabel  = r.state === 'AKTIF' ? 'Aktif' : 'Tidak Aktif';
         const kecamatan   = Array.isArray(r.kecamatan_id) ? r.kecamatan_id[1] : '-';
         const kategori    = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
-        const lengkapIcon = r.is_data_lengkap
-            ? '<i class="fa fa-check-circle" style="color:#27AE60;"></i> Lengkap'
-            : '<i class="fa fa-times-circle" style="color:#E74C3C;"></i> Tidak Lengkap';
         const minyakRows  = _buildMinyakRows(r);
 
         const icon = L.divIcon({
@@ -181,7 +178,7 @@ async function _loadSumurMarkers(ctx, domain) {
                         <tr><td><i class="fa fa-map"></i> Kecamatan</td><td><strong>${kecamatan}</strong></td></tr>
                         <tr><td><i class="fa fa-list"></i> Kategori</td><td><strong>${kategori}</strong></td></tr>
                         ${minyakRows}
-                        <tr><td><i class="fa fa-check"></i> Data</td><td><strong>${lengkapIcon}</strong></td></tr>
+
                         <tr><td><i class="fa fa-flag"></i> Status</td><td><strong style="color:${stateColor};">${stateLabel}</strong></td></tr>
                     </table>
                 </div>

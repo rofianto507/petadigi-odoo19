@@ -93,60 +93,74 @@
 
                                     <!-- Sumur Masyarakat -->
                                     <t t-if="initData.kategori.kode === 'sumur_masyarakat'">
-                                        <div class="sf-field">
-                                            <label class="sf-label">Minyak Produksi <span class="sf-opt">Opsional</span></label>
+                                        <div t-att-class="'sf-field' + (state.errors.minyak_produksi ? ' has-error' : '')">
+                                            <label class="sf-label">Minyak Produksi <span class="sf-req">*</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_produksi"
                                                    t-on-input="ev => state.minyak_produksi = ev.target.value"
                                                    placeholder="Jumlah minyak produksi (liter)"/>
+                                            <div t-if="state.errors.minyak_produksi" class="sf-errmsg"
+                                                 t-out="state.errors.minyak_produksi"/>
                                         </div>
-                                        <div class="sf-field">
-                                            <label class="sf-label">Minyak Keluar <span class="sf-opt">Opsional</span></label>
+                                        <div t-att-class="'sf-field' + (state.errors.minyak_keluar ? ' has-error' : '')">
+                                            <label class="sf-label">Minyak Keluar <span class="sf-req">*</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_keluar"
                                                    t-on-input="ev => state.minyak_keluar = ev.target.value"
                                                    placeholder="Jumlah minyak keluar (liter)"/>
+                                            <div t-if="state.errors.minyak_keluar" class="sf-errmsg"
+                                                 t-out="state.errors.minyak_keluar"/>
                                         </div>
                                     </t>
                                     <!-- BKU -->
                                     <t t-elif="initData.kategori.kode === 'bku'">
-                                        <div class="sf-field">
-                                            <label class="sf-label">Minyak Masuk <span class="sf-opt">Opsional</span></label>
+                                        <div t-att-class="'sf-field' + (state.errors.minyak_masuk ? ' has-error' : '')">
+                                            <label class="sf-label">Minyak Masuk <span class="sf-req">*</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_masuk"
                                                    t-on-input="ev => state.minyak_masuk = ev.target.value"
                                                    placeholder="Jumlah minyak masuk (liter)"/>
+                                            <div t-if="state.errors.minyak_masuk" class="sf-errmsg"
+                                                 t-out="state.errors.minyak_masuk"/>
                                         </div>
-                                        <div class="sf-field">
-                                            <label class="sf-label">Minyak Tersedia <span class="sf-opt">Opsional</span></label>
+                                        <div t-att-class="'sf-field' + (state.errors.minyak_tersedia ? ' has-error' : '')">
+                                            <label class="sf-label">Minyak Tersedia <span class="sf-req">*</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_tersedia"
                                                    t-on-input="ev => state.minyak_tersedia = ev.target.value"
                                                    placeholder="Jumlah minyak tersedia (liter)"/>
+                                            <div t-if="state.errors.minyak_tersedia" class="sf-errmsg"
+                                                 t-out="state.errors.minyak_tersedia"/>
                                         </div>
-                                        <div class="sf-field">
-                                            <label class="sf-label">Minyak Keluar <span class="sf-opt">Opsional</span></label>
+                                        <div t-att-class="'sf-field' + (state.errors.minyak_keluar ? ' has-error' : '')">
+                                            <label class="sf-label">Minyak Keluar <span class="sf-req">*</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_keluar"
                                                    t-on-input="ev => state.minyak_keluar = ev.target.value"
                                                    placeholder="Jumlah minyak keluar (liter)"/>
+                                            <div t-if="state.errors.minyak_keluar" class="sf-errmsg"
+                                                 t-out="state.errors.minyak_keluar"/>
                                         </div>
                                     </t>
                                     <!-- K3S -->
                                     <t t-elif="initData.kategori.kode === 'k3s'">
-                                        <div class="sf-field">
-                                            <label class="sf-label">Minyak Masuk <span class="sf-opt">Opsional</span></label>
+                                        <div t-att-class="'sf-field' + (state.errors.minyak_masuk ? ' has-error' : '')">
+                                            <label class="sf-label">Minyak Masuk <span class="sf-req">*</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_masuk"
                                                    t-on-input="ev => state.minyak_masuk = ev.target.value"
                                                    placeholder="Jumlah minyak masuk (liter)"/>
+                                            <div t-if="state.errors.minyak_masuk" class="sf-errmsg"
+                                                 t-out="state.errors.minyak_masuk"/>
                                         </div>
-                                        <div class="sf-field">
-                                            <label class="sf-label">Minyak Ditolak <span class="sf-opt">Opsional</span></label>
+                                        <div t-att-class="'sf-field' + (state.errors.minyak_ditolak ? ' has-error' : '')">
+                                            <label class="sf-label">Minyak Ditolak <span class="sf-req">*</span></label>
                                             <input class="sf-input" type="number" inputmode="decimal" step="any" min="0"
                                                    t-att-value="state.minyak_ditolak"
                                                    t-on-input="ev => state.minyak_ditolak = ev.target.value"
                                                    placeholder="Jumlah minyak ditolak (liter)"/>
+                                            <div t-if="state.errors.minyak_ditolak" class="sf-errmsg"
+                                                 t-out="state.errors.minyak_ditolak"/>
                                         </div>
                                     </t>
 
@@ -177,10 +191,10 @@
                                              t-out="state.errors.kabupaten_id"/>
                                     </div>
 
-                                    <div class="sf-field">
+                                    <div t-att-class="'sf-field' + (state.errors.kecamatan_id ? ' has-error' : '')">
                                         <label class="sf-label">
                                             Kecamatan
-                                            <span class="sf-opt">Opsional</span>
+                                            <span class="sf-req">*</span>
                                         </label>
                                         <select class="sf-input sf-select"
                                                 t-att-disabled="!state.kabupaten_id || state.loadingKecamatan"
@@ -195,12 +209,14 @@
                                                         t-out="kec.name"/>
                                             </t>
                                         </select>
+                                        <div t-if="state.errors.kecamatan_id" class="sf-errmsg"
+                                             t-out="state.errors.kecamatan_id"/>
                                     </div>
 
-                                    <div class="sf-field">
+                                    <div t-att-class="'sf-field' + (state.errors.desa_id ? ' has-error' : '')">
                                         <label class="sf-label">
                                             Desa/Kelurahan
-                                            <span class="sf-opt">Opsional</span>
+                                            <span class="sf-req">*</span>
                                         </label>
                                         <select class="sf-input sf-select"
                                                 t-att-disabled="!state.kecamatan_id || state.loadingDesa"
@@ -215,6 +231,8 @@
                                                         t-out="desa.name"/>
                                             </t>
                                         </select>
+                                        <div t-if="state.errors.desa_id" class="sf-errmsg"
+                                             t-out="state.errors.desa_id"/>
                                     </div>
 
                                 </div>
@@ -223,8 +241,8 @@
 
                         <!-- Lokasi GPS + Map -->
                         <div class="sf-section">
-                            <div class="sf-section-label">Lokasi GPS</div>
-                            <div class="sf-card">
+                            <div class="sf-section-label">Lokasi GPS <span class="sf-req">*</span></div>
+                            <div t-att-class="'sf-card' + (state.errors.gps ? ' has-error' : '')">
                                 <div class="sf-card-body">
 
                                     <button class="sf-btn sf-btn-tonal sf-btn-block"
@@ -255,6 +273,9 @@
                                         <span>Menunggu izin akses GPS</span>
                                     </div>
 
+                                    <div t-if="state.errors.gps" class="sf-errmsg"
+                                         t-out="state.errors.gps"/>
+
                                     <!-- Map stays in DOM to avoid Leaflet reinit -->
                                     <div id="sf-map" class="sf-map"/>
 
@@ -264,8 +285,8 @@
 
                         <!-- Foto Dokumentasi -->
                         <div class="sf-section">
-                            <div class="sf-section-label">Foto Dokumentasi</div>
-                            <div class="sf-card">
+                            <div class="sf-section-label">Foto Dokumentasi <span class="sf-req">*</span></div>
+                            <div t-att-class="'sf-card' + (state.errors.foto ? ' has-error' : '')">
                                 <div class="sf-card-body">
                                     <div class="sf-foto-btns">
                                         <label class="sf-btn sf-btn-outlined">
@@ -297,6 +318,8 @@
                                             </button>
                                         </div>
                                     </div>
+                                    <div t-if="state.errors.foto" class="sf-errmsg"
+                                         t-out="state.errors.foto"/>
                                 </div>
                             </div>
                         </div>
@@ -639,21 +662,35 @@
             if (!this.state.nama_surveyor.trim()) errors.nama_surveyor = 'Nama surveyor wajib diisi';
             if (!this.state.nama_sumur.trim()) errors.nama_sumur = 'Nama sumur wajib diisi';
             if (!this.state.kabupaten_id) errors.kabupaten_id = 'Pilih Kabupaten/Kota terlebih dahulu';
+            if (!this.state.kecamatan_id) errors.kecamatan_id = 'Pilih Kecamatan terlebih dahulu';
+            if (!this.state.desa_id)      errors.desa_id      = 'Pilih Desa/Kelurahan terlebih dahulu';
+            if (!this.state.foto)         errors.foto         = 'Foto dokumentasi wajib diisi';
+            const lat = parseFloat(this.state.latitude);
+            const lng = parseFloat(this.state.longitude);
+            if (!this.state.latitude || (lat === 0 && lng === 0)) {
+                errors.gps = 'Lokasi GPS wajib diisi. Izinkan akses lokasi di browser lalu coba lagi.';
+            }
+            const kode = this.initData.kategori && this.initData.kategori.kode;
+            if (kode === 'sumur_masyarakat') {
+                if (this.state.minyak_produksi === '') errors.minyak_produksi = 'Minyak Produksi wajib diisi';
+                if (this.state.minyak_keluar === '')   errors.minyak_keluar   = 'Minyak Keluar wajib diisi';
+            } else if (kode === 'bku') {
+                if (this.state.minyak_masuk === '')    errors.minyak_masuk    = 'Minyak Masuk wajib diisi';
+                if (this.state.minyak_tersedia === '') errors.minyak_tersedia = 'Minyak Tersedia wajib diisi';
+                if (this.state.minyak_keluar === '')   errors.minyak_keluar   = 'Minyak Keluar wajib diisi';
+            } else if (kode === 'k3s') {
+                if (this.state.minyak_masuk === '')    errors.minyak_masuk    = 'Minyak Masuk wajib diisi';
+                if (this.state.minyak_ditolak === '')  errors.minyak_ditolak  = 'Minyak Ditolak wajib diisi';
+            }
             this.state.errors = errors;
             return Object.keys(errors).length === 0;
         }
 
         /* ------ Submit ------ */
         async submit() {
-            if (!this.state.latitude) {
-                this.state.submitError = null;
-                const ok = await this._requestGPSAndWait();
-                if (!ok || !this.state.latitude) {
-                    this.state.submitError = 'Lokasi GPS diperlukan. Izinkan akses lokasi di browser lalu coba lagi.';
-                    document.getElementById('sf-map')
-                        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    return;
-                }
+            // Auto-request GPS before validating if not yet obtained
+            if (!this.state.latitude && !this.state.gpsLoading) {
+                await this._requestGPSAndWait();
             }
 
             if (!this._validate()) {

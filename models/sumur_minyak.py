@@ -60,16 +60,13 @@ class SumurMinyak(models.Model):
     nama_surveyor = fields.Char('Nama Surveyor', tracking=True)
     hp_surveyor = fields.Char('No. HP Surveyor', tracking=True)
 
+    submitter_ip = fields.Char('IP Pengirim', readonly=True)
+    submitter_ua = fields.Char('User-Agent Pengirim', readonly=True)
+
     state = fields.Selection([
         ('AKTIF', 'AKTIF'),
         ('TIDAK AKTIF', 'TIDAK AKTIF'),
     ], string='State', required=True, default='AKTIF', tracking=True)
-
-    is_data_lengkap = fields.Boolean(
-        'Data Lengkap',
-        compute='_compute_data_lengkap',
-        store=True,
-    )
 
     @api.depends('kategori_kode',
                  'minyak_produksi', 'minyak_masuk', 'minyak_tersedia',
@@ -85,11 +82,6 @@ class SumurMinyak(models.Model):
                 rec.total_minyak = rec.minyak_masuk + rec.minyak_ditolak
             else:
                 rec.total_minyak = 0.0
-
-    @api.depends('latitude', 'longitude', 'foto')
-    def _compute_data_lengkap(self):
-        for rec in self:
-            rec.is_data_lengkap = bool(rec.latitude and rec.longitude and rec.foto)
 
     def action_set_aktif(self):
         self.write({'state': 'AKTIF'})
