@@ -569,7 +569,7 @@ def _wib_to_utc(dt_str):
 | `GET /petadigi/sw.js` | PWA service worker (cache static assets, network pass-through API) |
 | `POST /petadigi/api/patroli/list` | List patroli — paginated, filter: `'today'`/`'aktif'`, `kabupaten_id`, `state` |
 | `POST /petadigi/api/patroli/record` | Detail 1 patroli: info + personel + lokasi titik |
-| `POST /petadigi/api/patroli/create` | Create patroli baru |
+| `POST /petadigi/api/patroli/create` | Create patroli baru; menyimpan `submitter_ip`, `submitter_ua` |
 | `POST /petadigi/api/patroli/set_selesai` | Set patroli state=SELESAI |
 | `POST /petadigi/api/patroli/personel_add` | Tambah personel ke patroli |
 | `POST /petadigi/api/patroli/personel_remove` | Hapus personel dari patroli |
@@ -654,6 +654,8 @@ if att and att.datas:
 - `personel_ids` (One2many → `petadigi.personel_patroli`), `personel_count` (Integer, computed stored)
 - `lokasi_ids` (One2many → `petadigi.lokasi_patroli`), `lokasi_count` (Integer, computed stored)
 - `keterangan` (Text), `state`: `PROSES` / `SELESAI`
+- `submitter_ip` (Char, readonly) — IP pengirim dari `X-Forwarded-For` / `remote_addr`; diisi dari form publik maupun internal app
+- `submitter_ua` (Char, readonly) — browser+OS parsed; tampil di form view group INFO PENGIRIM
 - Methods: `action_set_selesai`, `action_set_proses`, `action_view_personel`, `action_view_lokasi`, `default_get` (pre-fill dari user login + auto-fill `subdit_id`)
 - Onchanges: `_onchange_polres_id` (reset polsek/kabupaten), `_onchange_kabupaten_id` (reset kecamatan), `_onchange_kecamatan_id` (reset desa)
 - Sequence code: `petadigi.patroli.sequence`
@@ -748,6 +750,20 @@ if (data.has_foto && data.foto_src) {
 - Filter badge muncul di header record list ketika `listFilter === 'today'`, ada tombol ✕ untuk clear
 - `_navigateToStrongWithFilter(filter)` — set `_sp.listFilter`, call `switchTab('strong')`, panggil `_showRecordList()` jika tab sudah rendered
 
+**Alur Patroli tab**:
+1. `_showPatroliList()` — load patroli records (paginated, infinite scroll)
+2. FAB (+) → `_openPatroliCreate()` — form `_buildPatroliCreate()`:
+   - Kabupaten, Kecamatan, **Desa/Kelurahan wajib** (label `*`, divalidasi sebelum submit)
+   - `tanggal_mulai` pre-fill waktu sekarang, Keterangan opsional
+3. Submit → `api_patroli_create`; langsung buka `_openPatroliDetail(recordId)`
+4. **Detail** (`_buildPatroliDetail()`):
+   - Info patroli, list titik lokasi (counter `pt-lokasi-count`), list personel (counter `pt-personel-count`), form tambah personel inline
+   - **Set Selesai trigger**: cek `personel_count ≥ 1` DAN `lokasi_count ≥ 1` terlebih dahulu — jika salah satu 0, tampilkan toast error dan batalkan; jika lolos, tampilkan form tanggal selesai
+5. **Tambah titik** (`_buildTambahTitik()`):
+   - GPS wajib (koordinat lat/lng), **Tgl & Jam wajib** (label `*`, divalidasi), **Foto Dokumentasi wajib** (label `*`, validasi `_pt.titikFile`)
+   - Simpan dua-tahap: `lokasi_add` (lat/lng/tanggal/catatan) → `lokasi_foto` (upload foto via FileReader → base64 → `lokasi_foto` endpoint)
+   - Map Leaflet interaktif — drag marker untuk adjust koordinat
+
 **Weekly Bar Chart (Beranda)**:
 - ECharts bar card full-width di bawah KPI cards
 - Data dari `POST /petadigi/api/weekly` → `{days: [{label, date, count}]}`
@@ -816,6 +832,7 @@ location ~ ^/petadigi/ {
 - Services: `orm`, `action`
 - State drill-down: `this.drillKabupatenId`, `this.drillKecamatanId`
 - Method utama: `_switchMode()`, `_updateKpiCards()`, `_updateCharts()`, `_clearAllLayers()`
+- **KPI Click Action**: tiap card menyimpan property `action: { model, domain }` atau `null`; setelah render innerHTML, event listener ditambahkan ke card dengan class `petadigi-kpi-card--clickable`; klik → `this.action.doAction({ type: 'ir.actions.act_window', ... })` dengan domain filter aktif saat itu; card agregat (volume minyak, total personel, total lokasi SP) tidak clickable (`action: null`)
 - Filter refs:
   - `filterTahun`, `filterKabupaten`, `filterState`, `filterKategori`, `filterSubKategori`, `filterDateRange` — filter umum
   - `filterKategoriSumur` — filter khusus mode sumur (ref terpisah)
@@ -895,7 +912,7 @@ const baseDomain = [
 ### Kriminal (5 chart rows)
 - Row 1: Bar per kabupaten + Donut per kategori
 - Row 2: Bar lokasi TKP + Bar sub kategori (top 10, sort desc)
-- Row 3: Area line trend bulanan + Area line waktu kejadian
+- Row 3: Area line trend bulanan + **Bar chart "Statistik Waktu Kriminalitas"** (8 slot waktu per 3 jam; bar tertinggi warna `#3B6BDB`, lainnya `#92aae8`; label di atas bar)
 - Row 4: Area line waktu Curat + Curas + Curanmor
 - Row 5: Area line perbandingan 2 tahun
 
@@ -1628,6 +1645,26 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - Security patch controller `/strong/*`: rate limiting, guard token/data, `_validate_strong_pub_data()` lengkap (relasi wilayah, GPS bounds; foto tidak lagi divalidasi di sini), state guard di `personel_add`/`personel_remove`, format validation + idempotency di `set_selesai`, try/except di semua wilayah endpoints
 - `strong_pub_set_selesai`: terima `foto=None`; validasi foto wajib + ukuran (`> 700_000`) + magic bytes; simpan foto ke record bersama state SELESAI + tanggal_selesai
 
+**Patroli Public Form — Update UX & Security (2026-07-15)**
+- Isian wajib diperluas di fase `form`: kecamatan, desa
+- Fase `operasional`: tombol Lanjut ke Selesai cek personel ≥ 1 DAN lokasi ≥ 1
+- Fase `tambah_lokasi`: tanggal wajib, GPS (lat/lng) wajib, foto dokumentasi wajib
+- Field `submitter_ip` + `submitter_ua` (readonly) ditambah ke model `petadigi.patroli` dan tampil di form view (group INFO PENGIRIM)
+- Security patch controller `/patroli/*`: rate limiting, guard token/data, relational wilayah validation (kabupaten→kecamatan→desa), tanggal format validation, keterangan length limit, state guard di `personel_add/remove`, `lokasi_add/remove`, idempotency + count check di `set_selesai`, try/except di semua wilayah endpoints
+
+**Dashboard Map — KPI Click Action & Chart Update (2026-07-16)**
+- KPI cards kriminalitas, bencana, lalin, kam, lokasi, sumur, strong, patroli, umum: klik card navigasi ke list view Odoo dengan domain filter aktif (tahun/tanggal/polres/kategori/drill-down/state sesuai card)
+- Card agregat (volume minyak, total personel, distinct lokasi SP) diberi `action: null` — tidak clickable
+- CSS: `.petadigi-kpi-card--clickable` — cursor pointer + lift effect hover; card `null` tetap tidak clickable
+- Chart "Statistik Waktu Kriminalitas" diubah dari **radar** → **bar chart vertikal** (8 slot waktu per 3 jam, bar tertinggi warna primer `#3B6BDB`, lainnya `#92aae8`, label di atas bar, `grid.top: 24` untuk ruang label)
+
+**Patroli Mobile App — Update Internal (2026-07-15)**
+- Form create (`_buildPatroliCreate`): label Desa/Kelurahan diberi `*`, validasi wajib di submit
+- `api_patroli_create`: simpan `submitter_ip` (dari `X-Forwarded-For`) + `submitter_ua` (parsed via `parse_user_agent`)
+- Detail view (`_buildPatroliDetail`): trigger Set Selesai cek `personel_count ≥ 1` DAN `lokasi_count ≥ 1` — jika tidak memenuhi, toast error + batalkan
+- Tambah titik (`_buildTambahTitik`): Tgl & Jam dan Foto Dokumentasi dijadikan wajib (label `*`, validasi di submit sebelum call server)
+- Cache bust: `?v=20260715` di `strong_point_login_template.xml`
+
 **Subdit_id Tagging (2026-07-03)**
 - Field `subdit_id` baru di `petadigi.strong_point` dan `petadigi.patroli` — identifikasi data per subdit
 - Form config (`strong_point.form_config` & `patroli.form_config`) punya optional `subdit_id` — jika diset, public form otomatis menyembunyikan field Polres/Polsek (`is_subdit_form` flag), polres di-auto-assign ke Polda
@@ -1643,4 +1680,4 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 
 ---
 
-*Dokumen diperbarui: 2026-07-15 (Strong Point Mobile internal + Public Form: foto ke fase selesai, personel di form create, keterangan_lokasi, submitter info)*
+*Dokumen diperbarui: 2026-07-16 (Dashboard: KPI click → list view, chart Waktu Kriminalitas radar→bar; Patroli Public+Internal: desa wajib, count check, foto+waktu lokasi wajib, submitter info)*

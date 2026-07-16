@@ -271,62 +271,48 @@ function _renderWaktuChart(ctx, labels, values) {
     ctx._echartsWaktu = echarts.init(el);
 
     const maxVal = Math.max(...values, 1);
-    const radarMax = Math.ceil(maxVal * 1.25);
-
-    // Format label dengan spasi agar lebih mudah dibaca di sudut-sudut radar
-    const radarLabels = labels.map(l => l.replace('-', ' - '));
 
     ctx._echartsWaktu.setOption({
         tooltip: {
-            trigger: 'item',
+            trigger: 'axis',
             backgroundColor: '#fff',
             borderColor: '#e5e7eb',
             borderWidth: 1,
             textStyle: { color: '#2c3e50', fontSize: 12 },
             formatter: params => {
-                if (!params.data?.value) return '';
-                const lines = radarLabels.map((lbl, i) =>
-                    `${lbl}: <b>${(params.data.value[i] || 0).toLocaleString('id-ID')}</b>`
-                ).join('<br/>');
-                return `Kejadian per Waktu<br/>${lines}`;
+                const p = params[0];
+                return `${p.name}<br/><b>Total: ${p.value.toLocaleString('id-ID')}</b>`;
             },
         },
-        radar: {
-            indicator: radarLabels.map(name => ({ name, max: radarMax })),
-            shape: 'polygon',
-            radius: '62%',
-            center: ['50%', '54%'],
-            splitNumber: 4,
-            name: { textStyle: { color: '#555', fontSize: 10 } },
-            splitLine: {
-                lineStyle: { color: ['#e8ecf3', '#dde2ec', '#d0d7e6', '#c3cad8'], type: 'solid' },
-            },
-            splitArea: {
-                areaStyle: {
-                    color: ['rgba(235,240,255,0.5)', 'rgba(235,240,255,0.3)',
-                            'rgba(235,240,255,0.15)', 'rgba(235,240,255,0.05)'],
-                },
-            },
-            axisLine: { lineStyle: { color: '#ccd3e0' } },
+        grid: { left: 12, right: 12, top: 24, bottom: 36, containLabel: true },
+        xAxis: {
+            type: 'category',
+            data: labels,
+            axisLabel: { fontSize: 9, color: '#666', rotate: 30 },
+            axisLine:  { lineStyle: { color: '#e5e7eb' } },
+            axisTick:  { show: false },
+        },
+        yAxis: {
+            type: 'value',
+            minInterval: 1,
+            axisLabel: { fontSize: 10, color: '#999' },
+            splitLine: { lineStyle: { color: '#f0f0f0' } },
         },
         series: [{
-            type: 'radar',
-            data: [{
-                value: values,
-                name: 'Kejadian',
-                areaStyle: { color: 'rgba(59,107,219,0.18)' },
-                lineStyle: { color: '#3B6BDB', width: 2 },
-                itemStyle: { color: '#3B6BDB' },
-                symbol: 'circle',
-                symbolSize: 5,
-                label: {
-                    show: true,
-                    fontSize: 10,
-                    color: '#3B6BDB',
-                    fontWeight: '600',
-                    formatter: p => p.value > 0 ? p.value.toLocaleString('id-ID') : '',
-                },
-            }],
+            type: 'bar',
+            data: values.map(v => ({
+                value: v,
+                itemStyle: { color: v === maxVal ? '#3B6BDB' : '#92aae8', borderRadius: [3, 3, 0, 0] },
+            })),
+            label: {
+                show: true,
+                position: 'top',
+                fontSize: 10,
+                color: '#3B6BDB',
+                fontWeight: '600',
+                formatter: p => p.value > 0 ? p.value.toLocaleString('id-ID') : '',
+            },
+            barMaxWidth: 36,
         }],
     });
 }
