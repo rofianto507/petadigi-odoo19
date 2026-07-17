@@ -64,7 +64,7 @@
                     <sheet>
                         <field name="kode" invisible="1"/>
                         <div class="oe_button_box" name="button_box">
-                            <button class="oe_stat_button" icon="fa-tint"
+                            <button class="oe_stat_button" icon="fa-tint" invisible="1"
                                     type="object" name="action_view_sumur">
                                 <field name="jumlah_sumur" widget="statinfo" string="Total Sumur"/>
                             </button>

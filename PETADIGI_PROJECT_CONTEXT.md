@@ -335,9 +335,12 @@ const SUMUR_COLORS = [
 
 **Charts**: Bar+line combo dual Y-axis dengan unit Liter di tooltip dan Y-axis
 
-**Tabel data** (pagination 20/halaman):
-- Kolom: #, Kode, Nama Sumur, Desa, Kecamatan, Kabupaten, Kategori, Total Minyak (L), Status
-- Klik baris → buka form sumur minyak
+**Tabel data** (pagination 20/halaman) dengan **toggle Table / Kanban view**:
+- Toggle di pojok kanan toolbar: icon `fa-list` (tabel) dan `fa-th` (kanban) — state `ctx._sumurViewMode` (`'table'`|`'kanban'`, default `'table'`)
+- **Table mode**: kolom #, Kode, Nama Sumur, Desa, Kecamatan, Kabupaten, Kategori, Volume Minyak, Status; klik baris → buka form
+- **Kanban mode**: grid `auto-fill minmax(190px, 1fr)`; tiap card: foto thumbnail 130px (`/web/image/petadigi.sumur_minyak/{id}/foto`) atau placeholder ikon tint jika kosong; body: nama, kode, kec/kab, kategori, volume, badge status; klik card → buka form
+- Legend singkatan (P/M/T/K/D) hanya tampil di table mode
+- CSS: `.petadigi-view-toggle`, `.petadigi-view-btn--active`, `.petadigi-kanban-grid`, `.petadigi-kanban-card`, `.petadigi-kanban-thumb`, `.petadigi-kanban-thumb-placeholder`
 
 **Popup marker**: Nama, Kode, Kabupaten, Kecamatan, Desa, Kategori, Total Minyak (L), Status, Foto
 
@@ -840,6 +843,11 @@ location ~ ^/petadigi/ {
 - Active date: `this.activeDateFrom`, `this.activeDateTo`
 - `_suppressDateChange` — guard mencegah double-trigger flatpickr
 
+### Filter Bar — Responsivitas
+- `.petadigi-top-row`: `flex-wrap: wrap` — filter-box turun ke baris ke-2 jika layar terlalu sempit
+- `.petadigi-filter-box`: `flex-wrap: nowrap` + `overflow-x: auto` — semua select tetap satu baris dalam box; scroll horizontal jika tidak muat
+- `.petadigi-select`: `min-width: 110px; max-width: 200px` — mencegah teks panjang seperti "KEJAHATAN KONVENSIONAL" merusak layout
+
 ### Filter Visibility per Mode
 - Tahun + Date range: **tidak tampil** di mode `umum` dan `lokasi` (dan `sumur`)
 - Sub kategori: hanya tampil di mode `kriminal`
@@ -912,8 +920,8 @@ const baseDomain = [
 ### Kriminal (5 chart rows)
 - Row 1: Bar per kabupaten + Donut per kategori
 - Row 2: Bar lokasi TKP + Bar sub kategori (top 10, sort desc)
-- Row 3: Area line trend bulanan + **Bar chart "Statistik Waktu Kriminalitas"** (8 slot waktu per 3 jam; bar tertinggi warna `#3B6BDB`, lainnya `#92aae8`; label di atas bar)
-- Row 4: Area line waktu Curat + Curas + Curanmor
+- Row 3: Area line trend bulanan + **Line chart "Statistik Waktu Kriminalitas"** (8 slot waktu per 3 jam; `smooth: false`; warna garis+titik `#3B6BDB`; area gradient `rgba(59,107,219,0.18→0)`; label nilai di atas titik)
+- Row 4: Line chart waktu Curat + Curas + Curanmor — **disembunyikan sementara** (`row4.style.display = 'none'` di `dashboard_charts_kriminal.js`)
 - Row 5: Area line perbandingan 2 tahun
 
 ### KAM (3 chart rows)
@@ -1657,6 +1665,12 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - Card agregat (volume minyak, total personel, distinct lokasi SP) diberi `action: null` — tidak clickable
 - CSS: `.petadigi-kpi-card--clickable` — cursor pointer + lift effect hover; card `null` tetap tidak clickable
 - Chart "Statistik Waktu Kriminalitas" diubah dari **radar** → **bar chart vertikal** (8 slot waktu per 3 jam, bar tertinggi warna primer `#3B6BDB`, lainnya `#92aae8`, label di atas bar, `grid.top: 24` untuk ruang label)
+
+**Dashboard Kriminalitas & Sumur — UI Update (2026-07-17)**
+- Chart "Statistik Waktu Kriminalitas" diubah dari **bar chart** → **line chart** (`smooth: false`, warna `#3B6BDB`, area gradient tipis, label nilai di atas titik)
+- Row 4 grafik kriminalitas (Waktu Kejadian Curat/Curas/Curanmor) **disembunyikan sementara** via `row4.style.display = 'none'` di `dashboard_charts_kriminal.js`
+- Filter bar (`.petadigi-top-row`) diupdate responsif: `flex-wrap: wrap` pada row; `nowrap + overflow-x: auto` pada filter-box; `min/max-width` pada select — filter tidak lagi terpotong di layar kecil
+- Tabel sumur minyak: tambah **toggle Table/Kanban view** — kanban grid dengan foto thumbnail, state `ctx._sumurViewMode`, CSS kanban baru di `dashboard_map.css`
 
 **Patroli Mobile App — Update Internal (2026-07-15)**
 - Form create (`_buildPatroliCreate`): label Desa/Kelurahan diberi `*`, validasi wajib di submit

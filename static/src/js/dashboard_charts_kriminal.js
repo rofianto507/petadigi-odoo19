@@ -270,8 +270,6 @@ function _renderWaktuChart(ctx, labels, values) {
     if (ctx._echartsWaktu) ctx._echartsWaktu.dispose();
     ctx._echartsWaktu = echarts.init(el);
 
-    const maxVal = Math.max(...values, 1);
-
     ctx._echartsWaktu.setOption({
         tooltip: {
             trigger: 'axis',
@@ -299,11 +297,14 @@ function _renderWaktuChart(ctx, labels, values) {
             splitLine: { lineStyle: { color: '#f0f0f0' } },
         },
         series: [{
-            type: 'bar',
-            data: values.map(v => ({
-                value: v,
-                itemStyle: { color: v === maxVal ? '#3B6BDB' : '#92aae8', borderRadius: [3, 3, 0, 0] },
-            })),
+            type: 'line',
+            smooth: false,
+            data: values,
+            lineStyle: { color: '#3B6BDB', width: 2 },
+            itemStyle: { color: '#3B6BDB' },
+            areaStyle: { color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: 'rgba(59,107,219,0.18)' }, { offset: 1, color: 'rgba(59,107,219,0)' }] } },
+            symbol: 'circle',
+            symbolSize: 6,
             label: {
                 show: true,
                 position: 'top',
@@ -312,7 +313,6 @@ function _renderWaktuChart(ctx, labels, values) {
                 fontWeight: '600',
                 formatter: p => p.value > 0 ? p.value.toLocaleString('id-ID') : '',
             },
-            barMaxWidth: 36,
         }],
     });
 }
@@ -325,7 +325,7 @@ function _processMonthGroups(groups) {
                        || g.__range?.['tanggal_kejadian']?.from;
         if (!rangeFrom) return;
         const dateObj = new Date(rangeFrom.length > 10 ? rangeFrom.replace(' ', 'T') + 'Z' : rangeFrom);
-        const month   = dateObj.getMonth();
+        const month   = new Date(dateObj.getTime() + 7 * 3600 * 1000).getUTCMonth();
         if (month >= 0 && month < 12) data[month] += g.__count || 0;
     });
     return data;
@@ -455,7 +455,7 @@ function _processWaktuHourGroups(groups) {
                        || g.__range?.['tanggal_kejadian']?.from;
         if (!rangeFrom) return;
         const dateObj = new Date(rangeFrom.length > 10 ? rangeFrom.replace(' ', 'T') + 'Z' : rangeFrom);
-        const slot    = Math.floor(dateObj.getHours() / 3);
+        const slot    = Math.floor(((dateObj.getUTCHours() + 7) % 24) / 3);
         if (slot >= 0 && slot < 8) data[slot] += g.__count || 0;
     });
     return data;
@@ -557,7 +557,7 @@ export async function updateKriminalCharts(ctx, mode) {
     row.style.display  = 'flex';
     if (row2) row2.style.display = 'flex';
     if (row3) row3.style.display = 'flex';
-    if (row4) row4.style.display = 'flex';
+    if (row4) row4.style.display = 'none';  // hidden sementara
     if (row5) row5.style.display = 'flex';
 
     const tahun         = ctx.filterTahun?.el?.value         || '';
@@ -677,7 +677,7 @@ export async function updateKriminalCharts(ctx, mode) {
                            || g.__range?.['tanggal_kejadian']?.from;
             if (!rangeFrom) return;
             const dateObj = new Date(rangeFrom.length > 10 ? rangeFrom.replace(' ', 'T') + 'Z' : rangeFrom);
-            const month   = dateObj.getMonth();
+            const month   = new Date(dateObj.getTime() + 7 * 3600 * 1000).getUTCMonth();
             if (month < 0 || month > 11) return;
             if (g.status_perkara === 'PROSES')   prosesData[month]  = g.__count || 0;
             else if (g.status_perkara === 'SELESAI') selesaiData[month] = g.__count || 0;

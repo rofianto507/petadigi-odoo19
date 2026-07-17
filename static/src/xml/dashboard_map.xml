@@ -380,11 +380,31 @@
                     </div>
                 </div>
 
+                <!-- CHART STRONG WAKTU — distribusi 8 slot waktu, full width -->
+                <div class="petadigi-chart-row" t-ref="chartStrongDailyRow">
+                    <div class="petadigi-chart-card" style="flex:1;">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-clock-o"/> Distribusi Waktu Strong Point &amp; Gangguan Lalin
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartStrongDaily"/>
+                    </div>
+                </div>
+
                 <!-- DATA TABLE STRONG POINT -->
                 <div class="petadigi-chart-row" t-ref="tableStrongRow">
                     <div class="petadigi-data-table-card">
                         <div class="petadigi-chart-title"><i class="fa fa-table"/> Data Strong Point</div>
                         <div t-ref="tableStrongBody"/>
+                    </div>
+                </div>
+
+                <!-- CHART PATROLI WAKTU — distribusi 8 slot waktu vs kriminalitas -->
+                <div class="petadigi-chart-row" t-ref="chartPatroliWaktuRow">
+                    <div class="petadigi-chart-card" style="flex:1;">
+                        <div class="petadigi-chart-title">
+                            <i class="fa fa-clock-o"/> Distribusi Waktu Patroli &amp; Kriminalitas
+                        </div>
+                        <div class="petadigi-chart-body" t-ref="chartPatroliWaktu"/>
                     </div>
                 </div>
 

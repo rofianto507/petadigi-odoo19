@@ -216,7 +216,7 @@ export async function updateSumurCharts(ctx, mode) {
 
 const PAGE_SIZE = 20;
 
-export async function updateSumurTable(ctx, mode, page) {
+export async function updateSumurTable(ctx, mode, page, viewMode) {
     const ver    = ctx._modeVersion;
     const rowEl  = ctx.tableSumurRowRef?.el;
     const bodyEl = ctx.tableSumurBodyRef?.el;
@@ -225,8 +225,12 @@ export async function updateSumurTable(ctx, mode, page) {
     if (mode !== 'sumur') { if (ctx.currentMode !== 'sumur') rowEl.style.display = 'none'; return; }
     rowEl.style.display = 'flex';
 
+    if (viewMode !== undefined) ctx._sumurViewMode = viewMode;
+    if (!ctx._sumurViewMode) ctx._sumurViewMode = 'table';
+
     ctx._sumurTablePage = (page !== undefined) ? page : 1;
     const offset = (ctx._sumurTablePage - 1) * PAGE_SIZE;
+    const isKanban = ctx._sumurViewMode === 'kanban';
 
     const kabupatenId  = parseInt(ctx.filterKabupaten?.el?.value)       || null;
     const stateValue   = ctx.filterState?.el?.value                     || '';
@@ -245,11 +249,13 @@ export async function updateSumurTable(ctx, mode, page) {
 
     bodyEl.innerHTML = `<div style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Memuat data...</div>`;
 
+    const fmt = v => v ? `${v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L` : '-';
+
     try {
         const [records, total] = await Promise.all([
             ctx.orm.searchRead('petadigi.sumur_minyak', domain,
                 ['id', 'code', 'name', 'desa_id', 'kecamatan_id', 'kabupaten_id',
-                 'kategori_id', 'kategori_kode',
+                 'kategori_id', 'kategori_kode', 'foto',
                  'minyak_produksi', 'minyak_masuk', 'minyak_tersedia', 'minyak_keluar', 'minyak_ditolak',
                  'state'],
                 { order: 'name asc', limit: PAGE_SIZE, offset }),
@@ -261,35 +267,99 @@ export async function updateSumurTable(ctx, mode, page) {
         const fromRow    = total > 0 ? offset + 1 : 0;
         const toRow      = Math.min(offset + PAGE_SIZE, total);
 
-        const rows = records.map((r, i) => {
-            const kab      = Array.isArray(r.kabupaten_id) ? r.kabupaten_id[1] : '-';
-            const kec      = Array.isArray(r.kecamatan_id) ? r.kecamatan_id[1] : '-';
-            const desa     = Array.isArray(r.desa_id)      ? r.desa_id[1]      : '-';
-            const kategori = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
-            const cls      = r.state === 'AKTIF' ? '--green' : '--gray';
-            const fmt      = v => v ? `${v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} L` : '-';
-            let minyakCell = '-';
+        const _minyakStr = r => {
             if (r.kategori_kode === 'sumur_masyarakat')
-                minyakCell = `P: ${fmt(r.minyak_produksi)} / K: ${fmt(r.minyak_keluar)}`;
-            else if (r.kategori_kode === 'bku')
-                minyakCell = `M: ${fmt(r.minyak_masuk)} / T: ${fmt(r.minyak_tersedia)} / K: ${fmt(r.minyak_keluar)}`;
-            else if (r.kategori_kode === 'k3s')
-                minyakCell = `M: ${fmt(r.minyak_masuk)} / D: ${fmt(r.minyak_ditolak)}`;
+                return `P: ${fmt(r.minyak_produksi)} / K: ${fmt(r.minyak_keluar)}`;
+            if (r.kategori_kode === 'bku')
+                return `M: ${fmt(r.minyak_masuk)} / T: ${fmt(r.minyak_tersedia)} / K: ${fmt(r.minyak_keluar)}`;
+            if (r.kategori_kode === 'k3s')
+                return `M: ${fmt(r.minyak_masuk)} / D: ${fmt(r.minyak_ditolak)}`;
+            return '-';
+        };
+
+        // ─── Table view ───────────────────────────────────────────────────────────
+        const tableContent = () => {
+            const rows = records.map((r, i) => {
+                const kab      = Array.isArray(r.kabupaten_id) ? r.kabupaten_id[1] : '-';
+                const kec      = Array.isArray(r.kecamatan_id) ? r.kecamatan_id[1] : '-';
+                const desa     = Array.isArray(r.desa_id)      ? r.desa_id[1]      : '-';
+                const kategori = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
+                const cls      = r.state === 'AKTIF' ? '--green' : '--gray';
+                return `
+                    <tr class="petadigi-table-row" data-id="${r.id}" style="cursor:pointer;">
+                        <td class="petadigi-td">${offset + i + 1}</td>
+                        <td class="petadigi-td petadigi-td--mono">${r.code || '-'}</td>
+                        <td class="petadigi-td">${r.name || '-'}</td>
+                        <td class="petadigi-td">${desa}</td>
+                        <td class="petadigi-td">${kec}</td>
+                        <td class="petadigi-td">${kab}</td>
+                        <td class="petadigi-td">${kategori}</td>
+                        <td class="petadigi-td">${_minyakStr(r)}</td>
+                        <td class="petadigi-td"><span class="petadigi-badge petadigi-badge${cls}">${r.state || '-'}</span></td>
+                    </tr>`;
+            }).join('');
             return `
-                <tr class="petadigi-table-row" data-id="${r.id}" style="cursor:pointer;">
-                    <td class="petadigi-td">${offset + i + 1}</td>
-                    <td class="petadigi-td petadigi-td--mono">${r.code || '-'}</td>
-                    <td class="petadigi-td">${r.name || '-'}</td>
-                    <td class="petadigi-td">${desa}</td>
-                    <td class="petadigi-td">${kec}</td>
-                    <td class="petadigi-td">${kab}</td>
-                    <td class="petadigi-td">${kategori}</td>
-                    <td class="petadigi-td">${minyakCell}</td>
-                    <td class="petadigi-td"><span class="petadigi-badge petadigi-badge${cls}">${r.state || '-'}</span></td>
-                </tr>`;
-        }).join('');
+                <div class="petadigi-table-wrapper">
+                    <table class="petadigi-table">
+                        <thead><tr>
+                            <th class="petadigi-th">#</th>
+                            <th class="petadigi-th">Kode</th>
+                            <th class="petadigi-th">Nama Sumur</th>
+                            <th class="petadigi-th">Desa</th>
+                            <th class="petadigi-th">Kecamatan</th>
+                            <th class="petadigi-th">Kabupaten</th>
+                            <th class="petadigi-th">Kategori</th>
+                            <th class="petadigi-th">Volume Minyak</th>
+                            <th class="petadigi-th">Status</th>
+                        </tr></thead>
+                        <tbody>
+                            ${rows || `<tr><td colspan="9" style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Tidak ada data</td></tr>`}
+                        </tbody>
+                    </table>
+                </div>`;
+        };
+
+        // ─── Kanban view ──────────────────────────────────────────────────────────
+        const kanbanContent = () => {
+            if (!records.length)
+                return `<div style="text-align:center;padding:32px;color:#bbb;font-size:13px;">Tidak ada data</div>`;
+            const cards = records.map(r => {
+                const kab      = Array.isArray(r.kabupaten_id) ? r.kabupaten_id[1] : '-';
+                const kec      = Array.isArray(r.kecamatan_id) ? r.kecamatan_id[1] : '-';
+                const kategori = Array.isArray(r.kategori_id)  ? r.kategori_id[1]  : '-';
+                const cls      = r.state === 'AKTIF' ? '--green' : '--gray';
+                const thumb    = r.foto
+                    ? `<img class="petadigi-kanban-thumb" src="/web/image/petadigi.sumur_minyak/${r.id}/foto" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'petadigi-kanban-thumb-placeholder\\'><i class=\\'fa fa-tint\\'></i></div>'">`
+                    : `<div class="petadigi-kanban-thumb-placeholder"><i class="fa fa-tint"></i></div>`;
+                return `
+                    <div class="petadigi-kanban-card" data-id="${r.id}">
+                        ${thumb}
+                        <div class="petadigi-kanban-body">
+                            <div class="petadigi-kanban-name" title="${r.name || ''}">${r.name || '-'}</div>
+                            <div class="petadigi-kanban-code">${r.code || '-'}</div>
+                            <div class="petadigi-kanban-meta"><i class="fa fa-map-marker" style="color:#e67e22;font-size:10px;"></i> ${kec}, ${kab}</div>
+                            <div class="petadigi-kanban-meta">${kategori}</div>
+                            <div class="petadigi-kanban-volume">${_minyakStr(r)}</div>
+                            <div class="petadigi-kanban-footer">
+                                <span class="petadigi-badge petadigi-badge${cls}">${r.state || '-'}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+            return `<div class="petadigi-kanban-grid">${cards}</div>`;
+        };
 
         if (ctx._modeVersion !== ver) return;
+
+        const legendHtml = `
+            <span style="font-size:10px;color:#888;background:#fdf6ee;border:1px solid #f0d9b5;border-radius:4px;padding:2px 8px;white-space:nowrap;">
+                <b style="color:#A04000;">P</b>=Produksi &nbsp;
+                <b style="color:#A04000;">M</b>=Masuk &nbsp;
+                <b style="color:#A04000;">T</b>=Tersedia &nbsp;
+                <b style="color:#A04000;">K</b>=Keluar &nbsp;
+                <b style="color:#A04000;">D</b>=Ditolak
+            </span>`;
+
         bodyEl.innerHTML = `
             <div class="petadigi-table-toolbar">
                 <span class="petadigi-table-info">
@@ -297,43 +367,24 @@ export async function updateSumurTable(ctx, mode, page) {
                         ? `Menampilkan&nbsp;<b>${fromRow}–${toRow}</b>&nbsp;dari&nbsp;<b>${total.toLocaleString('id-ID')}</b>&nbsp;data`
                         : 'Tidak ada data'}
                 </span>
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:10px;color:#888;background:#fdf6ee;border:1px solid #f0d9b5;border-radius:4px;padding:2px 8px;white-space:nowrap;">
-                        <b style="color:#A04000;">P</b>=Produksi &nbsp;
-                        <b style="color:#A04000;">M</b>=Masuk &nbsp;
-                        <b style="color:#A04000;">T</b>=Tersedia &nbsp;
-                        <b style="color:#A04000;">K</b>=Keluar &nbsp;
-                        <b style="color:#A04000;">D</b>=Ditolak
-                    </span>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    ${!isKanban ? legendHtml : ''}
                     <div class="petadigi-table-pagination">
                         <button class="petadigi-page-btn" data-action="prev" ${curPage <= 1 ? 'disabled' : ''}><i class="fa fa-chevron-left"></i></button>
                         <span class="petadigi-page-info">Hal. ${curPage} / ${totalPages}</span>
                         <button class="petadigi-page-btn" data-action="next" ${curPage >= totalPages ? 'disabled' : ''}><i class="fa fa-chevron-right"></i></button>
                     </div>
+                    <div class="petadigi-view-toggle">
+                        <button class="petadigi-view-btn${!isKanban ? ' petadigi-view-btn--active' : ''}" data-view="table" title="Tampilan Tabel"><i class="fa fa-list"></i></button>
+                        <button class="petadigi-view-btn${isKanban ? ' petadigi-view-btn--active' : ''}" data-view="kanban" title="Tampilan Kanban"><i class="fa fa-th"></i></button>
+                    </div>
                 </div>
             </div>
-            <div class="petadigi-table-wrapper">
-                <table class="petadigi-table">
-                    <thead><tr>
-                        <th class="petadigi-th">#</th>
-                        <th class="petadigi-th">Kode</th>
-                        <th class="petadigi-th">Nama Sumur</th>
-                        <th class="petadigi-th">Desa</th>
-                        <th class="petadigi-th">Kecamatan</th>
-                        <th class="petadigi-th">Kabupaten</th>
-                        <th class="petadigi-th">Kategori</th>
-                        <th class="petadigi-th">Volume Minyak</th>
-                        <th class="petadigi-th">Status</th>
-                    </tr></thead>
-                    <tbody>
-                        ${rows || `<tr><td colspan="9" style="text-align:center;padding:24px;color:#bbb;font-size:13px;">Tidak ada data</td></tr>`}
-                    </tbody>
-                </table>
-            </div>`;
+            ${isKanban ? kanbanContent() : tableContent()}`;
 
-        bodyEl.querySelectorAll('.petadigi-table-row').forEach(tr => {
-            tr.addEventListener('click', () => {
-                const id = parseInt(tr.dataset.id);
+        bodyEl.querySelectorAll('.petadigi-table-row, .petadigi-kanban-card').forEach(el => {
+            el.addEventListener('click', () => {
+                const id = parseInt(el.dataset.id);
                 if (!id) return;
                 ctx.action.doAction({ type: 'ir.actions.act_window', res_model: 'petadigi.sumur_minyak',
                     res_id: id, views: [[false, 'form']], target: 'current' });
@@ -341,6 +392,9 @@ export async function updateSumurTable(ctx, mode, page) {
         });
         bodyEl.querySelector('[data-action="prev"]')?.addEventListener('click', () => updateSumurTable(ctx, mode, curPage - 1));
         bodyEl.querySelector('[data-action="next"]')?.addEventListener('click', () => updateSumurTable(ctx, mode, curPage + 1));
+        bodyEl.querySelectorAll('[data-view]').forEach(btn => {
+            btn.addEventListener('click', () => updateSumurTable(ctx, mode, 1, btn.dataset.view));
+        });
 
     } catch (e) {
         console.error('Sumur table load error:', e);

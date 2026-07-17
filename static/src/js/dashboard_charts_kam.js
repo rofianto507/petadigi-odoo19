@@ -194,7 +194,7 @@ function _processKamMonthGroups(groups) {
                        || g.__range?.['tanggal_kejadian']?.from;
         if (!rangeFrom) return;
         const dateObj = new Date(rangeFrom.length > 10 ? rangeFrom.replace(' ', 'T') + 'Z' : rangeFrom);
-        const month   = dateObj.getMonth(); // 0-11
+        const month   = new Date(dateObj.getTime() + 7 * 3600 * 1000).getUTCMonth();
         if (month >= 0 && month < 12) data[month] += g.__count || 0;
     });
     return data;

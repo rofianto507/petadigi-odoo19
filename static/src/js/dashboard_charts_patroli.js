@@ -144,24 +144,120 @@ function _renderTrendChart(ctx, months, patroliData, lokasiData) {
     });
 }
 
+const WAKTU_LABELS = ['00:00-02:59', '03:00-05:59', '06:00-08:59', '09:00-11:59',
+                      '12:00-14:59', '15:00-17:59', '18:00-20:59', '21:00-23:59'];
+
+function _renderWaktuChart(ctx, patroliSlots, krimSlots) {
+    const el = ctx.chartPatroliWaktuRef?.el;
+    if (!el || typeof echarts === 'undefined') return;
+    if (ctx._echartsPatroliWaktu) ctx._echartsPatroliWaktu.dispose();
+    ctx._echartsPatroliWaktu = echarts.init(el);
+    ctx._echartsPatroliWaktu.setOption({
+        tooltip: {
+            trigger: 'axis',
+            backgroundColor: '#fff',
+            borderColor: '#e5e7eb',
+            borderWidth: 1,
+            textStyle: { color: '#2c3e50', fontSize: 12 },
+            formatter: params => {
+                const pat  = params.find(p => p.seriesName === 'Patroli');
+                const krim = params.find(p => p.seriesName === 'Kriminalitas');
+                return `<b>${params[0]?.name}</b><br/>`
+                    + `<span style="color:#27ae60">&#9632;</span> Patroli: <b>${(pat?.value || 0).toLocaleString('id-ID')}</b><br/>`
+                    + `<span style="color:#e74c3c">&#9632;</span> Kriminalitas: <b>${(krim?.value || 0).toLocaleString('id-ID')}</b>`;
+            },
+        },
+        legend: {
+            bottom: 0,
+            textStyle: { fontSize: 11, color: '#555' },
+            icon: 'roundRect',
+            itemWidth: 12, itemHeight: 8,
+        },
+        grid: { left: 12, right: 24, top: 12, bottom: 48, containLabel: true },
+        xAxis: {
+            type: 'category',
+            data: WAKTU_LABELS,
+            axisLabel: { fontSize: 10, color: '#666', rotate: 30, interval: 0 },
+            axisLine: { lineStyle: { color: '#e5e7eb' } },
+            axisTick: { show: false },
+        },
+        yAxis: {
+            type: 'value',
+            minInterval: 1,
+            axisLabel: { fontSize: 10, color: '#999' },
+            splitLine: { lineStyle: { color: '#f0f0f0' } },
+        },
+        series: [
+            {
+                name: 'Patroli',
+                type: 'line',
+                smooth: false,
+                data: patroliSlots,
+                lineStyle: { color: '#27ae60', width: 2 },
+                itemStyle: { color: '#27ae60' },
+                symbol: 'circle',
+                symbolSize: 6,
+                areaStyle: {
+                    color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [{ offset: 0, color: 'rgba(39,174,96,0.18)' }, { offset: 1, color: 'rgba(39,174,96,0)' }] },
+                },
+                label: {
+                    show: true,
+                    position: 'top',
+                    fontSize: 10,
+                    color: '#27ae60',
+                    fontWeight: '600',
+                    formatter: p => p.value > 0 ? p.value.toLocaleString('id-ID') : '',
+                },
+            },
+            {
+                name: 'Kriminalitas',
+                type: 'line',
+                smooth: false,
+                data: krimSlots,
+                lineStyle: { color: '#e74c3c', width: 2 },
+                itemStyle: { color: '#e74c3c' },
+                symbol: 'circle',
+                symbolSize: 6,
+                areaStyle: {
+                    color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                        colorStops: [{ offset: 0, color: 'rgba(231,76,60,0.14)' }, { offset: 1, color: 'rgba(231,76,60,0)' }] },
+                },
+                label: {
+                    show: true,
+                    position: 'top',
+                    fontSize: 10,
+                    color: '#e74c3c',
+                    fontWeight: '600',
+                    formatter: p => p.value > 0 ? p.value.toLocaleString('id-ID') : '',
+                },
+            },
+        ],
+    });
+}
+
 export function disposePatroliCharts(ctx) {
     if (ctx._echartsPatroliBar)   { ctx._echartsPatroliBar.dispose();   ctx._echartsPatroliBar   = null; }
     if (ctx._echartsPatroliTrend) { ctx._echartsPatroliTrend.dispose(); ctx._echartsPatroliTrend = null; }
+    if (ctx._echartsPatroliWaktu) { ctx._echartsPatroliWaktu.dispose(); ctx._echartsPatroliWaktu = null; }
 }
 
 export async function updatePatroliCharts(ctx, mode) {
-    const ver = ctx._modeVersion;
-    const row = ctx.chartPatroliRowRef?.el;
+    const ver      = ctx._modeVersion;
+    const row      = ctx.chartPatroliRowRef?.el;
+    const waktuRow = ctx.chartPatroliWaktuRowRef?.el;
     if (!row) return;
 
     if (mode !== 'patroli') {
         if (ctx.currentMode !== 'patroli') {
             row.style.display = 'none';
+            if (waktuRow) waktuRow.style.display = 'none';
             disposePatroliCharts(ctx);
         }
         return;
     }
     row.style.display = 'flex';
+    if (waktuRow) waktuRow.style.display = 'flex';
 
     const kabupatenId = parseInt(ctx.filterKabupaten?.el?.value) || null;
     const stateValue  = ctx.filterState?.el?.value || '';
@@ -193,14 +289,25 @@ export async function updatePatroliCharts(ctx, mode) {
         ...(dateTo      ? [['patroli_id.tanggal_mulai', '<=', wibDateEndUtc(dateTo)]]       : []),
     ];
 
+    const krimDomain = [
+        ...(polresId    ? [['polres_id',       '=',  polresId]]                      : []),
+        ...(kabupatenId ? [['kabupaten_id',     '=',  kabupatenId]]                  : []),
+        ...(dateFrom    ? [['tanggal_kejadian', '>=', wibDateStartUtc(dateFrom)]]    : []),
+        ...(dateTo      ? [['tanggal_kejadian', '<=', wibDateEndUtc(dateTo)]]        : []),
+    ];
+
     try {
-        const [polresGroups, trendGroups, lokasiTrendGroups] = await Promise.all([
+        const [polresGroups, trendGroups, lokasiTrendGroups, patroliHourGroups, krimHourGroups] = await Promise.all([
             ctx.orm.call('petadigi.patroli', 'read_group',
                 [baseDomain, ['polres_id'], ['polres_id']], { lazy: false }),
             ctx.orm.call('petadigi.patroli', 'read_group',
                 [baseDomain, [], ['tanggal_mulai:month']], { lazy: false }),
             ctx.orm.call('petadigi.lokasi_patroli', 'read_group',
                 [lokasiBaseDomain, [], ['tanggal:month']], { lazy: false }),
+            ctx.orm.call('petadigi.patroli', 'read_group',
+                [baseDomain, [], ['tanggal_mulai:hour']], { lazy: false }),
+            ctx.orm.call('petadigi.kriminalitas', 'read_group',
+                [krimDomain, [], ['tanggal_kejadian:hour']], { lazy: false }),
         ]);
 
         if (ctx._modeVersion !== ver) return;
@@ -217,7 +324,7 @@ export async function updatePatroliCharts(ctx, mode) {
             const from = g.__range?.['tanggal_mulai:month']?.from
                       || g.__range?.['tanggal_mulai']?.from;
             if (!from) return;
-            const month = new Date(from.replace(' ', 'T') + 'Z').getMonth();
+            const month = new Date(new Date(from.replace(' ', 'T') + 'Z').getTime() + 7 * 3600 * 1000).getUTCMonth();
             if (month < 0 || month > 11) return;
             patroliData[month] += g.__count || 0;
         });
@@ -227,13 +334,32 @@ export async function updatePatroliCharts(ctx, mode) {
             const from = g.__range?.['tanggal:month']?.from
                       || g.__range?.['tanggal']?.from;
             if (!from) return;
-            const month = new Date(from.replace(' ', 'T') + 'Z').getMonth();
+            const month = new Date(new Date(from.replace(' ', 'T') + 'Z').getTime() + 7 * 3600 * 1000).getUTCMonth();
             if (month < 0 || month > 11) return;
             lokasiData[month] += g.__count || 0;
         });
 
+        const patroliSlots = new Array(8).fill(0);
+        patroliHourGroups.forEach(g => {
+            const rf = g.__range?.['tanggal_mulai:hour']?.from || g.__range?.['tanggal_mulai']?.from;
+            if (!rf) return;
+            const d    = new Date(rf.replace(' ', 'T') + 'Z');
+            const slot = Math.floor(((d.getUTCHours() + 7) % 24) / 3);
+            if (slot >= 0 && slot < 8) patroliSlots[slot] += g.__count || 0;
+        });
+
+        const krimSlots = new Array(8).fill(0);
+        krimHourGroups.forEach(g => {
+            const rf = g.__range?.['tanggal_kejadian:hour']?.from || g.__range?.['tanggal_kejadian']?.from;
+            if (!rf) return;
+            const d    = new Date(rf.replace(' ', 'T') + 'Z');
+            const slot = Math.floor(((d.getUTCHours() + 7) % 24) / 3);
+            if (slot >= 0 && slot < 8) krimSlots[slot] += g.__count || 0;
+        });
+
         _renderBarChart(ctx, barNames, barValues);
         _renderTrendChart(ctx, MONTHS_ID, patroliData, lokasiData);
+        _renderWaktuChart(ctx, patroliSlots, krimSlots);
     } catch (e) {
         console.error('Patroli chart load error:', e);
     }

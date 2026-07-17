@@ -140,7 +140,7 @@ function _processLalinHourGroups(groups) {
                        || g.__range?.['tanggal_kejadian']?.from;
         if (!rangeFrom) return;
         const dateObj = new Date(rangeFrom.length > 10 ? rangeFrom.replace(' ', 'T') + 'Z' : rangeFrom);
-        const slot    = Math.floor(dateObj.getHours() / 3);
+        const slot    = Math.floor(((dateObj.getUTCHours() + 7) % 24) / 3);
         if (slot >= 0 && slot < 8) data[slot] += g.__count || 0;
     });
     return data;

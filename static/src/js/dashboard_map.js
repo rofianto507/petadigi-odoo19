@@ -94,11 +94,15 @@ export class DashboardMap extends Component {
         this.chartStrongRowRef         = useRef("chartStrongRow");
         this.chartStrongBarRef         = useRef("chartStrongBar");
         this.chartStrongTrendRef       = useRef("chartStrongTrend");
+        this.chartStrongDailyRowRef    = useRef("chartStrongDailyRow");
+        this.chartStrongDailyRef       = useRef("chartStrongDaily");
         this.tableStrongRowRef         = useRef("tableStrongRow");
         this.tableStrongBodyRef        = useRef("tableStrongBody");
         this.chartPatroliRowRef        = useRef("chartPatroliRow");
         this.chartPatroliBarRef        = useRef("chartPatroliBar");
         this.chartPatroliTrendRef      = useRef("chartPatroliTrend");
+        this.chartPatroliWaktuRowRef   = useRef("chartPatroliWaktuRow");
+        this.chartPatroliWaktuRef      = useRef("chartPatroliWaktu");
         this.tablePatroliRowRef        = useRef("tablePatroliRow");
         this.tablePatroliBodyRef       = useRef("tablePatroliBody");
         this.tableKriminalRowRef       = useRef("tableKriminalRow");
