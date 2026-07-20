@@ -58,6 +58,9 @@
             <!-- ══ MAIN CONTENT ══ -->
             <div class="petadigi-main-content">
 
+                <!-- STICKY HEADER: filter + summary + KPI -->
+                <div class="petadigi-sticky-header">
+
                 <!-- TOP ROW: breadcrumb + filter -->
                 <div class="petadigi-top-row">
                     <div class="petadigi-breadcrumb-box" t-ref="breadcrumb">
@@ -108,6 +111,8 @@
 
                 <!-- KPI ROW — diisi oleh JS sesuai mode aktif -->
                 <div class="petadigi-kpi-row" t-ref="kpiRow"/>
+
+                </div><!-- end petadigi-sticky-header -->
 
                 <!-- MAP -->
                 <div class="petadigi-map-wrapper" t-ref="mapWrapper">

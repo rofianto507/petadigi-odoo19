@@ -6,7 +6,7 @@
             <field name="name">strong_point.list.petadigi</field>
             <field name="model">petadigi.strong_point</field>
             <field name="arch" type="xml">
-                <list string="Strong Point">
+                <list string="Strong Point" decoration-danger="personel_count == 0">
                     <field name="code"/>
                     <field name="subdit_id" optional="show"/>
                     <field name="create_uid" string="Penginput" optional="hide"/>
@@ -42,6 +42,8 @@
                     <separator/>
                     <filter string="PROSES" name="filter_proses" domain="[('state','=','PROSES')]"/>
                     <filter string="SELESAI" name="filter_selesai" domain="[('state','=','SELESAI')]"/>
+                    <separator/>
+                    <filter string="Tidak Ada Personel" name="filter_tanpa_personel" domain="[('personel_count','=',0)]"/>
                     <separator/>
                     <filter string="Tanggal Mulai" name="filter_tanggal_mulai" date="tanggal_mulai"/>
                     <group>

@@ -176,7 +176,7 @@ export function addBackButton(ctx, targetLevel, backCtx, onBack) {
 // level kecamatan di masing-masing layer.
 export function renderSummaryMarkers(ctx, geoLayer, countProp, onClickFn) {
     ctx.markerLayerGroup.clearLayers();
-    const markers = [];
+    ctx.summaryMarkerGroup.clearLayers();
 
     geoLayer.eachLayer(polygonLayer => {
         const props = polygonLayer.feature.properties;
@@ -200,13 +200,10 @@ export function renderSummaryMarkers(ctx, geoLayer, countProp, onClickFn) {
             iconAnchor: L.point(size / 2, size / 2),
         });
 
-        const marker = L.marker([center.lat, center.lng], { icon });
-        marker._markerCount = count;
+        const marker = L.marker([center.lat, center.lng], { icon, interactive: true });
         marker.on('click', () => { ctx.map.closePopup(); onClickFn(props, polygonLayer); });
-        markers.push(marker);
+        ctx.summaryMarkerGroup.addLayer(marker);
     });
-
-    ctx.markerLayerGroup.addLayers(markers);
 }
 
 export function renderKabupatenSummaryMarkers(ctx, geoLayer, filters, countProp, mainBreadcrumb, appendIcon, drillDownFn) {

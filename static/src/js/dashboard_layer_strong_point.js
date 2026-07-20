@@ -138,6 +138,11 @@ function _createStrongMarker(r, ctx) {
                     <i class="fa fa-map-pin"></i>
                     <strong>${r.code}</strong>
                 </div>
+                <div id="sp-foto-wrap-${r.id}" class="petadigi-popup-foto">
+                    <div class="petadigi-popup-foto-spinner">
+                        <i class="fa fa-circle-o-notch fa-spin"></i>
+                    </div>
+                </div>
                 <div class="petadigi-popup-body">
                     <table>
                         <tr><td><i class="fa fa-shield"></i> Polres</td><td><strong>${polres}</strong></td></tr>
@@ -158,6 +163,25 @@ function _createStrongMarker(r, ctx) {
             </div>
         `, { maxWidth: 300, className: 'petadigi-leaflet-popup' });
         marker.on('popupopen', () => {
+            // Lazy-load foto dokumentasi
+            const fotoWrap = document.getElementById(`sp-foto-wrap-${r.id}`);
+            if (fotoWrap) {
+                const img = document.createElement('img');
+                img.className = 'petadigi-popup-foto-img';
+                img.alt = 'Foto Strong Point';
+                const spinner = fotoWrap.querySelector('.petadigi-popup-foto-spinner');
+                img.onload = () => {
+                    if (img.naturalWidth > 1) {
+                        fotoWrap.appendChild(img);
+                        img.style.display = 'block';
+                        if (spinner) spinner.style.display = 'none';
+                    } else {
+                        fotoWrap.style.display = 'none';
+                    }
+                };
+                img.onerror = () => { fotoWrap.style.display = 'none'; };
+                img.src = `/web/image/petadigi.strong_point/${r.id}/foto`;
+            }
             setTimeout(() => {
                 const btn = document.getElementById(`btn-detail-strong-${r.id}`);
                 if (btn) btn.addEventListener('click', () => ctx.action.doAction({

@@ -8,6 +8,8 @@
                 <list string="Kategori Kriminal">
                     <field name="icon_preview" widget="html" string="Icon" nolabel="1"/>
                     <field name="name"/>
+                    <field name="kriminalitas_proses" string="Proses" optional="show"/>
+                    <field name="kriminalitas_selesai" string="Selesai" optional="show"/>
                     <field name="icon" optional="show"/>
                     <field name="keterangan" optional="show"/>
                 </list>
@@ -19,6 +21,16 @@
             <field name="arch" type="xml">
                 <form string="Kategori Kriminal">
                     <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" type="object"
+                                    name="action_view_kriminalitas_proses" icon="fa-spinner">
+                                <field name="kriminalitas_proses" widget="statinfo" string="Proses"/>
+                            </button>
+                            <button class="oe_stat_button" type="object"
+                                    name="action_view_kriminalitas_selesai" icon="fa-check-circle">
+                                <field name="kriminalitas_selesai" widget="statinfo" string="Selesai"/>
+                            </button>
+                        </div>
                         <group>
                             <group string="Informasi">
                                 <field name="name"/>

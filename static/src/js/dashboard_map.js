@@ -533,11 +533,12 @@ export class DashboardMap extends Component {
         el.innerHTML = '<option value="">Semua Kategori</option>';
         try {
             const records = await this.orm.searchRead(
-                'petadigi.kategori_sumur_minyak', [], ['id', 'name'], { order: 'name asc' });
+                'petadigi.kategori_sumur_minyak', [], ['id', 'name', 'kode'], { order: 'name asc' });
             records.forEach(r => {
                 const opt = document.createElement('option');
                 opt.value = r.id;
                 opt.textContent = r.name;
+                opt.dataset.kode = r.kode || '';
                 el.appendChild(opt);
             });
         } catch (_) {}
@@ -865,28 +866,27 @@ export class DashboardMap extends Component {
                 ];
             } else if (mode === 'sumur') {
                 // sumur_minyak tidak punya sumber_dokumen_id & tanggal_kejadian
-                const sumurKategoriId = parseInt(this.filterKategoriSumur?.el?.value) || null;
+                const sumurEl         = this.filterKategoriSumur?.el;
+                const sumurKategoriId = parseInt(sumurEl?.value) || null;
+                const sumurKode       = sumurEl?.options[sumurEl.selectedIndex]?.dataset?.kode || '';
                 const sumurSts  = stateValue      ? [['state',       '=', stateValue]]      : [];
                 const sumurKat  = sumurKategoriId ? [['kategori_id', '=', sumurKategoriId]] : [];
                 const sumurBase = [...sumurSts, ...sumurKat, ...drillDomain];
-                const [total, minyakGroups] = await Promise.all([
-                    this.orm.searchCount('petadigi.sumur_minyak', sumurBase),
-                    this.orm.call('petadigi.sumur_minyak', 'read_group',
-                        [sumurBase,
-                         ['minyak_produksi:sum', 'minyak_masuk:sum', 'minyak_tersedia:sum',
-                          'minyak_keluar:sum', 'minyak_ditolak:sum'],
-                         []], { lazy: false }),
-                ]);
+                const minyakGroups = await this.orm.call('petadigi.sumur_minyak', 'read_group',
+                    [sumurBase,
+                     ['minyak_produksi:sum', 'minyak_masuk:sum', 'minyak_tersedia:sum',
+                      'minyak_keluar:sum', 'minyak_ditolak:sum'],
+                     []], { lazy: false });
                 const g = minyakGroups[0] || {};
                 const fmtM = v => `${(v || 0).toLocaleString('id-ID', { maximumFractionDigits: 2 })} L`;
-                cards = [
-                    { icon: 'fa-database',  color: '#A04000', value: total,                    label: 'Total Sumur',     action: { model: 'petadigi.sumur_minyak', domain: sumurBase } },
-                    { icon: 'fa-arrow-up',  color: '#27ae60', value: fmtM(g.minyak_produksi),  label: 'Total Produksi',  action: null },
-                    { icon: 'fa-sign-in',   color: '#2980b9', value: fmtM(g.minyak_masuk),     label: 'Total Masuk',     action: null },
-                    { icon: 'fa-tint',      color: '#1a6b9a', value: fmtM(g.minyak_tersedia),  label: 'Total Tersedia',  action: null },
-                    { icon: 'fa-arrow-down',color: '#d35400', value: fmtM(g.minyak_keluar),    label: 'Total Keluar',    action: null },
-                    { icon: 'fa-ban',       color: '#c0392b', value: fmtM(g.minyak_ditolak),   label: 'Total Ditolak',   action: null },
+                const allVolumeCards = [
+                    { icon: 'fa-arrow-up',  color: '#27ae60', value: fmtM(g.minyak_produksi), label: 'Total Produksi', action: null, kodes: ['', 'sumur_masyarakat'] },
+                    { icon: 'fa-sign-in',   color: '#2980b9', value: fmtM(g.minyak_masuk),    label: 'Total Masuk',    action: null, kodes: ['', 'bku', 'k3s'] },
+                    { icon: 'fa-tint',      color: '#1a6b9a', value: fmtM(g.minyak_tersedia), label: 'Total Tersedia', action: null, kodes: ['', 'bku'] },
+                    { icon: 'fa-arrow-down',color: '#d35400', value: fmtM(g.minyak_keluar),   label: 'Total Keluar',   action: null, kodes: ['', 'sumur_masyarakat', 'bku'] },
+                    { icon: 'fa-ban',       color: '#c0392b', value: fmtM(g.minyak_ditolak),  label: 'Total Ditolak',  action: null, kodes: ['', 'k3s'] },
                 ];
+                cards = allVolumeCards.filter(c => c.kodes.includes(sumurKode)).map(({ kodes: _, ...rest }) => rest);
             } else if (mode === 'strong') {
                 const df_s = [
                     ...(dateFrom ? [['tanggal_mulai', '>=', wibDateStartUtc(dateFrom)]] : []),
@@ -1059,6 +1059,9 @@ export class DashboardMap extends Component {
             },
         }).addTo(this.map);
 
+        // Layer non-cluster untuk summary count bubble per kabupaten/kecamatan/desa
+        this.summaryMarkerGroup = L.layerGroup().addTo(this.map);
+
         // Layer terpisah untuk overlay lokasi penting (tidak ikut cluster)
         this.lokasiOverlayLayerGroup = L.layerGroup().addTo(this.map);
 
@@ -1110,6 +1113,7 @@ export class DashboardMap extends Component {
         if (this.desaLayerGroup)      this.desaLayerGroup.clearLayers();
         if (this.desaLabelGroup)      this.desaLabelGroup.clearLayers();
         if (this.markerLayerGroup)    this.markerLayerGroup.clearLayers();
+        if (this.summaryMarkerGroup)  this.summaryMarkerGroup.clearLayers();
         if (this.comingSoonControl)   { this.comingSoonControl.remove(); this.comingSoonControl = null; }
         removeKriminalLegend(this);
         removeKamLegend(this);

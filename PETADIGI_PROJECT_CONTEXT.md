@@ -254,6 +254,30 @@ petadigi.modus_operandi           petadigi.sumber_dokumen
 petadigi.subdit                   petadigi.sub_status_perkara
 ```
 
+**`petadigi.kategori_kriminal`** — Kategori Kriminalitas
+- `name`, `keterangan`
+- `kriminalitas_ids` (One2many → `petadigi.kriminalitas`)
+- `kriminalitas_proses` (Integer, computed stored) — count status_perkara = 'PROSES'
+- `kriminalitas_selesai` (Integer, computed stored) — count status_perkara = 'SELESAI'
+- `@api.depends('kriminalitas_ids.status_perkara')` via single `read_group` lazy=False
+- Methods: `action_view_kriminalitas_proses()`, `action_view_kriminalitas_selesai()`
+- List view: kolom `kriminalitas_proses` + `kriminalitas_selesai` (optional="show")
+- Form view: `oe_button_box` dengan stat button fa-spinner (Proses) + fa-check-circle (Selesai)
+
+**`petadigi.sub_kategori_kriminal`** — Sub Kategori Kriminalitas
+- `name`, `kategori_id` (Many2one → `petadigi.kategori_kriminal`)
+- `kriminalitas_ids` (One2many via `sub_kategori_id`), `kriminalitas_proses`, `kriminalitas_selesai` — pola sama dengan kategori_kriminal
+- Domain filter action: `[('sub_kategori_id', '=', self.id), ('status_perkara', '=', status)]`
+- List view + Form view: sama dengan kategori_kriminal
+
+**`petadigi.kategori_lalu_lintas`** — Kategori Lalu Lintas
+- `name`, `keterangan`
+- `lalin_ids` (One2many → `petadigi.lalu_lintas`)
+- `lalin_proses` (Integer, computed stored), `lalin_selesai` (Integer, computed stored)
+- `@api.depends('lalin_ids.state')` — uses `state` (bukan `status_perkara` seperti kriminalitas)
+- `read_group` groupby `['kategori_id', 'state']`
+- List view: kolom `lalin_proses` + `lalin_selesai`; Form view: stat button smart buttons
+
 ---
 
 ## 5. Sumur Minyak — Arsitektur
@@ -305,10 +329,16 @@ petadigi.subdit                   petadigi.sub_status_perkara
 - Charts: `dashboard_charts_sumur_minyak.js`
 - Mode dipilih dari toggle peta → `currentMode = 'sumur'`
 
-**KPI Cards** (6 cards, layout `data-cols="6"`):
-- Total Sumur, Total Produksi (L), Total Masuk (L), Total Tersedia (L), Total Keluar (L), Total Ditolak (L)
-- Data dari single `read_group` dengan 5 aggregate sum + count
-- CSS kompak untuk 6 kolom: padding/font/icon lebih kecil; responsive 3-col <1100px, 2-col <700px
+**KPI Cards** (dinamis berdasarkan `filterKategoriSumur`):
+- **Semua Kategori**: Produksi + Masuk + Tersedia + Keluar + Ditolak (5 card, `data-cols="5"`)
+- **Sumur Masyarakat** (`kode = 'sumur_masyarakat'`): Total Produksi + Total Keluar (2 card)
+- **BKU** (`kode = 'bku'`): Total Masuk + Total Tersedia + Total Keluar (3 card)
+- **K3S** (`kode = 'k3s'`): Total Masuk + Total Ditolak (2 card)
+- Card "Total Sumur" dihapus
+- Kode kategori dibaca dari `data-kode` attribute pada option dropdown (diisi saat `_populateKategoriSumur()` fetch field `kode` dari `petadigi.kategori_sumur_minyak`)
+- `allVolumeCards` array berisi semua 5 card dengan property `kodes: ['', ...]` — filter dengan `Array.includes(sumurKode)` sebelum render
+- Data dari single `read_group` dengan 5 aggregate sum (tanpa `searchCount` lagi)
+- CSS: `data-cols` rules tersedia untuk 1–6 kolom; `data-cols="5"` dan `data-cols="6"` pakai compact style (padding/font/icon lebih kecil); responsive 3-col <1100px, 2-col <700px
 
 **Filter khusus sumur** — `filterKategoriSumur` (ref terpisah dari `filterKategori`):
 - `filterKategori` disembunyikan saat mode sumur (`showKategori = !['umum','sumur'].includes(mode)`)
@@ -675,8 +705,13 @@ if att and att.datas:
 - `nama` (Char, required), `pangkat` (Char)
 - `nama_lengkap` (Char, computed stored: `"{pangkat} {nama}"`)
 
+**View Strong Point** (`views/strong_point_views.xml`):
+- List: `decoration-danger="personel_count == 0"` — seluruh baris merah jika tidak ada personel
+- Search: filter **Tidak Ada Personel** (`domain=[('personel_count','=',0)]`) di setelah filter state
+
 **View Patroli** (`views/patroli_views.xml`):
-- List: code, tanggal, polres/polsek, kabupaten/kecamatan/desa, state badge
+- List: `decoration-danger="personel_count == 0 or lokasi_count == 0"` — baris merah jika tidak ada personel ATAU tidak ada titik lokasi
+- Search: filter **Tidak Ada Personel** + **Tidak Ada Titik Lokasi** setelah filter state
 - Form: smart button Personel, header state (PROSES→SELESAI), group Wilayah (role-aware readonly) + Pelaksanaan, notebook tab Personel editable inline + tab Keterangan
 - Search: filter status, Hari Ini/Minggu/Bulan/Tahun, groupby polres/polsek/kabupaten/status/bulan
 - Graph, Pivot, Calendar (date_start=`tanggal_mulai`, color=`state`)
@@ -835,6 +870,11 @@ location ~ ^/petadigi/ {
 - Services: `orm`, `action`
 - State drill-down: `this.drillKabupatenId`, `this.drillKecamatanId`
 - Method utama: `_switchMode()`, `_updateKpiCards()`, `_updateCharts()`, `_clearAllLayers()`
+
+**Sticky Header (2026-07-21)**:
+- `petadigi-top-row` + `petadigi-summary-row` + `petadigi-kpi-row` dibungkus dalam `<div class="petadigi-sticky-header">`
+- CSS: `position: sticky; top: -14px; z-index: 50; background: #f0f2f5; margin: -14px -14px 0 -14px; padding: 14px 14px 10px 14px`
+- `top: -14px` mengoffset `padding: 14px` parent `.petadigi-main-content` agar header nempel ke tepi atas layar
 - **KPI Click Action**: tiap card menyimpan property `action: { model, domain }` atau `null`; setelah render innerHTML, event listener ditambahkan ke card dengan class `petadigi-kpi-card--clickable`; klik → `this.action.doAction({ type: 'ir.actions.act_window', ... })` dengan domain filter aktif saat itu; card agregat (volume minyak, total personel, total lokasi SP) tidak clickable (`action: null`)
 - Filter refs:
   - `filterTahun`, `filterKabupaten`, `filterState`, `filterKategori`, `filterSubKategori`, `filterDateRange` — filter umum
@@ -924,14 +964,61 @@ const baseDomain = [
 - Row 4: Line chart waktu Curat + Curas + Curanmor — **disembunyikan sementara** (`row4.style.display = 'none'` di `dashboard_charts_kriminal.js`)
 - Row 5: Area line perbandingan 2 tahun
 
+> **UTC/WIB fix (2026-07-17)**: `_processWaktuHourGroups` menggunakan `((dateObj.getUTCHours() + 7) % 24)` — bukan `getHours()` (browser local time). `_processMonthGroups` + trend groups menggunakan `new Date(dUtc.getTime() + 7*3600*1000).getUTCMonth()` — bukan `getMonth()`. Pola ini berlaku di semua chart kriminalitas + KAM + Lalin.
+
 ### KAM (3 chart rows)
 - Row 1: Bar per kabupaten + Donut per kategori
 - Row 2: Bar per modus operandi + Pie per jenis TKP
 - Row 3: Area line perbandingan 2 tahun
 
+> **UTC/WIB fix (2026-07-17)**: `_processKamMonthGroups` menggunakan `new Date(dUtc.getTime() + 7*3600*1000).getUTCMonth()`.
+
 ### Bencana (1 chart row): Bar per kabupaten + Donut per kategori
 ### Lalin (2 chart rows): Bar + Donut | Pie jenis jalan + Area line rentang waktu
+
+> **UTC/WIB fix (2026-07-17)**: `_processLalinHourGroups` menggunakan `((dateObj.getUTCHours() + 7) % 24)` untuk slot waktu.
+
 ### Lokasi Penting (1 chart row): Bar per kabupaten + Donut per kategori
+
+### Strong Point (2 chart rows via `updateStrongPointCharts`)
+- Row 1: Bar per kabupaten + Donut pie state PROSES/SELESAI
+- Row 2: **Line chart "Distribusi Waktu Strong Point & Gangguan Lalin"** (8 slot waktu per 3 jam; `smooth: true`; 2 series; legend di bawah chart)
+  - WAKTU_LABELS: `['00:00-02:59', '03:00-05:59', ..., '21:00-23:59']`
+  - Strong Point: biru `#1a6b9a`, area gradient `rgba(26,107,154,0.18→0)`
+  - Gangguan Lalin: oranye `#e67e22`, area gradient `rgba(230,126,34,0.14→0)`
+  - Data: `read_group` dengan `:hour` groupby → slot index `Math.floor(((UTCHour + 7) % 24) / 3)`
+  - Kedua label series di `position: 'top'`; legend `bottom: 0`
+  - Grid: `{ left:12, right:24, top:12, bottom:48, containLabel:true }`
+  - Chart refs: `chartStrongDailyRef` / `_echartsStrongDaily`
+
+### Patroli (3 chart rows via `updatePatroliCharts`)
+- Row 1–2: Bar per kabupaten + trend bulanan + lokasi (charts lama)
+- Row 3: **Line chart "Distribusi Waktu Patroli & Kriminalitas"** (8 slot waktu per 3 jam; `smooth: true`; 2 series; legend di bawah chart) — *ditambahkan 2026-07-17*
+  - Patroli: hijau `#27ae60`, area gradient `rgba(39,174,96,0.18→0)`
+  - Kriminalitas: merah `#e74c3c`, area gradient `rgba(231,76,60,0.14→0)`
+  - Kriminalitas domain: tanpa filter state (tampilkan semua state — `data kriminalitas dibuat muncul semua`)
+  - Kedua label di `position: 'top'`; legend `bottom: 0`
+  - Chart refs: `chartPatroliWaktuRef` / `_echartsPatroliWaktu`
+  - XML ref: `chartPatroliWaktuRow` (t-ref div wrapper row), `chartPatroliWaktu` (canvas)
+  - `dashboard_map.js`: `this.chartPatroliWaktuRowRef` + `this.chartPatroliWaktuRef` di-register via `useRef`
+
+**Pola WIB slot (berlaku di semua chart waktu)**:
+```js
+const WAKTU_LABELS = ['00:00-02:59','03:00-05:59','06:00-08:59','09:00-11:59',
+                      '12:00-14:59','15:00-17:59','18:00-20:59','21:00-23:59'];
+// Dari read_group :hour, __range.from adalah WIB-hour-start dalam UTC
+const d    = new Date(rf.replace(' ', 'T') + 'Z');
+const slot = Math.floor(((d.getUTCHours() + 7) % 24) / 3);
+// +7 untuk konversi UTC → WIB sebelum ambil jam
+```
+
+**Pola WIB bulan (berlaku di semua chart trend bulanan)**:
+```js
+const rangeFrom = g.__range?.['field:month']?.from || '';
+const dUtc = new Date(rangeFrom.replace(' ', 'T') + 'Z');
+const month = new Date(dUtc.getTime() + 7 * 3600 * 1000).getUTCMonth();
+// +7h shift → getUTCMonth() untuk WIB calendar boundary yang benar
+```
 
 ### Sumur Minyak (2 chart row via `updateSumurCharts`)
 - Bar chart: total sumur per kabupaten (semua kabupaten, sort desc, gradasi oranye-coklat)
@@ -946,8 +1033,18 @@ const baseDomain = [
 
 - **Library**: Leaflet.markercluster v1.5.3
 - **Inisialisasi**: `L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 60, ... })`
-- **Layer cluster**: `ctx.markerLayerGroup`
+- **Layer cluster**: `ctx.markerLayerGroup` — untuk marker data individual (kriminalitas, strong point, dll)
+- **Layer summary bubble**: `ctx.summaryMarkerGroup` — `L.layerGroup()` (NON-clustering) untuk count bubble per kabupaten/kecamatan di `renderSummaryMarkers()`. Dipisahkan agar bubble tidak ikut ter-cluster oleh markercluster (fix Lubuklinggau/Musi Rawas overlap 2026-07-21)
 - **Layer overlay lokasi**: `ctx.lokasiOverlayLayerGroup`
+
+> **Penting**: `renderSummaryMarkers` di `dashboard_helpers.js` menggunakan `ctx.summaryMarkerGroup.addLayer()` (bukan `ctx.markerLayerGroup`). Berlaku untuk semua mode peta yang menampilkan summary bubble di level kabupaten/kecamatan.
+
+**Strong Point Popup — Foto Lazy-Load (2026-07-21)**:
+- Popup HTML menyertakan `<div id="sp-foto-wrap-{id}" class="petadigi-popup-foto">` dengan spinner
+- Event `popupopen` → `createElement('img')`, set `img.src = /web/image/petadigi.strong_point/{id}/foto`
+- `img.onload`: jika `naturalWidth > 1` → append img, hide spinner; else hide wrap
+- `img.onerror`: hide wrap
+- Pattern: lazy-load saat popup dibuka, bukan saat marker dibuat
 
 **CSS marker classes**:
 - `petadigi-crime-marker` → kriminalitas (merah)
@@ -1672,6 +1769,35 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - Filter bar (`.petadigi-top-row`) diupdate responsif: `flex-wrap: wrap` pada row; `nowrap + overflow-x: auto` pada filter-box; `min/max-width` pada select — filter tidak lagi terpotong di layar kecil
 - Tabel sumur minyak: tambah **toggle Table/Kanban view** — kanban grid dengan foto thumbnail, state `ctx._sumurViewMode`, CSS kanban baru di `dashboard_map.css`
 
+**Dashboard Map & Kategori Backend — Multi-Update (2026-07-21)**
+
+*Dashboard Map:*
+- Filter + KPI bar dibuat **sticky on scroll** — dibungkus `petadigi-sticky-header` dengan `position:sticky; top:-14px`
+- **Sumur Minyak KPI cards dinamis** berdasarkan filter kategori sumur: card Total Sumur dihapus; cards muncul sesuai kode kategori (semua/sumur_masyarakat/bku/k3s); `kode` disimpan sebagai `data-kode` pada option dropdown; `allVolumeCards` filter per `kodes: ['', ...]`; layout responsive `data-cols` 1–6 semua tersedia
+- **Summary bubble marker** dipindah ke `L.layerGroup()` terpisah (`ctx.summaryMarkerGroup`) — fix Lubuklinggau/Musi Rawas bubble ikut ter-cluster oleh markercluster; berlaku semua mode peta
+- **Strong Point popup**: foto lazy-load via `popupopen` event — `naturalWidth > 1` guard + `onerror` hide
+- CSS `data-cols` rules ditambah untuk 1, 2, 3, 5 kolom (sebelumnya hanya 4 dan 6); `data-cols="5"` pakai compact style
+
+*Backend Model Kategori:*
+- `petadigi.kategori_kriminal`: tambah `kriminalitas_ids` One2many + `kriminalitas_proses`/`kriminalitas_selesai` computed stored + smart buttons form + list columns
+- `petadigi.sub_kategori_kriminal`: sama, via `sub_kategori_id`
+- `petadigi.kategori_lalu_lintas`: sama, via `state` (bukan `status_perkara`)
+
+*Backend View Strong Point & Patroli:*
+- Strong Point list: `decoration-danger="personel_count == 0"` + filter "Tidak Ada Personel"
+- Patroli list: `decoration-danger="personel_count == 0 or lokasi_count == 0"` + filter "Tidak Ada Personel" + "Tidak Ada Titik Lokasi"
+
+**Dashboard — UTC/WIB Fix & Waktu Distribution Chart (2026-07-18)**
+- **Root cause**: Odoo `read_group :day/:hour/:month` mengelompokkan berdasarkan timezone WIB (bukan UTC). `__range.from` adalah UTC timestamp dari awal jam/hari/bulan WIB. Kode lama langsung pakai `getHours()`/`getMonth()` → salah jika browser tidak di WIB.
+- **Fix pattern universal** diterapkan ke semua dashboard:
+  - Jam: `((dateObj.getUTCHours() + 7) % 24)` — bukan `getHours()`
+  - Bulan: `new Date(dUtc.getTime() + 7*3600*1000).getUTCMonth()` — bukan `getMonth()`
+  - Files yang difix: `dashboard_charts_kriminal.js`, `dashboard_charts_kam.js`, `dashboard_charts_lalin.js`, `dashboard_charts_strong_point.js`
+- **Strong Point**: chart "Tanggal per Hari" diganti → **"Distribusi Waktu Strong Point & Gangguan Lalin"** (line smooth, 8 slot per 3 jam, SP biru vs Lalin oranye, legend bawah, label top)
+- **Patroli**: **chart baru "Distribusi Waktu Patroli & Kriminalitas"** ditambah di dashboard Patroli (line smooth, 8 slot per 3 jam, Patroli hijau vs Kriminalitas merah, semua state kriminalitas, legend bawah, label top)
+- XML: tambah `chartPatroliWaktuRow` div di `dashboard_map.xml`; JS: 2 ref baru di `dashboard_map.js`
+- Label overlap fix: kedua series kedua pada waktu charts menggunakan `position: 'top'` (sebelumnya `'bottom'` overlapping dengan x-axis label)
+
 **Patroli Mobile App — Update Internal (2026-07-15)**
 - Form create (`_buildPatroliCreate`): label Desa/Kelurahan diberi `*`, validasi wajib di submit
 - `api_patroli_create`: simpan `submitter_ip` (dari `X-Forwarded-For`) + `submitter_ua` (parsed via `parse_user_agent`)
@@ -1694,4 +1820,4 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 
 ---
 
-*Dokumen diperbarui: 2026-07-16 (Dashboard: KPI click → list view, chart Waktu Kriminalitas radar→bar; Patroli Public+Internal: desa wajib, count check, foto+waktu lokasi wajib, submitter info)*
+*Dokumen diperbarui: 2026-07-21 (Sticky header; Sumur KPI dinamis per kategori; summaryMarkerGroup L.layerGroup fix cluster; SP popup foto lazy-load; kategori kriminal/sub/lalin smart buttons; strong point + patroli decoration-danger + filter)*

@@ -8,6 +8,8 @@
                 <list string="Kategori Lalu Lintas">
                     <field name="icon_preview" widget="html" string="Icon" nolabel="1"/>
                     <field name="name"/>
+                    <field name="lalin_proses" string="Proses" optional="show"/>
+                    <field name="lalin_selesai" string="Selesai" optional="show"/>
                     <field name="icon" optional="show"/>
                     <field name="keterangan" optional="show"/>
                 </list>
@@ -19,6 +21,16 @@
             <field name="arch" type="xml">
                 <form string="Kategori Lalu Lintas">
                     <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button class="oe_stat_button" type="object"
+                                    name="action_view_lalin_proses" icon="fa-spinner">
+                                <field name="lalin_proses" widget="statinfo" string="Proses"/>
+                            </button>
+                            <button class="oe_stat_button" type="object"
+                                    name="action_view_lalin_selesai" icon="fa-check-circle">
+                                <field name="lalin_selesai" widget="statinfo" string="Selesai"/>
+                            </button>
+                        </div>
                         <group>
                             <group string="Informasi">
                                 <field name="name"/>
