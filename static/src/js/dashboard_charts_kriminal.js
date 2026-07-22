@@ -577,7 +577,7 @@ export async function updateKriminalCharts(ctx, mode) {
 
     const baseDomain = [
         ...drillDomain,
-        ...(polresId      ? [['kabupaten_id.polres_id',  '=',  polresId]]                       : []),
+        ...(polresId      ? [['polres_id',  '=',  polresId]]                       : []),
         ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
         ...(tahun         ? [['tahun', '=',  tahun]]                          : []),
         ...(dateFrom      ? [['tanggal_kejadian',        '>=', wibDateStartUtc(dateFrom)]]         : []),
@@ -595,7 +595,7 @@ export async function updateKriminalCharts(ctx, mode) {
         ...drillDomain,
         ...(kategoriId    ? [['kategori_id',             '=', kategoriId]]                     : []),
         ...(subKategoriId ? [['sub_kategori_id',         '=', subKategoriId]]                  : []),
-        ...(polresId      ? [['kabupaten_id.polres_id',  '=', polresId]]                       : []),
+        ...(polresId      ? [['polres_id',  '=', polresId]]                       : []),
     ];
     const currentYrDom  = [...yearlyBase, ['tahun', '=', String(selectedYear)]];
     const prevYrDom     = [...yearlyBase, ['tahun', '=', String(prevYear)]];
@@ -748,7 +748,7 @@ export async function updateKriminalTable(ctx, mode, page) {
 
     const domain = [
         ...drillDomain,
-        ...(polresId      ? [['kabupaten_id.polres_id',  '=',  polresId]]                       : []),
+        ...(polresId      ? [['polres_id',  '=',  polresId]]                       : []),
         ...(stateValue    ? [['status_perkara',          '=',  stateValue]]                     : []),
         ...(tahun         ? [['tahun', '=',  tahun]]                          : []),
         ...(dateFrom      ? [['tanggal_kejadian',        '>=', wibDateStartUtc(dateFrom)]]         : []),

@@ -104,3 +104,15 @@ access_lokasi_patroli_polsek,lokasi_patroli polsek,model_petadigi_lokasi_patroli
 access_lokasi_patroli_subdit_sp,lokasi_patroli subdit sp,model_petadigi_lokasi_patroli,petadigi.group_subdit_strong_point,1,1,1,1
 access_strong_point_form_config_admin,strong_point_form_config admin,model_petadigi_strong_point_form_config,petadigi.group_admin,1,1,1,1
 access_patroli_form_config_admin,patroli_form_config admin,model_petadigi_patroli_form_config,petadigi.group_admin,1,1,1,1
+access_kriminalitas_viewer,kriminalitas viewer,model_petadigi_kriminalitas,petadigi.group_viewer,1,0,0,0
+access_kasus_menonjol_viewer,kasus_menonjol viewer,model_petadigi_kasus_menonjol,petadigi.group_viewer,1,0,0,0
+access_bencana_viewer,bencana viewer,model_petadigi_bencana,petadigi.group_viewer,1,0,0,0
+access_lalu_lintas_viewer,lalu_lintas viewer,model_petadigi_lalu_lintas,petadigi.group_viewer,1,0,0,0
+access_lokasi_penting_viewer,lokasi_penting viewer,model_petadigi_lokasi_penting,petadigi.group_viewer,1,0,0,0
+access_sumur_minyak_viewer,sumur_minyak viewer,model_petadigi_sumur_minyak,petadigi.group_viewer,1,0,0,0
+access_strong_point_viewer,strong_point viewer,model_petadigi_strong_point,petadigi.group_viewer,1,0,0,0
+access_lokasi_strong_point_viewer,lokasi_strong_point viewer,model_petadigi_lokasi_strong_point,petadigi.group_viewer,1,0,0,0
+access_personel_viewer,personel viewer,model_petadigi_personel,petadigi.group_viewer,1,0,0,0
+access_patroli_viewer,patroli viewer,model_petadigi_patroli,petadigi.group_viewer,1,0,0,0
+access_personel_patroli_viewer,personel_patroli viewer,model_petadigi_personel_patroli,petadigi.group_viewer,1,0,0,0
+access_lokasi_patroli_viewer,lokasi_patroli viewer,model_petadigi_lokasi_patroli,petadigi.group_viewer,1,0,0,0

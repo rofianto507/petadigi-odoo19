@@ -79,7 +79,7 @@ function _buildPatroliDomain(filters, geoConditions = []) {
 
 function _buildKriminalDomain(filters, geoConditions = []) {
     const domain = [...geoConditions];
-    if (filters.polresId) domain.push(['kabupaten_id.polres_id', '=', filters.polresId]);
+    if (filters.polresId) domain.push(['polres_id', '=', filters.polresId]);
     if (filters.dateFrom) domain.push(['tanggal_kejadian', '>=', wibDateStartUtc(filters.dateFrom)]);
     if (filters.dateTo)   domain.push(['tanggal_kejadian', '<=', wibDateEndUtc(filters.dateTo)]);
     return domain;

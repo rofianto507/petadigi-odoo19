@@ -175,7 +175,7 @@ petadigi.desa            → Desa/Kelurahan (menyimpan GeoJSON geometry, FK: kec
 
 **`petadigi.lokasi_penting`** — Lokasi penting
 - `code`, `nama_lokasi`, `alamat_lengkap`, `hp_kontak`, `keterangan`
-- `kabupaten_id`, `kecamatan_id`, `desa_id`
+- `kabupaten_id` (**required=True**), `kecamatan_id` (**required=True**), `desa_id` (**required=True**)
 - `kategori_id`, `latitude`, `longitude`
 - `state`: `AKTIF` / `NON AKTIF`
 - **TIDAK punya `tanggal_kejadian` dan `sumber_dokumen_id`**
@@ -1344,6 +1344,7 @@ if user.polsek_id: defaults.setdefault('polsek_id', user.polsek_id.id)
 - `petadigi.group_polres` — Polres (data wilayahnya sendiri)
 - `petadigi.group_polsek` — Polsek (data wilayahnya sendiri)
 - `petadigi.group_petadigi_user` — User umum (baca semua data referensi)
+- `petadigi.group_viewer` — Dashboard Viewer: **hanya baca**, lihat semua data tanpa filter area, hanya menu Maps yang tampil (tidak ada Cooling System / Configuration); implies `group_petadigi_user`; tidak ada record rules → akses global semua record
 
 **Profil mobile — Badge "Level Akses":**
 - `group_subdit_strong_point` → "Subdit" (icon `fa-star`)
@@ -1812,6 +1813,31 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 - Backend views: kolom `subdit_id` di list (optional="show"), search filter + group by
 - Migration script: `tools/migrate_subdit.py` — backfill `subdit_id` dari `create_uid.subdit_id`
 
+**Multi-Fix Dashboard & Akses — (2026-07-22)**
+
+*Bug Fix Filter Polres:*
+- Filter `polres_id` di dashboard sebelumnya pakai domain `['kabupaten_id.polres_id', '=', polresId]` — tidak match jika polres record ≠ polres kabupatennya (e.g. data "Polda Sumsel" tidak muncul)
+- **Fix**: ganti ke domain langsung `['polres_id', '=', polresId]` di 5 file:
+  - `dashboard_layer_kriminal.js` — 1 occurrence
+  - `dashboard_charts_kriminal.js` — 3 occurrences (replace_all)
+  - `dashboard_layer_strong_point.js` — 1 occurrence
+  - `dashboard_layer_patroli.js` — 1 occurrence
+
+*Bug Fix Date Range UTC/WIB:*
+- `_initFlatpickr()` onChange dan quick filter "30 hari terakhir" pakai `d.toISOString().slice(0,10)` yang return UTC date → pengguna WIB mendapat tanggal -1 hari
+- **Fix**: ganti ke `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` (local timezone) di `dashboard_map.js`
+
+*Lokasi Penting Required Fields:*
+- `kabupaten_id`, `kecamatan_id`, `desa_id` dijadikan `required=True` di `models/lokasi_penting.py`
+- Root cause: user Polres yang tidak mengisi kabupaten mendapat "Akses Eror" (domain kabupaten kosong gagal record rule polres) — dengan required=True validasi lebih awal dengan pesan error yang jelas
+
+*Grup Baru — Dashboard Viewer:*
+- `security/security.xml`: tambah `group_viewer` (Dashboard Viewer) dengan `privilege_petadigi_access`, implies `group_petadigi_user`
+- `security/ir.model.access.csv`: tambah 14 baris read-only (1,0,0,0) untuk `group_viewer` pada model: kriminalitas, kasus_menonjol, bencana, lalu_lintas, lokasi_penting, sumur_minyak, strong_point, lokasi_strong_point, personel, patroli, personel_patroli, lokasi_patroli
+- `views/menu.xml`: tambah `petadigi.group_viewer` ke 6 sub-menu Maps yang sebelumnya dibatasi (Bencana, Lalu Lintas, Strong Point, Patroli, Lokasi Penting, Sumur Minyak)
+- Viewer otomatis dapat akses Dashboard + Maps > Kriminalitas + Maps > Kasus Menonjol (karena implies `group_petadigi_user`)
+- Tidak ada record rules → viewer lihat SEMUA data tanpa batasan area
+
 ### Potensial Berikutnya
 - Export/report Monitoring Giat ke PDF/Excel
 - Notifikasi real-time kasus baru
@@ -1820,4 +1846,4 @@ Script dijalankan via Odoo shell: `exec(open('/path/to/script.py').read())`
 
 ---
 
-*Dokumen diperbarui: 2026-07-21 (Sticky header; Sumur KPI dinamis per kategori; summaryMarkerGroup L.layerGroup fix cluster; SP popup foto lazy-load; kategori kriminal/sub/lalin smart buttons; strong point + patroli decoration-danger + filter)*
+*Dokumen diperbarui: 2026-07-22 (Fix polres filter domain; fix date range UTC/WIB; lokasi_penting required fields; group_viewer Dashboard Viewer)*

@@ -70,6 +70,13 @@
         ]"/>
     </record>
 
+    <!-- Dashboard Viewer: hanya baca semua data dashboard, menu Maps saja. -->
+    <record id="group_viewer" model="res.groups">
+        <field name="name">Dashboard Viewer</field>
+        <field name="privilege_id" ref="privilege_petadigi_access"/>
+        <field name="implied_ids" eval="[(4, ref('petadigi.group_petadigi_user'))]"/>
+    </record>
+
     <!-- ═══════════════════════════════════════════════════════
          RECORD RULES
          Admin tidak butuh record rule (akses global via ir.model.access).

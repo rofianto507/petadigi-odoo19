@@ -12,17 +12,19 @@ class LokasiPenting(models.Model):
     nama_lokasi = fields.Char('Nama Lokasi', required=True, tracking=True)
     alamat_lengkap = fields.Char('Alamat Lengkap', tracking=True)
     hp_kontak = fields.Char('HP / Kontak', tracking=True)
-    kabupaten_id = fields.Many2one('petadigi.kabupaten', string='Kabupaten/Kota', tracking=True)
+    kabupaten_id = fields.Many2one('petadigi.kabupaten', string='Kabupaten/Kota', required=True, tracking=True)
     kecamatan_id = fields.Many2one(
         'petadigi.kecamatan',
         string='Kecamatan',
         domain="[('kabupaten_id', '=', kabupaten_id)]",
+        required=True,
         tracking=True
     )
     desa_id = fields.Many2one(
         'petadigi.desa',
         string='Desa/Kelurahan',
         domain="[('kecamatan_id', '=', kecamatan_id)]",
+        required=True,
         tracking=True
     )
     latitude = fields.Float('Latitude', digits=(10, 6), tracking=True, aggregator=False)

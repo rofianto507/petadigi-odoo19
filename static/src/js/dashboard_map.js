@@ -257,7 +257,7 @@ export class DashboardMap extends Component {
             disableMobile: true,
             onChange: (selectedDates) => {
                 if (this._suppressDateChange) return;
-                const fmt = d => d.toISOString().slice(0, 10);
+                const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
                 this.activeDateFrom = selectedDates[0] ? fmt(selectedDates[0]) : '';
                 this.activeDateTo   = selectedDates[1] ? fmt(selectedDates[1]) : '';
                 if (selectedDates.length === 0 || selectedDates.length === 2) {
@@ -411,7 +411,7 @@ export class DashboardMap extends Component {
             const today = new Date();
             const d30 = new Date(today);
             d30.setDate(d30.getDate() - 30);
-            const _fmtD = d => d.toISOString().slice(0, 10);
+            const _fmtD = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             this.activeDateFrom = _fmtD(d30);
             this.activeDateTo   = _fmtD(today);
             this._suppressDateChange = true;
@@ -765,7 +765,7 @@ export class DashboardMap extends Component {
             ...(dateTo   ? [['tanggal_kejadian', '<=', wibDateEndUtc(dateTo)]] : []),
         ];
         const jenisLpValue  = this.filterJenisLP?.el?.value          || '';
-        const polresf = polresId ? [['kabupaten_id.polres_id', '=', polresId]] : [];
+        const polresf = polresId ? [['polres_id', '=', polresId]] : [];
         const kf  = kategoriId    ? [['kategori_id',    '=', kategoriId]]    : [];
         const sf  = subKategoriId ? [['sub_kategori_id','=', subKategoriId]] : [];
         const jlpf = jenisLpValue  ? [['jenis_lp',       '=', jenisLpValue]]  : [];

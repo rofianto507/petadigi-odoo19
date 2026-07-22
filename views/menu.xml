@@ -46,42 +46,42 @@
             name="Bencana"
             parent="menu_petadigi_maps"
             action="action_petadigi_bencana"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_viewer"
             sequence="3"/>
         <menuitem
             id="menu_lalu_lintas"
             name="Lalu Lintas"
             parent="menu_petadigi_maps"
             action="action_petadigi_lalu_lintas"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_viewer"
             sequence="4"/>
         <menuitem
             id="menu_strong_point"
             name="Strong Point"
             parent="menu_petadigi_maps"
             action="action_petadigi_strong_point"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_subdit_strong_point"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_subdit_strong_point,petadigi.group_viewer"
             sequence="5"/>
         <menuitem
             id="menu_patroli"
             name="Patroli"
             parent="menu_petadigi_maps"
             action="action_petadigi_patroli"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_subdit_strong_point"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_subdit_strong_point,petadigi.group_viewer"
             sequence="5"/>
         <menuitem
             id="menu_lokasi_penting"
             name="Lokasi Penting"
             parent="menu_petadigi_maps"
             action="action_petadigi_lokasi_penting"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_viewer"
             sequence="6"/>
         <menuitem
             id="menu_sumur_minyak"
             name="Sumur Minyak"
             parent="menu_petadigi_maps"
             action="action_petadigi_sumur_minyak"
-            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek"
+            groups="petadigi.group_admin,petadigi.group_polres,petadigi.group_polsek,petadigi.group_viewer"
             sequence="7"/>
 
         <!-- Cooling System: tidak untuk subdit -->

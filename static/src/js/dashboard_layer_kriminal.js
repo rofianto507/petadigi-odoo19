@@ -248,7 +248,7 @@ export async function loadModeKriminal(ctx) {
     ctx.currentLevel = 'kabupaten';
 
     const filters = _getActiveFilters(ctx);
-    const baseDomain = filters.polresId ? [['kabupaten_id.polres_id', '=', filters.polresId]] : [];
+    const baseDomain = filters.polresId ? [['polres_id', '=', filters.polresId]] : [];
 
     try {
         const kabDomain = filters.kabupatenId ? [['id', '=', filters.kabupatenId]] : [];
